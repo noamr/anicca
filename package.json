@@ -1,0 +1,23 @@
+{
+  "name": "anicca",
+  "version": "1.0.0",
+  "description": "A declarative web application framework",
+  "main": "index.js",
+  "repository": "git@github.com:noamr/anicca.git",
+  "author": "Noam Rosenthal <noam.j.rosenthal@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "build-dev": "rollup --environment BUILD:dev -c rollup.config.js",
+    "build-prod": "rollup --environment BUILD:production -c rollup.config.js"
+  },
+  "devDependencies": {
+    "cypress": "^3.8.0",
+    "nearley": "^2.19.0",
+    "rollup": "^1.27.13",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-rust": "^1.2.0",
+    "rollup-plugin-serve": "^1.0.1",
+    "rollup-plugin-terser": "^5.1.3"
+  }
+}
