@@ -1,0 +1,17 @@
+<html>
+<head>
+    <script type="module">
+        import {myApp} from './simple.kal.mjs'
+        window.addEventListener('DOMContentLoaded', () => {
+            myApp({
+                rootElement: document.querySelector('#app')
+            })
+        })
+    </script>
+</head>
+<body>
+    <div id="app">
+        <div id="myText">Waiting</div>
+    </div>
+</body>
+</html>

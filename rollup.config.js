@@ -4,6 +4,7 @@ import commonjs from 'rollup-plugin-commonjs'
 import serve from 'rollup-plugin-serve'
 
 const production = process.env.BUILD === 'production'
+const dev = !production
 
 export default {
 	input: 'src/main.js',
