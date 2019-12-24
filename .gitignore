@@ -105,6 +105,8 @@ dist
 # TernJS port file
 .tern-port
 
-*.kal.js
+*.kal.mjs
 *.kal.rs
+*.kal.json
 *.kal.wasm
+*.ne.cjs

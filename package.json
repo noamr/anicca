@@ -8,8 +8,9 @@
   "author": "Noam Rosenthal <noam.j.rosenthal@gmail.com>",
   "license": "MIT",
   "scripts": {
+    "grammar": "nearleyc ./src/builder/kal.ne > ./src/builder/kal.ne.cjs",
     "cypress:prepare": "ts-node ./build.ts cypress/**/*.kal",
-    "cypress:open": "node cypress:prepare && cypress open",
+    "cypress:open": "cypress open",
     "build:dev": "rollup --environment BUILD:dev -c rollup.config.js",
     "build:prod": "rollup --environment BUILD:production -c rollup.config.js",
     "build:serve": "rollup --environment SERVE=1;BUILD:dev -c rollup.config.js"

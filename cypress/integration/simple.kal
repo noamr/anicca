@@ -1,8 +1,8 @@
+const value = 'Hello World!'
+
 view myView
     #myText
         bind innerHTML to value
-
-const value = 'Hello World!'
 
 app myApp
     use myView
