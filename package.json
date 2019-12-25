@@ -10,6 +10,7 @@
   "scripts": {
     "grammar": "nearleyc ./src/builder/kal.ne > ./src/builder/kal.ne.cjs",
     "cypress:prepare": "ts-node ./build.ts cypress/**/*.kal",
+    "cypress:run": "yarn cypress:prepare && cypress run",
     "cypress:open": "cypress open",
     "build:dev": "rollup --environment BUILD:dev -c rollup.config.js",
     "build:prod": "rollup --environment BUILD:production -c rollup.config.js",

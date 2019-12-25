@@ -1,2 +1,4 @@
 {
+    "watchForFileChanges": true,
+    "testFiles": "**/*.spec.js"
 }

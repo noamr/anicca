@@ -1,0 +1,18 @@
+<html>
+<head>
+    <script type="module">
+        import {myApp} from './increment.kal.mjs'
+        window.addEventListener('DOMContentLoaded', () => {
+            myApp({
+                rootElement: document.querySelector('#app')
+            })
+        })
+    </script>
+</head>
+<body>
+    <div id="app">
+        <a href="#" id="button">Increment</a>
+        <div id="result">Waiting</div>
+    </div>
+</body>
+</html>
