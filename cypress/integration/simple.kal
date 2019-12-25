@@ -2,7 +2,7 @@ const value = 'Hello World!'
 
 view myView
     #myText
-        bind innerHTML to value
+        bind html to value
 
 app myApp
     use myView

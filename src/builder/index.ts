@@ -33,7 +33,9 @@ interface ViewDeclaration {
 
 }
 
-type BindTarget = "innerHTML"
+type BindTarget = {
+    type: 'html' | 'attribute' | 'style'
+}
 
 type Reference = {
     type: "Formula" | "Const"
@@ -85,7 +87,10 @@ async function compile(bundle: ParsedKal) {
                                 ${
                                     r.declarations.map(d => {
                                         const bd = d as BindDeclaration
-                                        return `e.${bd.target} = ${bd.src.ref}`
+                                        switch (bd.target.type) {
+                                            case 'html':
+                                                return `e.innerHTML = ${bd.src.ref}`
+                                        }
                                     }).join("\n")
                                 }
                             })`

@@ -8,6 +8,7 @@ const indentAwareLexer = new IndentifyLexer(moo.compile({
       'i8', 'i16', 'i32', 'i64', 'u8', 'u16', 'u32', 'u64', 'f32', 'f64', 'bool',
       'view', 'formula', 'app', 'statechart',
       'use', 'bind', 'export',
+      'html', 'attribute', 'style',
       'of', 'to'],
   ws:     /[ \t]+/,
   int: /-?[0-9]+/,
@@ -66,7 +67,7 @@ viewBindDeclaration ->
     "bind" __ viewBindTarget __ "to" __ formula _ newlines    {% ([a, b, target, c, d, e, src]) => ({type: "Bind", target, src}) %}
 
 viewBindTarget ->
-    "innerHTML" {% () => 'innerHTML' %}
+    "html" {% (t) => ({...toToken(t), type: 'html'}) %}
 
 selector ->
     %selector {% ([s]) => s.value %}
