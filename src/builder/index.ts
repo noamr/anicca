@@ -129,7 +129,7 @@ export async function build({inputPath, jsOutputPath, rsOutputPath, wasmOutputPa
 
     parser.feed(fs.readFileSync(inputPath, 'utf8'))
     const parsed = parser.results[0][0]
-    fs.writeFileSync(jsonIntermediatePath, JSON.stringify(parsed))
+    fs.writeFileSync(jsonIntermediatePath, JSON.stringify(parsed, null, 4))
     const compiled = await compile(parsed)
 
     fs.writeFileSync(jsOutputPath, compiled)
