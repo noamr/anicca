@@ -11,15 +11,17 @@ const lexer = moo.compile({
       'of', 'to', 'on'],
 
   pipeline: /\|\>/,
-  operator: /[+*/?|%^&\-,]/,
-  parentheses: /[(){}[\].]/,
+  shift: /(?:\<\<)|(?:\>\>\>?)/,
+  compare: /(?:[<>!=]\=)|(?:[<>])/,
+  float: /-?(?:[0-9]+\.[0-9]*)|(?:\.[0-9]+)/,
+  operator: /[+*/?|%\^&\-,.]/,
+  parentheses: /[(){}[\]]/,
   varname: /[A-Za-z$_][A-Za-z$_0-9]*/,
   ws: /[ \t]+/,
   int: /-?[0-9]+/,
   hex: /0x[0-9A-Fa-f]+/,
   binary: /0b[0-1]+/,
   unary: /[!~]/,
-  float: /-?[0-9]*.[0-9]/,
   and: /\&\&/,
   or: /\|\|/,
   assign: /[=+*/?|%^&\-]?=/,
@@ -44,7 +46,7 @@ function fixTokens({op, args, token, ...rest}) {
     return ({op, $token: token ? extractToken(token): undefined, args: args ? args.map(fixTokens).flat() : undefined, ...rest})
 }
 
-const BinaryOp = op => ([a,{token,value}]) => {console.log({a,token,value}); return ({op, token, args: [a, value]}) }
+const ExtractOp = op => ([obj]) => ({op, ...obj})
 
 %}
 
@@ -83,7 +85,17 @@ Next[A] ->
     | W %indent W $A %dedent {% ([,,,a]) => a %}
 
 RValue[Op, Value] ->
-    Next[$Op $Value] {% ([[token, value]]) => ({token, value}) %}
+    Next[$Op $Value] {% ([[token, [args]]]) => ({token, args}) %}
+
+Ternary[A, Op1, B, Op2, C] ->
+    Binary[$A, $Op1, Binary[$B, $Op2, $C]]
+        {% ([{token, args}]) => ({token, args: [args[0], ...args[1]]}) %}
+
+Binary[L, Op, R] ->
+    $L RValue[$Op, $R] {% ([[l], {token, args}]) => ({token, args: [l, ...args]}) %}
+
+Unary[Op, R] ->
+    RValue[$Op, $R] {% ([{token, args}]) => ({token, args}) %}
 
 # Follow the JS order of precendence 
 # https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
@@ -101,32 +113,60 @@ GET ->
     | P {% id %}
 
 UNARY -> 
-    WS "!" WS UNARY    {% ([,token,,a]) => ({op: 'not', token, args: [a]}) %}
-    | WS "~" WS UNARY    {% ([,token,,a]) => ({op: 'bwnot', token, args: [a]}) %}
-    | WS "-" WS UNARY    {% ([,token,,a]) => ({op: 'minus', token, args: [{$primitive: 0}, a]}) %}
-#    | WS "+" WS UNARY    {% ([,token,,a]) => ({op: 'toNumber', token, args: [a]}) %}
+    Unary["!", UNARY]       {% ExtractOp('not') %}
+    | Unary["~", UNARY]     {% ExtractOp('bwnot') %}
+    | Unary["-", UNARY]     {% ExtractOp('negate') %}
     | GET             {% id %}
     
 # Exponents
-E -> UNARY WS "**" WS E    {% ([a,,token,,b]) => ({op: 'pow', token, args: [a, b]}) %}
-    | UNARY             {% id %}
+E -> Binary[UNARY, "**" ,E]     {% ExtractOp('pow') %}
+    | UNARY                     {% id %}
 
 # Multiplication and division
-MD -> MD WS "*" WS E  {% ([a,,token,,b]) => ({op: 'mult', args: [a, b], token}) %}
-    |MD WS "/" WS E  {% ([a,,token,,b]) => ({op: 'div', args: [a, b], token}) %}
-    |MD WS "%" WS E  {% ([a,,,,b]) => ({op: 'mod', args: [a, b], token}) %}
-    | E             {% id %}
+MD -> Binary[MD, "*", E]    {% ExtractOp('mult') %}
+    | Binary[MD, "/", E]    {% ExtractOp('div') %}
+    | Binary[MD, "%", E]    {% ExtractOp('mod') %}
+    | E                     {% id %}
 
 W ->
     %eol {% NOOP %}
     | _ {% NOOP %}
 
 # Addition and subtraction
-AS -> AS RValue["+", MD] {% BinaryOp('add') %}
-    | AS RValue["-", MD] {% BinaryOp('sub') %}
+AS -> Binary[AS, "+", MD] {% ExtractOp('add') %}
+    | Binary[AS, "-", MD] {% ExtractOp('sub') %}
     | MD            {% id %}
 
-operand -> AS {% id %}
+BWS -> Binary[BWS, "<<", AS] {% ExtractOp('shl') %}
+    | Binary[BWS, ">>", AS] {% ExtractOp('shr') %}
+    | Binary[BWS, ">>>", AS] {% ExtractOp('ushr') %}
+    | AS {% id %}
+
+COMPARE ->
+    Binary[COMPARE, "==", BWS] {% ExtractOp('eq') %}
+    | Binary[COMPARE, "<=", BWS] {% ExtractOp('lte') %}
+    | Binary[COMPARE, ">=", BWS] {% ExtractOp('gte') %}
+    | Binary[COMPARE, ">", BWS] {% ExtractOp('gt') %}
+    | Binary[COMPARE, "<", BWS] {% ExtractOp('lt') %}
+    | BWS {% id %}
+
+BWAND ->
+    Binary[BWAND, "&", COMPARE] {% ExtractOp('bwand') %}
+    | COMPARE {% id %}
+
+BWXOR ->
+    Binary[BWXOR, "^", BWAND] {% ExtractOp('bwxor') %}
+    | BWAND {% id %}
+
+BWOR ->
+    Binary[BWOR, "|", BWXOR] {% ExtractOp('bwor') %}
+    | BWXOR {% id %}
+
+COND ->
+    Ternary[COND, "?", COND, ":", BWOR] {% ExtractOp('cond') %}
+    | BWOR {% id %}
+
+operand -> COND {% id %}
     
 pipeFunctionCall ->
     anyExpression WS %pipeline WS partialFunctionCall 

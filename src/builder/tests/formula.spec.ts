@@ -13,6 +13,11 @@ const removeTokens = (a: any): Formula =>
         
 const parseRaw = (str: string) => removeTokens(parse(str))
 describe('formulas', () => {
+    describe('const', () => {
+        it('float', () => {
+            expect(parse('0.4425')).toMatchSnapshot()
+        })
+    })
     describe('single', () => {
         it('plus', () => {
             expect(parse('a + 1')).toMatchSnapshot()
@@ -42,6 +47,52 @@ describe('formulas', () => {
         it('notnot', () => {
             expect(parse('!!abc')).toMatchSnapshot()
         })
+    })
+
+    describe('compare', () => {
+        it('==', () => {
+            expect(parseRaw('a == 0')).toEqual(parseRaw('eq(a, 0)'))
+        })
+        it('<=', () => {
+            expect(parseRaw('a <= 0')).toEqual(parseRaw('lte(a, 0)'))
+        })
+        it('<', () => {
+            expect(parseRaw('a < 0')).toEqual(parseRaw('lt(a, 0)'))
+        })
+        it('>', () => {
+            expect(parseRaw('a > b')).toEqual(parseRaw('gt(a, b)'))
+        })
+        it('>=', () => {
+            expect(parseRaw('a >= .3')).toEqual(parseRaw('gte(a, 0.3)'))
+        })
+        
+    })
+
+    describe('bitwise', () => {
+        it('and', () => {
+            expect(parseRaw('a & b')).toEqual(parseRaw('bwand(a, b)'))
+        })
+        it('or', () => {
+            expect(parseRaw('a | b')).toEqual(parseRaw('bwor(a, b)'))
+        })
+        it('xor', () => {
+            expect(parseRaw('a ^ b')).toEqual(parseRaw('bwxor(a, b)'))
+        })
+        it('shl', () => {
+            expect(parseRaw('a << b')).toEqual(parseRaw('shl(a, b)'))
+        })
+        it('shr', () => {
+            expect(parseRaw('a >> b')).toEqual(parseRaw('shr(a, b)'))
+        })
+        it('ushr', () => {
+            expect(parseRaw('a >>> b')).toEqual(parseRaw('ushr(a, b)'))
+        })
+
+        it('precedence', () => {
+            expect(parseRaw('a & b ^ c | d')).toEqual(parseRaw('bwor(bwxor(bwand(a, b), c), d)'))
+            expect(parseRaw('a ^ b | c & 3')).toEqual(parseRaw('bwor(bwxor(a, b), bwand(c, 3))'))
+        })
+
     })
 
     describe('parantheses', () => {

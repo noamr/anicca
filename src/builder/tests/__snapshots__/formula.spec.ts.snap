@@ -1,5 +1,11 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`formulas const float 1`] = `
+Object {
+  "$primitive": 0.4425,
+}
+`;
+
 exports[`formulas functions multiple args 1`] = `
 Object {
   "$token": Object {
@@ -258,9 +264,6 @@ Object {
   },
   "args": Array [
     Object {
-      "$primitive": 0,
-    },
-    Object {
       "$ref": "a",
       "$token": Object {
         "col": 2,
@@ -268,7 +271,7 @@ Object {
       },
     },
   ],
-  "op": "minus",
+  "op": "negate",
 }
 `;
 
