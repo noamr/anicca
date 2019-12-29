@@ -185,14 +185,14 @@ describe('formulas', () => {
         })
         it('functions', () => {
             expect(parseRaw(`
-                a
-                    + sin
-                        (8.3)
-                        * abc /
-                            1 |>
-                                h() |>
-                                iijj()
-            `)).toEqual(parseRaw('a+sin(8.3)*abc/1|>h()|>iijj()'))
+                a*
+                sin(
+                    4)
+            `)).toEqual(parseRaw(' a * sin(4)'))
+            expect(parseRaw(`
+                8 **
+                max(3, 4)
+            `)).toEqual(parseRaw('pow(8, (3 |> max(?,  4))'))
         })
     })
 

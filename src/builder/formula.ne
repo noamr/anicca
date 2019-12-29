@@ -17,6 +17,7 @@ const lexer = moo.compile({
   compare: /(?:[<>!=]\=)|(?:[<>])/,
   float: /-?(?:[0-9]+\.[0-9]*)|(?:\.[0-9]+)/,
   and: /\&\&/,
+  oiw: /\*\*/,
   or: /\|\|/,
   operator: /[+*/?|%\^&\-,.:]/,
   parentheses: /[(){}[\]]/,
@@ -130,7 +131,7 @@ UNARY ->
     | GET             {% id %}
     
 # Exponents
-E -> Binary[UNARY, "**" ,E]     {% ExtractOp('pow') %}
+E -> Binary[E, "**" , UNARY]     {% ExtractOp('pow') %}
     | UNARY                     {% id %}
 
 # Multiplication and division
@@ -199,11 +200,11 @@ pipeFunctionCall ->
         {% ([input,, token,, resolvePartial]) => resolvePartial({token, input}) %}
 
 standardFunctionCall ->
-    %varname WS "(" WS arguments WS ")" WS {% ([op,,,, args]) => ({token: op, op: op.value, args}) %}
+    WS %varname WS "(" WS arguments WS ")" WS {% ([,op,,,, args]) => ({token: op, op: op.value, args}) %}
 
 partialFunctionCall ->
-    %varname WS "(" WS partialArgs WS ")" {%
-        ([op, , , , args], location, reject) => {
+    WS %varname WS "(" WS partialArgs WS ")" {%
+        ([,op, , , , args], location, reject) => {
             const index = args.findIndex(a => a === partialSymbol)
             return ({token, input}) => {
                 const resolvedArgs = [...args]
