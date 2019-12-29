@@ -14,7 +14,7 @@ const lexer = moo.compile({
   shift: /(?:\<\<)|(?:\>\>\>?)/,
   compare: /(?:[<>!=]\=)|(?:[<>])/,
   float: /-?(?:[0-9]+\.[0-9]*)|(?:\.[0-9]+)/,
-  operator: /[+*/?|%\^&\-,.]/,
+  operator: /[+*/?|%\^&\-,.:]/,
   parentheses: /[(){}[\]]/,
   varname: /[A-Za-z$_][A-Za-z$_0-9]*/,
   ws: /[ \t]+/,
@@ -89,7 +89,9 @@ RValue[Op, Value] ->
 
 Ternary[A, Op1, B, Op2, C] ->
     Binary[$A, $Op1, Binary[$B, $Op2, $C]]
-        {% ([{token, args}]) => ({token, args: [args[0], ...args[1]]}) %}
+        {% ([{token, args}]) => {
+            return ({token, args: [...args[0], ...args[1].args.map(([a]) => a)]})
+         } %}
 
 Binary[L, Op, R] ->
     $L RValue[$Op, $R] {% ([[l], {token, args}]) => ({token, args: [l, ...args]}) %}

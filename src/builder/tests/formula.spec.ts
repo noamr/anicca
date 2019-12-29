@@ -95,6 +95,12 @@ describe('formulas', () => {
 
     })
 
+    describe('ternary', () => {
+        it('cond', () => {
+            expect(parseRaw('a ? b : c')).toEqual(parseRaw('cond(a, b, c)'))
+        })
+    })
+
     describe('parantheses', () => {
         it('single', () => {
             expect(parseRaw('(a)')).toEqual(parseRaw('a'))
