@@ -183,6 +183,17 @@ describe('formulas', () => {
                     + 3
             `)).toEqual(parseRaw('a+3'))
         })
+        it('functions', () => {
+            expect(parseRaw(`
+                a
+                    + sin
+                        (8.3)
+                        * abc /
+                            1 |>
+                                h() |>
+                                iijj()
+            `)).toEqual(parseRaw('a+sin(8.3)*abc/1|>h()|>iijj()'))
+        })
     })
 
     describe('order of operations', () => {
