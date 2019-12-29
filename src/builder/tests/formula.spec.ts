@@ -17,6 +17,12 @@ describe('formulas', () => {
         it('float', () => {
             expect(parse('0.4425')).toMatchSnapshot()
         })
+        it('string literal', () => {
+            expect(parse('"abc"')).toMatchSnapshot()
+        })
+        it('string literal single quote', () => {
+            expect(parse('\'abc\'')).toMatchSnapshot()
+        })
     })
     describe('single', () => {
         it('plus', () => {
@@ -193,6 +199,35 @@ describe('formulas', () => {
                 8 **
                 max(3, 4)
             `)).toEqual(parseRaw('pow(8, (3 |> max(?,  4))'))
+        })
+    })
+
+    describe('objects', () => {
+        describe('array constructor', () => {
+            it('empty', () => {
+                expect(parseRaw('[]')).toEqual(parseRaw('array()'))
+            })
+            it('one arg', () => {
+                expect(parseRaw('[3]')).toEqual(parseRaw('array(3)'))
+            })
+            it('multiple args', () => {
+                expect(parseRaw("[.3, 'bla', done]")).toEqual(parseRaw('array(0.3, "bla", done)'))
+            })
+        })
+        describe('object constructor', () => {
+            it('empty', () => {
+                expect(parseRaw('{}')).toEqual(parseRaw('object()'))
+            })
+            it('one arg', () => {
+                expect(parseRaw('{a: 3}')).toEqual(parseRaw('object(entry("a", 3))'))
+                expect(parseRaw('{2: 3}')).toEqual(parseRaw('object(entry(2, 3))'))
+                expect(parseRaw('{["a"]: 3}')).toEqual(parseRaw('object(entry("a", 3))'))
+                expect(parseRaw('{"a": 3}')).toEqual(parseRaw('object(entry("a", 3))'))
+                expect(parseRaw('{[abc]: "def"}')).toEqual(parseRaw('object(entry(abc, "def"))'))
+            })
+            it('multiple args', () => {
+                expect(parseRaw("[.3, 'bla', done]")).toEqual(parseRaw('array(0.3, "bla", done)'))
+            })            
         })
     })
 

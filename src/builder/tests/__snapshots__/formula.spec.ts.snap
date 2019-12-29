@@ -6,6 +6,18 @@ Object {
 }
 `;
 
+exports[`formulas const string literal 1`] = `
+Object {
+  "$primitive": "abc",
+}
+`;
+
+exports[`formulas const string literal single quote 1`] = `
+Object {
+  "$primitive": "abc",
+}
+`;
+
 exports[`formulas functions multiple args 1`] = `
 Object {
   "$token": Object {

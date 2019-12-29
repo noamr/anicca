@@ -10,6 +10,8 @@ const lexer = moo.compile({
       'prevent default', 'dispatch',
       'of', 'to', 'on'],
 
+  singleQuoteStringLiteral:  {match: /'(?:\\['\\]|[^\n'\\])*'/}, 
+  doubleQuoteStringLiteral:  {match: /"(?:\\["\\]|[^\n"\\])*"/},
   pipeline: /\|\>/,
   nullishCoalescing: /\?\?/,
   optionalChain: /\?\./,
@@ -29,8 +31,6 @@ const lexer = moo.compile({
   unary: /[!~]/,
   assign: /[=+*/?|%^&\-]?=/,
   selector: /[#*]?[A-Za-z$_][A-Za-z$_0-9]*\[?\]?(?:[~*$^]?\=[^\n])?/,
-  singleQuoteStringLiteral:  {match: /'(?:\\['\\]|[^\n'\\])*'/}, 
-  doubleQuoteStringLiteral:  {match: /"(?:\\["\\]|[^\n"\\])*"/},
   newline: { match: /[\n]/, lineBreaks: true }
 })
 
@@ -122,6 +122,8 @@ GET ->
     | GET Next["." %varname] {% ([a,[token, b]]) => ({op: 'get', token, args: [a, {$primitive: b.value}]}) %}
     | functionCall {% id %}
     | optionalChain {% id %}
+    | arrayConstructor {% id %}
+    | objectConstructor {% id %}
     | P {% id %}
 
 UNARY -> 
@@ -201,6 +203,29 @@ pipeFunctionCall ->
 
 standardFunctionCall ->
     WS %varname WS "(" WS arguments WS ")" WS {% ([,op,,,, args]) => ({token: op, op: op.value, args}) %}
+
+arrayConstructor ->
+    WS "[" WS arguments WS "]" WS {% ([,token,,args]) => ({token, op: 'array', args}) %}
+
+objectKey ->
+    stringLiteral {% ([p]) => ({$primitive: JSON.parse(p)}) %}
+    | %varname {% ([p]) => ({$primitive: p.value}) %}
+    | %int {% ([p]) => ({$primitive: +p.value}) %}
+    | %float {% ([p]) => ({$primitive: +p.value}) %}
+    | "[" WS anyExpression WS "]" {% ([,,p]) => p %}
+
+objectEntry ->
+    Binary[objectKey, ":", anyExpression]
+        {% ([{token, args}]) => 
+        ({op: 'entry', token, args}) %}    
+
+objectEntries ->
+    objectEntry
+    | objectEntry WS "," WS objectEntries {% ([one,, additionalArgs]) => ([one, ...additionalArgs]) %}
+    | null {% () => [] %}
+
+objectConstructor ->
+    WS "{" WS objectEntries WS "}" WS {% ([,token,,args]) => ({token, op: 'object', args}) %}
 
 partialFunctionCall ->
     WS %varname WS "(" WS partialArgs WS ")" {%
