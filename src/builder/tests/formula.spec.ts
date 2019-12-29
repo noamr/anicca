@@ -145,6 +145,9 @@ describe('formulas', () => {
             expect(parseRaw('a["b"]')).toEqual(parseRaw('a.b'))
             expect(parseRaw('a[b]')).not.toEqual(parseRaw('a.b'))
         })
+        it('?.', () => {
+            expect(parseRaw('a?.b')).toEqual(parseRaw('cond(isnil(a), a, a.b)'))
+        })
     })
 
     describe('functions', () => {

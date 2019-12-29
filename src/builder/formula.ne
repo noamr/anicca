@@ -12,7 +12,7 @@ const lexer = moo.compile({
 
   pipeline: /\|\>/,
   nullishCoalescing: /\?\?/,
-  chain: /\.\?/,
+  optionalChain: /\?\./,
   shift: /(?:\<\<)|(?:\>\>\>?)/,
   compare: /(?:[<>!=]\=)|(?:[<>])/,
   float: /-?(?:[0-9]+\.[0-9]*)|(?:\.[0-9]+)/,
@@ -110,10 +110,17 @@ ATOM ->
 P -> WS "(" Next[anyExpression] ")" WS {% ([,,[d]]) => d %}
     | ATOM {% id %}
 
+optionalChain ->
+    Binary[GET, "?.", %varname] {% ExtractOp('oc', 
+        ({token, op, args}) => ({token, op: 'cond', args: [
+            {op: 'isnil', args: [args[0]]},
+            args[0], {op: 'get', args: [args[0], {$primitive: args[1].value, token: args[1]}]}]})) %}
+
 GET -> 
     GET Next["[" Next[GET] "]"] {% ([a,[,[b]]]) => ({op: 'get', args: [a, b]}) %}
     | GET Next["." %varname] {% ([a,[token, b]]) => ({op: 'get', token, args: [a, {$primitive: b.value}]}) %}
     | functionCall {% id %}
+    | optionalChain {% id %}
     | P {% id %}
 
 UNARY -> 
