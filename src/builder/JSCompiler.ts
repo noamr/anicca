@@ -47,7 +47,7 @@ export default async function compile(bundle: Bundle) {
                                                 const bd = d as BindDeclaration
                                                 switch (bd.target.type) {
                                                     case 'html':
-                                                        return `e.innerHTML = ${bd.src.ref}`
+                                                        return `e.innerHTML = ${bd.src.$ref}`
                                                 }
 
                                                 break;

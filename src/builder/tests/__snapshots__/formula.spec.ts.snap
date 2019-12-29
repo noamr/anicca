@@ -1,0 +1,346 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[` 1`] = `
+Object {
+  "$token": Object {
+    "col": 1,
+    "line": 1,
+  },
+  "args": Array [
+    Object {
+      "$primitive": 123,
+    },
+  ],
+  "op": "sin",
+}
+`;
+
+exports[`formulas functions multiple args 1`] = `
+Object {
+  "$token": Object {
+    "col": 1,
+    "line": 1,
+  },
+  "args": Array [
+    Object {
+      "$ref": "abc",
+      "$token": Object {
+        "col": 5,
+        "line": 1,
+      },
+    },
+    Object {
+      "$primitive": 123,
+    },
+  ],
+  "op": "max",
+}
+`;
+
+exports[`formulas functions no args 1`] = `
+Object {
+  "$token": Object {
+    "col": 1,
+    "line": 1,
+  },
+  "args": Array [],
+  "op": "now",
+}
+`;
+
+exports[`formulas functions single arg 1`] = `
+Object {
+  "$token": Object {
+    "col": 1,
+    "line": 1,
+  },
+  "args": Array [
+    Object {
+      "$primitive": 123,
+    },
+  ],
+  "op": "sin",
+}
+`;
+
+exports[`formulas functions standard 1`] = `
+Object {
+  "$token": Object {
+    "col": 1,
+    "line": 1,
+  },
+  "args": Array [
+    Object {
+      "$primitive": 123,
+    },
+  ],
+  "op": "sin",
+}
+`;
+
+exports[`formulas get . 1`] = `
+Object {
+  "args": Array [
+    Object {
+      "$ref": "a",
+      "$token": Object {
+        "col": 1,
+        "line": 1,
+      },
+    },
+    Object {
+      "$primitive": "b",
+    },
+  ],
+  "op": "get",
+}
+`;
+
+exports[`formulas get [nubmer] 1`] = `
+Object {
+  "args": Array [
+    Object {
+      "$ref": "a",
+      "$token": Object {
+        "col": 1,
+        "line": 1,
+      },
+    },
+    Object {
+      "$primitive": 0,
+    },
+  ],
+  "op": "get",
+}
+`;
+
+exports[`formulas get [singleQuote] 1`] = `
+Object {
+  "args": Array [
+    Object {
+      "$ref": "a",
+      "$token": Object {
+        "col": 1,
+        "line": 1,
+      },
+    },
+    Object {
+      "$primitive": "str",
+    },
+  ],
+  "op": "get",
+}
+`;
+
+exports[`formulas get [str] 1`] = `
+Object {
+  "args": Array [
+    Object {
+      "$ref": "a",
+      "$token": Object {
+        "col": 1,
+        "line": 1,
+      },
+    },
+    Object {
+      "$primitive": "str",
+    },
+  ],
+  "op": "get",
+}
+`;
+
+exports[`formulas get [value] 1`] = `
+Object {
+  "args": Array [
+    Object {
+      "$ref": "a",
+      "$token": Object {
+        "col": 1,
+        "line": 1,
+      },
+    },
+    Object {
+      "$ref": "b",
+      "$token": Object {
+        "col": 3,
+        "line": 1,
+      },
+    },
+  ],
+  "op": "get",
+}
+`;
+
+exports[`formulas multi plus 1`] = `
+Object {
+  "$token": Object {
+    "col": 7,
+    "line": 1,
+  },
+  "args": Array [
+    Object {
+      "$token": Object {
+        "col": 3,
+        "line": 1,
+      },
+      "args": Array [
+        Object {
+          "$ref": "a",
+          "$token": Object {
+            "col": 1,
+            "line": 1,
+          },
+        },
+        Object {
+          "$primitive": 1,
+        },
+      ],
+      "op": "add",
+    },
+    Object {
+      "$ref": "b",
+      "$token": Object {
+        "col": 9,
+        "line": 1,
+      },
+    },
+  ],
+  "op": "add",
+}
+`;
+
+exports[`formulas single minus 1`] = `
+Object {
+  "$token": Object {
+    "col": 3,
+    "line": 1,
+  },
+  "args": Array [
+    Object {
+      "$ref": "a",
+      "$token": Object {
+        "col": 1,
+        "line": 1,
+      },
+    },
+    Object {
+      "$primitive": 1,
+    },
+  ],
+  "op": "sub",
+}
+`;
+
+exports[`formulas single mult 1`] = `
+Object {
+  "$token": Object {
+    "col": 3,
+    "line": 1,
+  },
+  "args": Array [
+    Object {
+      "$ref": "a",
+      "$token": Object {
+        "col": 1,
+        "line": 1,
+      },
+    },
+    Object {
+      "$primitive": 1,
+    },
+  ],
+  "op": "mult",
+}
+`;
+
+exports[`formulas single plus 1`] = `
+Object {
+  "$token": Object {
+    "col": 3,
+    "line": 1,
+  },
+  "args": Array [
+    Object {
+      "$ref": "a",
+      "$token": Object {
+        "col": 1,
+        "line": 1,
+      },
+    },
+    Object {
+      "$primitive": 1,
+    },
+  ],
+  "op": "add",
+}
+`;
+
+exports[`formulas unary negate 1`] = `
+Object {
+  "$token": Object {
+    "col": 1,
+    "line": 1,
+  },
+  "args": Array [
+    Object {
+      "$primitive": 0,
+    },
+    Object {
+      "$ref": "a",
+      "$token": Object {
+        "col": 2,
+        "line": 1,
+      },
+    },
+  ],
+  "op": "minus",
+}
+`;
+
+exports[`formulas unary not 1`] = `
+Object {
+  "$token": Object {
+    "col": 1,
+    "line": 1,
+  },
+  "args": Array [
+    Object {
+      "$ref": "abc",
+      "$token": Object {
+        "col": 2,
+        "line": 1,
+      },
+    },
+  ],
+  "op": "not",
+}
+`;
+
+exports[`formulas unary notnot 1`] = `
+Object {
+  "$token": Object {
+    "col": 1,
+    "line": 1,
+  },
+  "args": Array [
+    Object {
+      "$token": Object {
+        "col": 2,
+        "line": 1,
+      },
+      "args": Array [
+        Object {
+          "$ref": "abc",
+          "$token": Object {
+            "col": 3,
+            "line": 1,
+          },
+        },
+      ],
+      "op": "not",
+    },
+  ],
+  "op": "not",
+}
+`;

@@ -1,3 +1,5 @@
+import { T } from "index"
+
 export type Primitive = string | number | boolean | null
 
 export type StatementType = "Const" | "View" | "App" | "Export" | "Controller"
@@ -20,7 +22,7 @@ export interface ConstStatement extends Statement {
 
 export interface ExportStatement extends Statement {
     type: "Export"
-    ref: Reference
+    ref: Formula
 }
 
 export interface ViewDeclaration extends WithToken {
@@ -31,14 +33,28 @@ export interface BindTarget extends WithToken  {
     type: 'html' | 'attribute' | 'style'
 }
 
-export type Reference = {
-    type: "Formula" | "Const"
-    ref: string
+export interface Formula extends WithToken {
 }
+export interface ReferenceFormula extends Formula {
+    $ref: string
+}
+export interface PrimitiveFormula extends Formula {
+    $primitive: Primitive
+}
+
+export interface FunctionFormula<Op extends string = string> extends Formula {
+    op: Op
+    args?: Formula[]
+}
+
+
+
+
+
 
 export interface BindDeclaration extends ViewDeclaration{
     type: "Bind"
-    src: Reference
+    src: Formula
     target: BindTarget
 }
 
@@ -112,7 +128,5 @@ export type State = {
     name: string
     children: Array<State|Transition>
 }
-
-
 
 export type Bundle = Array<Statement>

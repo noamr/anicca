@@ -1,62 +1,13 @@
-@{%
-const moo = require("moo");
-const IndentifyLexer = require("@shieldsbetter/nearley-indentify")
-
-const indentAwareLexer = new IndentifyLexer(moo.compile({
-  keywords: [
-      'const', 'let', 'table',
-      'i8', 'i16', 'i32', 'i64', 'u8', 'u16', 'u32', 'u64', 'f32', 'f64', 'bool',
-      'view', 'formula', 'app', 'controller',
-      'use', 'bind', 'export',
-      'html', 'attribute', 'style',
-      'prevent default', 'dispatch',
-      'of', 'to', 'on'],
-  ws:     /[ \t]+/,
-  int: /-?[0-9]+/,
-  float: /-?[0-9]*.[0-9]/,
-  varname: /[A-Za-z$_][A-Za-z$_0-9]*/,
-  assign: /[+\-*/|&]?\=/,
-  arithmetic: /[=+*/?|^]/,
-  selector: /[#*]?[A-Za-z$_][A-Za-z$_0-9]*\[?\]?(?:[~*$^]?\=[^\n])?/,
-  singleQuoteStringLiteral:  {match: /'(?:\\['\\]|[^\n'\\])*'/, value: s => s.slice(1, -1)}, 
-  doubleQuoteStringLiteral:  {match: /"(?:\\["\\]|[^\n"\\])*"/, value: s => s.slice(1, -1)}, 
-  newline: { match: /[\n]/, lineBreaks: true }
-}))
-
-const extractToken = t => (t instanceof Array ? extractToken(t[0]) : {$token: {col: t.col, line: t.line}})
-const NOOP = () => {}
-%}
-
-@lexer indentAwareLexer
 main -> (statements)                           {% id %}
 
-stringLiteral -> 
-    %singleQuoteStringLiteral {% ([{value}]) => value %}
-    | %doubleQuoteStringLiteral {% ([{value}]) => value %}
+@include "./formula.ne"
+constValue -> primitive {% id %}
 
 newlines -> %eol {% NOOP %}
     | %eol newlines {% NOOP %}
 
 maybeNewlines -> newlines {% NOOP %} 
     | null {% NOOP %}
-
-type -> "string" {%id %}
-        | "i32" {%id %}
-        | "f32" {%id %}
-number -> %float | %int {%id %}
-boolean -> "true" | "false" {%id %}
-nil -> "null" {%id %}
-primitive -> 
-    number {%id %}
-    | stringLiteral {%id %}
-    | boolean {%id %}
-    | nil {%id %}
-constValue -> primitive {% ([a]) => a[0] %}
-
- 
-# Whitespace
-_ -> null | _ [\s] {% NOOP %}
-__ -> [\s] | __ [\s] {% NOOP %}
 
 
 beforeChildren -> _ newlines %indent {% NOOP %}
@@ -159,18 +110,19 @@ transitionAction ->
 
 Operand[O] => _ $O _ {% ([, [op]]) => op %}
 incrementAction ->
-    %varname Operand["+="] formula {% ([target, op, src]) => ({operand: op.value, target: target.value, src}) %}
+    %varname Operand["+="] rawFormula {% ([target, op, src]) => 
+        ({type: "Assign", target: target.value, src: {op: "plus", ...extractToken(target), args: [
+            {$ref: target.value, ...extractToken(target)}, src
+        ]}}) %}
 
 viewEventDispatchAction ->
     DeclareKeyword["dispatch"] %varname to %varname
-        {% ([token, event, , controller]) => ({...token, event: event.value, controller: controller.value, type: 'Dispatch'}) %}
+        {% ([token, event, , bus]) => ({...token, event: event.value, bus: bus.value, type: 'Dispatch'}) %}
 
 preventDefault ->
     "prevent default" {% t => ({type: "PreventDefault", ...extractToken(t)}) %}
 
-formula ->
-    %varname {% ([ref]) => ({type: "Formula", ref: ref.value}) %}
-    | primitive {% ([v]) => ({type: "Primitive", value: v.value}) %}
+formula -> rawFormula {% id %}
 
 VarDeclaration[Type] ->
     DeclareKeyword[$Type] %varname _ maybeAs _ "=" _ constValue newlines {% ([token, name, s2, type, s3, e, s4, value]) => 
