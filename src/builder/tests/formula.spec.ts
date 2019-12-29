@@ -105,6 +105,15 @@ describe('formulas', () => {
         })
     })
 
+    describe('indentation', () => {
+        it('operands', () => {
+            expect(parseRaw(`
+                a
+                    + 3
+            `)).toEqual(parseRaw('a+3'))
+        })
+    })
+
     describe('order of operations', () => {
         it('plus mult', () => {
             expect(parseRaw('a + b * c')).toEqual(parseRaw('a+(b * c)'))
