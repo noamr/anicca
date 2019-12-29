@@ -11,6 +11,8 @@ const lexer = moo.compile({
       'of', 'to', 'on'],
 
   pipeline: /\|\>/,
+  nullishCoalescing: /\?\?/,
+  chain: /\.\?/,
   shift: /(?:\<\<)|(?:\>\>\>?)/,
   compare: /(?:[<>!=]\=)|(?:[<>])/,
   float: /-?(?:[0-9]+\.[0-9]*)|(?:\.[0-9]+)/,
@@ -46,7 +48,7 @@ function fixTokens({op, args, token, ...rest}) {
     return ({op, $token: token ? extractToken(token): undefined, args: args ? args.map(fixTokens).flat() : undefined, ...rest})
 }
 
-const ExtractOp = op => ([obj]) => ({op, ...obj})
+const ExtractOp = (op, postprocess = a => a) => ([obj]) => postprocess(({op, ...obj}))
 
 %}
 
@@ -163,6 +165,10 @@ BWXOR ->
 BWOR ->
     Binary[BWOR, "|", BWXOR] {% ExtractOp('bwor') %}
     | BWXOR {% id %}
+
+NC ->
+    Binary[NC, "??", BWOR] {% ExtractOp('nc', ({token, op, args})
+        => ({token, op: 'cond', args: [{op: 'isnil', args: args[0]}, args[0], args[1]]})) %}
 
 COND ->
     Ternary[COND, "?", COND, ":", BWOR] {% ExtractOp('cond') %}
