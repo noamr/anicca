@@ -44,6 +44,8 @@ function fixTokens({op, args, token, ...rest}) {
     return ({op, $token: token ? extractToken(token): undefined, args: args ? args.map(fixTokens).flat() : undefined, ...rest})
 }
 
+const BinaryOp = op => ([a,{token,value}]) => {console.log({a,token,value}); return ({op, token, args: [a, value]}) }
+
 %}
 
 @lexer indentAwareLexer
@@ -76,18 +78,25 @@ primitive ->
 anyExpression -> 
     WS operand WS {% ([,e]) => e %}
 
+Next[A] ->
+    W $A {% ([,a]) => a %}
+    | W %indent W $A %dedent {% ([,,,a]) => a %}
+
+RValue[Op, Value] ->
+    Next[$Op $Value] {% ([[token, value]]) => ({token, value}) %}
+
 # Follow the JS order of precendence 
 # https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
 ATOM ->
     WS primitive WS             {% ([,$primitive]) => ({$primitive}) %}
     | WS %varname WS             {% ([,token]) => ({$ref: token.value, token}) %}
 
-P -> WS "(" anyExpression ")" WS {% ([,,d]) => d %}
+P -> WS "(" Next[anyExpression] ")" WS {% ([,,[d]]) => d %}
     | ATOM {% id %}
 
 GET -> 
-    GET WS "[" WS GET WS "]" {% ([a,,,,b]) => ({op: 'get', args: [a, b]}) %}
-    | GET WS "." WS %varname {% ([a,,,,b]) => ({op: 'get', args: [a, {$primitive: b.value}]}) %}
+    GET Next["[" Next[GET] "]"] {% ([a,[,[b]]]) => ({op: 'get', args: [a, b]}) %}
+    | GET Next["." %varname] {% ([a,[token, b]]) => ({op: 'get', token, args: [a, {$primitive: b.value}]}) %}
     | functionCall {% id %}
     | P {% id %}
 
@@ -95,7 +104,7 @@ UNARY ->
     WS "!" WS UNARY    {% ([,token,,a]) => ({op: 'not', token, args: [a]}) %}
     | WS "~" WS UNARY    {% ([,token,,a]) => ({op: 'bwnot', token, args: [a]}) %}
     | WS "-" WS UNARY    {% ([,token,,a]) => ({op: 'minus', token, args: [{$primitive: 0}, a]}) %}
-    | WS "+" WS UNARY    {% ([,token,,a]) => ({op: 'toNumber', token, args: [a]}) %}
+#    | WS "+" WS UNARY    {% ([,token,,a]) => ({op: 'toNumber', token, args: [a]}) %}
     | GET             {% id %}
     
 # Exponents
@@ -108,9 +117,13 @@ MD -> MD WS "*" WS E  {% ([a,,token,,b]) => ({op: 'mult', args: [a, b], token}) 
     |MD WS "%" WS E  {% ([a,,,,b]) => ({op: 'mod', args: [a, b], token}) %}
     | E             {% id %}
 
+W ->
+    %eol {% NOOP %}
+    | _ {% NOOP %}
+
 # Addition and subtraction
-AS -> AS WS "+" WS MD {% function([a,,token,,b]) {return ({op: 'add', token, args: [a, b]}) } %}
-    | AS WS "-" WS MD {% function([a,,token,,b]) {return ({op: 'sub', token, args: [a, b]}) } %}
+AS -> AS RValue["+", MD] {% BinaryOp('add') %}
+    | AS RValue["-", MD] {% BinaryOp('sub') %}
     | MD            {% id %}
 
 operand -> AS {% id %}

@@ -1,20 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[` 1`] = `
-Object {
-  "$token": Object {
-    "col": 1,
-    "line": 1,
-  },
-  "args": Array [
-    Object {
-      "$primitive": 123,
-    },
-  ],
-  "op": "sin",
-}
-`;
-
 exports[`formulas functions multiple args 1`] = `
 Object {
   "$token": Object {
@@ -63,23 +48,12 @@ Object {
 }
 `;
 
-exports[`formulas functions standard 1`] = `
-Object {
-  "$token": Object {
-    "col": 1,
-    "line": 1,
-  },
-  "args": Array [
-    Object {
-      "$primitive": 123,
-    },
-  ],
-  "op": "sin",
-}
-`;
-
 exports[`formulas get . 1`] = `
 Object {
+  "$token": Object {
+    "col": 2,
+    "line": 1,
+  },
   "args": Array [
     Object {
       "$ref": "a",
