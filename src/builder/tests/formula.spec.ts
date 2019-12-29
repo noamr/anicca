@@ -95,10 +95,21 @@ describe('formulas', () => {
 
     })
 
-    describe('ternary', () => {
+    describe('logical', () => {
         it('cond', () => {
             expect(parseRaw('a ? b : c')).toEqual(parseRaw('cond(a, b, c)'))
         })
+        
+        it('nullish', () => {
+            expect(parseRaw('a ?? 3')).toEqual(parseRaw('cond(isnil(a), a, 3)'))
+        })
+        it('and', () => {
+            expect(parseRaw('a && b')).toEqual(parseRaw('and(a, b)'))
+        })
+        it('or', () => {
+            expect(parseRaw('a || b')).toEqual(parseRaw('or(a, b)'))
+        })
+        
     })
 
     describe('parantheses', () => {

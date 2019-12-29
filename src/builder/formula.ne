@@ -16,6 +16,8 @@ const lexer = moo.compile({
   shift: /(?:\<\<)|(?:\>\>\>?)/,
   compare: /(?:[<>!=]\=)|(?:[<>])/,
   float: /-?(?:[0-9]+\.[0-9]*)|(?:\.[0-9]+)/,
+  and: /\&\&/,
+  or: /\|\|/,
   operator: /[+*/?|%\^&\-,.:]/,
   parentheses: /[(){}[\]]/,
   varname: /[A-Za-z$_][A-Za-z$_0-9]*/,
@@ -24,8 +26,6 @@ const lexer = moo.compile({
   hex: /0x[0-9A-Fa-f]+/,
   binary: /0b[0-1]+/,
   unary: /[!~]/,
-  and: /\&\&/,
-  or: /\|\|/,
   assign: /[=+*/?|%^&\-]?=/,
   selector: /[#*]?[A-Za-z$_][A-Za-z$_0-9]*\[?\]?(?:[~*$^]?\=[^\n])?/,
   singleQuoteStringLiteral:  {match: /'(?:\\['\\]|[^\n'\\])*'/}, 
@@ -48,7 +48,7 @@ function fixTokens({op, args, token, ...rest}) {
     return ({op, $token: token ? extractToken(token): undefined, args: args ? args.map(fixTokens).flat() : undefined, ...rest})
 }
 
-const ExtractOp = (op, postprocess = a => a) => ([obj]) => postprocess(({op, ...obj}))
+const ExtractOp = (op, postprocess) => ([obj]) => (postprocess || (a => a))(({op, ...obj}))
 
 %}
 
@@ -167,12 +167,23 @@ BWOR ->
     | BWXOR {% id %}
 
 NC ->
-    Binary[NC, "??", BWOR] {% ExtractOp('nc', ({token, op, args})
-        => ({token, op: 'cond', args: [{op: 'isnil', args: args[0]}, args[0], args[1]]})) %}
+    Binary[NC, "??", BWOR] {% ExtractOp('nc', 
+        ({token, op, args}) => ({token, op: 'cond', args: [
+            {op: 'isnil', args: [args[0]]},
+            args[0], args[1]]})) %}
+    | BWOR {% id %}
+
+LAND ->
+    Binary[LAND, "&&", NC] {% ExtractOp('and') %}
+    | NC {% id %}
+
+LOR ->
+    Binary[LOR, "||", LAND] {% ExtractOp('or') %}
+    | LAND {% id %}
 
 COND ->
-    Ternary[COND, "?", COND, ":", BWOR] {% ExtractOp('cond') %}
-    | BWOR {% id %}
+    Ternary[COND, "?", COND, ":", LOR] {% ExtractOp('cond') %}
+    | LOR {% id %}
 
 operand -> COND {% id %}
     
