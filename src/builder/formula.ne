@@ -140,17 +140,17 @@ arguments ->
     | null {% () => [] %}
 
 partialArg ->
-    anyExpression
-    | WS "?" WS {% () => [partialSymbol] %}
+    anyExpression {% id %}
+    | WS "?" WS {% () => partialSymbol %}
 
 partialArgs ->
     partialArg
-    | partialArg "," partialArgs {% ([one,, additional]) => ([one, ...a], loc, reject) => {
-        if (one === partialSymbol && additional.findIndex(a => a === partialSymbol) >= 0) {
+    | partialArg WS "," WS partialArgs {% ([one,,,, additionalParialArgs], loc, reject) => {
+        if (one === partialSymbol && additionalParialArgs.findIndex(a => a === partialSymbol) >= 0) {
             return reject
         }
 
-        return [one, ...additional]
+        return [one, ...additionalParialArgs]
     } %}
     | null {% () => [] %}
 

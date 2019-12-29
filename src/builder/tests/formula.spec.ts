@@ -89,8 +89,19 @@ describe('formulas', () => {
         it('multiple args', () => {
             expect(parse('max(abc, 123)')).toMatchSnapshot()
         })
-        it('pipe', () => {
-            expect(parseRaw('sin(1)')).toEqual(parseRaw('1 |> sin()'))
+        describe('pipe', () => {
+            it('no args', () => {
+                expect(parseRaw('1 |> sin()')).toEqual(parseRaw('sin(1)'))
+            })
+            it('one arg', () => {
+                expect(parseRaw('1 |> max(2)')).toEqual(parseRaw('max(1, 2)'))
+            })    
+            it('placeholder', () => {
+                expect(parseRaw('1 |> max(2, ?)')).toEqual(parseRaw('max(2, 1)'))
+            })    
+            it('mid placeholder', () => {
+                expect(parseRaw('abc |> func(2, ?, now())')).toEqual(parseRaw('func(2, abc, now())'))
+            })    
         })
     })
 
