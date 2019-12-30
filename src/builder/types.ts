@@ -1,5 +1,3 @@
-import { T } from "index"
-
 export type Primitive = string | number | boolean | null
 
 export type StatementType = "Const" | "View" | "App" | "Export" | "Controller"

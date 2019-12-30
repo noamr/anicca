@@ -107,7 +107,7 @@ describe('formulas', () => {
         })
         
         it('nullish', () => {
-            expect(parseRaw('a ?? 3')).toEqual(parseRaw('cond(isnil(a), a, 3)'))
+            expect(parseRaw('a ?? 3')).toEqual(parseRaw('cond(isNil(a), a, 3)'))
         })
         it('and', () => {
             expect(parseRaw('a && b')).toEqual(parseRaw('and(a, b)'))
@@ -152,7 +152,7 @@ describe('formulas', () => {
             expect(parseRaw('a[b]')).not.toEqual(parseRaw('a.b'))
         })
         it('?.', () => {
-            expect(parseRaw('a?.b')).toEqual(parseRaw('cond(isnil(a), a, a.b)'))
+            expect(parseRaw('a?.b')).toEqual(parseRaw('cond(isNil(a), a, a.b)'))
         })
     })
 

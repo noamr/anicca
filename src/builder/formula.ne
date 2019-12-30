@@ -1,17 +1,9 @@
 @{%
 const moo = require("moo")
 const lexer = moo.compile({
-  keywords: [
-      'const', 'let', 'table',
-      'i8', 'i16', 'i32', 'i64', 'u8', 'u16', 'u32', 'u64', 'f32', 'f64', 'bool',
-      'view', 'formula', 'app', 'controller',
-      'use', 'bind', 'export',
-      'html', 'attribute', 'style',
-      'prevent default', 'dispatch',
-      'of', 'to', 'on'],
-
   singleQuoteStringLiteral:  {match: /'(?:\\['\\]|[^\n'\\])*'/}, 
   doubleQuoteStringLiteral:  {match: /"(?:\\["\\]|[^\n"\\])*"/},
+  assign: /[=\+*/?|%^&\-]?=/,
   pipeline: /\|\>/,
   nullishCoalescing: /\?\?/,
   optionalChain: /\?\./,
@@ -21,15 +13,14 @@ const lexer = moo.compile({
   and: /\&\&/,
   oiw: /\*\*/,
   or: /\|\|/,
-  operator: /[+*/?|%\^&\-,.:]/,
+  operator: /[!~+*/?|%\^&\-,.:]/,
   parentheses: /[(){}[\]]/,
   varname: /[A-Za-z$_][A-Za-z$_0-9]*/,
+  qvar: /[A-Za-z$_][A-Za-z$_0-9]*.[A-Za-z$_][A-Za-z$_0-9]*/,
   ws: /[ \t]+/,
   int: /-?[0-9]+/,
   hex: /0x[0-9A-Fa-f]+/,
   binary: /0b[0-1]+/,
-  unary: /[!~]/,
-  assign: /[=+*/?|%^&\-]?=/,
   selector: /[#*]?[A-Za-z$_][A-Za-z$_0-9]*\[?\]?(?:[~*$^]?\=[^\n])?/,
   newline: { match: /[\n]/, lineBreaks: true }
 })
@@ -114,7 +105,7 @@ P -> WS "(" Next[anyExpression] ")" WS {% ([,,[d]]) => d %}
 optionalChain ->
     Binary[GET, "?.", %varname] {% ExtractOp('oc', 
         ({token, op, args}) => ({token, op: 'cond', args: [
-            {op: 'isnil', args: [args[0]]},
+            {op: 'isNil', args: [args[0]]},
             args[0], {op: 'get', args: [args[0], {$primitive: args[1].value, token: args[1]}]}]})) %}
 
 GET -> 
@@ -179,7 +170,7 @@ BWOR ->
 NC ->
     Binary[NC, "??", BWOR] {% ExtractOp('nc', 
         ({token, op, args}) => ({token, op: 'cond', args: [
-            {op: 'isnil', args: [args[0]]},
+            {op: 'isNil', args: [args[0]]},
             args[0], args[1]]})) %}
     | BWOR {% id %}
 
@@ -234,7 +225,7 @@ partialFunctionCall ->
             return ({token, input}) => {
                 const resolvedArgs = [...args]
                 resolvedArgs.splice(index, index < 0 ? 0 : 1, input)
-                return {op: op.value, token, input, args: resolvedArgs}
+                return {op: op.value, token, args: resolvedArgs}
             }
         }
     %}

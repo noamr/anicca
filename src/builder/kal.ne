@@ -1,4 +1,4 @@
-main -> (statements)                           {% id %}
+main -> (statements)                           {% ([s]) => JSON.parse(JSON.stringify(s)) %}
 
 @include "./formula.ne"
 constValue -> primitive {% id %}
@@ -33,19 +33,61 @@ ChildrenOfType[X, XX] ->
 statements -> ChildrenOfType[anyStatement, statements] {% id %}
 
 anyStatement -> 
-    exportStatement {% id %}                     
-    | appStatement  {% id %}                       
+    slotStatement {% id %}
+    | mainStatement  {% id %}     
+    | busStatement {% id %}                  
     | constStatement {% id %}                     
-    | letStatement {% id %}                     
+    | letStatement {% id %}                
+    | macroStatement {% id %}
+    | importStatement {% id %}                     
+    | includeStatement {% id %}                     
     | viewStatement {% id %}    
     | controllerStatement {% id %}                  
 
-exportStatement -> DeclareKeyword["export"] %varname _ newlines {% ([token, name]) => ({"type": "Export", "ref": name.value, ...token}) %}
 viewStatement -> Statement["view", viewRules] {% Statement('View', 'rules') %}
+busStatement -> DeclareKeyword["bus"] %varname _ newlines {% ([token, name]) => ({"type": "Bus", "name": name.value, $token: extractToken(token)}) %}
+slotStatement -> Statement["slot", formula] {% Statement('Slot', 'formula') %}
+includeStatement -> DeclareKeyword["include"] _ stringLiteral WS {% ([token,, path]) => ({type: "Include", path: eval(path), $token: extractToken(token)}) %}
+importStatement -> DeclareKeyword["import"] _ stringLiteral Conjunction["as"] %varname WS {% ([token,, path,, name]) => ({type: "Import", path: eval(path), name: name.value, $token: extractToken(token)}) %}
+
+macroStatement -> DeclareKeyword["macro"] %varname _ "(" _ macroArgs _ ")" IndentChildren[formula]
+    {% ([,t,,,,args,,,formula]) => ({$macro: {args, formula}, $token: extractToken(t)}) %}
+
+macroArgs ->
+    null {% () => [] %}
+    | %varname {% ([{value}]) => [value] %}
+    | %varname _ "," _ macroArgs {% ([one,,,, additionalArgs]) => ([one.value, ...additionalArgs]) %}
+
+selectorValue ->
+    %varname {%id%}
+    | stringLiteral {%id%}
+    | number {%id%}
+
+selectorAttribComp ->
+    "=" {% id %}
+    | "~=" {% id %}
+    | "*=" {% id %}
+    | "$=" {% id %}
+    | "^=" {% id %}
+
+selectorAttribs ->
+    _ "[" _ %varname _ selectorAttribComp _ selectorValue _ "]" {% (a) => a.join('') %}
+    | _ "[" _ %varname _ "]" {% (a) => a.join('') %}
+
+selectorKey ->
+    "*" {%id%}
+    | %varname {% id %}
+    | %selector {% id%}
+
+selector ->
+    selectorKey {% id %}
+    | selectorKey selectorAttribs {% ([key, attribs]) => ({...key, value: key.value + attribs}) %}
+
+
 
 viewRules -> ChildrenOfType[viewRule, viewRules] {% id %}
-viewRule -> %selector IndentChildren[viewDeclarations]
-    {% ([selector, declarations]) => ({type: 'ViewRule', declarations, selector: selector.value, ...extractToken(selector)})  %}
+viewRule -> selector IndentChildren[viewDeclarations]
+    {% ([selector, declarations]) => ({type: 'ViewRule', declarations, selector: selector.value, $token: extractToken(selector)})  %}
 
 viewDeclarations -> ChildrenOfType[viewDeclaration, viewDeclarations] {% id %}
 
@@ -58,11 +100,11 @@ viewBindDeclaration ->
         {% ([token, target, , src]) => ({...token, type: "Bind", target, src}) %}
 
 viewBindTarget ->
-    "html" {% ([t]) => ({type: 'html', ...extractToken(t)}) %}
+    "html" {% ([t]) => ({type: 'html', $token: extractToken(t)}) %}
 
 viewEventDeclaration ->
     DeclareKeyword["on"] %varname IndentChildren[viewEventActions]
-        {% ([token, eventType, actions]) => ({type: "DOMEvent", ...token, eventType: eventType.value, actions}) %}
+        {% ([token, eventType, actions]) => ({type: "DOMEvent", $token: extractToken(token), eventType: eventType.value, actions}) %}
 
 viewEventActions -> ChildrenOfType[viewEventAction, viewEventActions] {% id %}
 
@@ -76,12 +118,12 @@ controllerStatement -> Statement["controller", statechart] {% Statement("Control
 
 statechart -> branchState {% ([root]) => ({root}) %}
 maybeStateName ->
-    %varname {% ([name]) => ({name: name.value, ...extractToken(name)}) %}
+    %varname {% ([name]) => ({name: name.value, $token: extractToken(name)}) %}
     | null {% NOOP %}
 
 exclusiveStateHeader ->
-    DeclareKeyword["state"] %varname {% ([t, name]) => ({...extractToken(t), name: name.value}) %}
-    | %varname {% ([name]) => ({...extractToken(name), name: name.value}) %}
+    DeclareKeyword["state"] %varname {% ([t, name]) => ({$token: extractToken(t), name: name.value}) %}
+    | %varname {% ([name]) => ({$token: extractToken(name), name: name.value}) %}
 
 exclusiveState -> exclusiveStateHeader IndentChildren[stateChildren] {% ([header, children]) => ({type: 'State', ...header, children}) %}
 branchState -> exclusiveState {% id %}
@@ -102,39 +144,49 @@ transitionConditions ->
     transitionTrigger {% id %}
 
 transitionTrigger ->
-    DeclareKeyword["on"] %varname {% ([token, event]) => ({...token, event: event.value, ...extractToken(event)}) %}
+    DeclareKeyword["on"] %varname {% ([token, event]) => ({...token, event: event.value, $token: extractToken(event)}) %}
 
 transitionActions -> ChildrenOfType[transitionAction, transitionActions] {% id %}
 transitionAction ->
     incrementAction {% id %}
+    | assignAction {% id %}
 
 Operand[O] => _ $O _ {% ([, [op]]) => op %}
+qvar =>
+    %qvar {% ([v]) => ({...v, value: v.split('.')}) %}
+    | %varname {% ([v]) => ({...v, value: [v.value]}) %}
+
 incrementAction ->
-    %varname Operand["+="] rawFormula {% ([target, op, src]) => 
-        ({type: "Assign", target: target.value, src: {op: "plus", ...extractToken(target), args: [
-            {$ref: target.value, ...extractToken(target)}, src
+    qvar _ "+=" _ formula {% ([target,, op,, src]) => 
+        ({type: "Assign", target: target.value, src: {op: "plus", $token: extractToken(target), args: [
+            {$ref: target.value, $token: extractToken(target)}, src
         ]}}) %}
+
+assignAction ->
+    qvar _ "=" _ formula {% ([target,, op,, src]) => 
+        ({type: "Assign", target: target.value, src}) %}
 
 viewEventDispatchAction ->
     DeclareKeyword["dispatch"] %varname to %varname
-        {% ([token, event, , bus]) => ({...token, event: event.value, bus: bus.value, type: 'Dispatch'}) %}
+        {% ([token, event, , bus]) => ({$token: extractToken(token), event: event.value, bus: bus.value, type: 'Dispatch'}) %}
 
 preventDefault ->
-    "prevent default" {% t => ({type: "PreventDefault", ...extractToken(t)}) %}
+    "prevent" " " "default" {% t => ({type: "PreventDefault", $token: extractToken(t)}) %}
 
 formula -> rawFormula {% id %}
 
 VarDeclaration[Type] ->
-    DeclareKeyword[$Type] %varname _ maybeAs _ "=" _ constValue newlines {% ([token, name, s2, type, s3, e, s4, value]) => 
-        ({name: name.value, value, ...token})%} 
+    DeclareKeyword[$Type] %varname Conjunction["="] constValue newlines {% ([type, name,, value]) => 
+        ({name: name.value, value, $token: extractToken(type)})%} 
 
 constStatement -> VarDeclaration["const"] {% ([v]) => ({...v, type: 'Const'}) %}
 letStatement -> VarDeclaration["let"] {% ([v]) => ({...v, type: 'Let'}) %}
-appStatement -> Statement["app", appDeclarations] {% Statement("App", "declarations") %}
-appDeclarations -> ChildrenOfType[useDeclaration, appDeclarations] {% id %}
+
+mainStatement -> 
+    "main" _ mainChildren WS
+        {% ([token,, declarations]) => ({$token: extractToken(token), type: 'Main', declarations}) %}
+mainChildren -> ChildrenOfType[useDeclaration, mainChildren] {% id %}
 
 useDeclaration ->
-    DeclareKeyword["use"] %varname {% ([token, name]) => ({type: "Use", ref: name.value, ...token}) %}
+    DeclareKeyword["use"] qvar {% ([token, name]) => ({type: "Use", ref: name.value, ...token}) %}
 
-maybeAs -> asExpression | null
-asExpression -> "as" __ type
