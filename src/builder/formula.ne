@@ -3,12 +3,12 @@ const moo = require("moo")
 const lexer = moo.compile({
   singleQuoteStringLiteral:  {match: /'(?:\\['\\]|[^\n'\\])*'/}, 
   doubleQuoteStringLiteral:  {match: /"(?:\\["\\]|[^\n"\\])*"/},
-  assign: /[=\+*/?|%^&\-]?=/,
+  assigns: /[=\+*/?|%^&\-]?=/,
   pipeline: /\|\>/,
   nullishCoalescing: /\?\?/,
   optionalChain: /\?\./,
   shift: /(?:\<\<)|(?:\>\>\>?)/,
-  compare: /(?:[<>!=]\=)|(?:[<>])/,
+  compare: /(?:[<>\!=]\=)|(?:[<>])/,
   float: /-?(?:[0-9]+\.[0-9]*)|(?:\.[0-9]+)/,
   and: /\&\&/,
   oiw: /\*\*/,
@@ -16,7 +16,6 @@ const lexer = moo.compile({
   operator: /[!~+*/?|%\^&\-,.:]/,
   parentheses: /[(){}[\]]/,
   varname: /[A-Za-z$_][A-Za-z$_0-9]*/,
-  qvar: /[A-Za-z$_][A-Za-z$_0-9]*.[A-Za-z$_][A-Za-z$_0-9]*/,
   ws: /[ \t]+/,
   int: /-?[0-9]+/,
   hex: /0x[0-9A-Fa-f]+/,
@@ -93,11 +92,15 @@ Binary[L, Op, R] ->
 Unary[Op, R] ->
     RValue[$Op, $R] {% ([{token, args}]) => ({token, args}) %}
 
+qvar =>
+    %varname _ ":" _ qvar {% ([first,,,,next]) => ({...first, value: `${first}.${next}`}) %}
+    | %varname {% id %}
+
 # Follow the JS order of precendence 
 # https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
 ATOM ->
     WS primitive WS             {% ([,$primitive]) => ({$primitive}) %}
-    | WS %varname WS             {% ([,token]) => ({$ref: token.value, token}) %}
+    | WS qvar WS             {% ([,token]) => ({$ref: token.value, token}) %}
 
 P -> WS "(" Next[anyExpression] ")" WS {% ([,,[d]]) => d %}
     | ATOM {% id %}
@@ -150,6 +153,7 @@ BWS -> Binary[BWS, "<<", AS] {% ExtractOp('shl') %}
 COMPARE ->
     Binary[COMPARE, "==", BWS] {% ExtractOp('eq') %}
     | Binary[COMPARE, "<=", BWS] {% ExtractOp('lte') %}
+    | Binary[COMPARE, "!=", BWS] {% ExtractOp('neq') %}
     | Binary[COMPARE, ">=", BWS] {% ExtractOp('gte') %}
     | Binary[COMPARE, ">", BWS] {% ExtractOp('gt') %}
     | Binary[COMPARE, "<", BWS] {% ExtractOp('lt') %}

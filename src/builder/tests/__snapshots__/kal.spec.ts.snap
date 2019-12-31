@@ -1,0 +1,1258 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`kal bus bus 1`] = `
+Array [
+  Array [
+    Object {
+      "$token": Object {
+        "col": 13,
+        "line": 2,
+      },
+      "name": "myBus",
+      "type": "Bus",
+    },
+  ],
+]
+`;
+
+exports[`kal controller actions 1`] = `
+Array [
+  Array [
+    Object {
+      "name": "myController",
+      "statechart": Object {
+        "root": Object {
+          "$token": Object {
+            "col": 17,
+            "line": 3,
+          },
+          "children": Array [
+            Object {
+              "$token": Object {
+                "col": 21,
+                "line": 4,
+              },
+              "actions": Array [
+                Object {
+                  "src": Object {
+                    "$token": Object {
+                      "col": 25,
+                      "line": 5,
+                    },
+                    "args": Array [
+                      Object {
+                        "$ref": "a",
+                        "$token": Object {
+                          "col": 25,
+                          "line": 5,
+                        },
+                      },
+                      Object {
+                        "$primitive": 1,
+                      },
+                    ],
+                    "op": "add",
+                  },
+                  "target": Object {
+                    "$ref": "a",
+                  },
+                  "type": "Assign",
+                },
+                Object {
+                  "src": Object {
+                    "$token": Object {
+                      "col": 25,
+                      "line": 6,
+                    },
+                    "args": Array [
+                      Object {
+                        "$ref": "dda.abcvb",
+                        "$token": Object {
+                          "col": 25,
+                          "line": 6,
+                        },
+                      },
+                      Object {
+                        "$primitive": 4,
+                      },
+                    ],
+                    "op": "div",
+                  },
+                  "target": Object {
+                    "$ref": "dda.abcvb",
+                  },
+                  "type": "Assign",
+                },
+                Object {
+                  "src": Object {
+                    "$token": Object {
+                      "col": 25,
+                      "line": 7,
+                    },
+                    "args": Array [
+                      Object {
+                        "$ref": "foo.bar",
+                        "$token": Object {
+                          "col": 25,
+                          "line": 7,
+                        },
+                      },
+                      Object {
+                        "$primitive": 2,
+                      },
+                    ],
+                    "op": "div",
+                  },
+                  "target": Object {
+                    "$ref": "foo.bar",
+                  },
+                  "type": "Assign",
+                },
+              ],
+              "event": Object {
+                "$ref": "event",
+              },
+              "type": "Transition",
+            },
+          ],
+          "name": "someState",
+          "type": "State",
+        },
+      },
+      "type": "Controller",
+    },
+  ],
+]
+`;
+
+exports[`kal controller goto 1`] = `
+Array [
+  Array [
+    Object {
+      "name": "myController",
+      "statechart": Object {
+        "root": Object {
+          "$token": Object {
+            "col": 17,
+            "line": 3,
+          },
+          "children": Array [
+            Object {
+              "$token": Object {
+                "col": 21,
+                "line": 5,
+              },
+              "actions": Array [
+                Object {
+                  "src": Object {
+                    "$primitive": 0,
+                  },
+                  "target": Object {
+                    "$ref": "x.a",
+                  },
+                  "type": "Assign",
+                },
+              ],
+              "condition": Object {
+                "$token": Object {
+                  "col": 28,
+                  "line": 5,
+                },
+                "args": Array [
+                  Object {
+                    "$ref": "a",
+                    "$token": Object {
+                      "col": 26,
+                      "line": 5,
+                    },
+                  },
+                  Object {
+                    "$primitive": 1,
+                  },
+                ],
+                "op": "lte",
+              },
+              "event": Object {
+                "$ref": "somewhere",
+              },
+              "type": "Transition",
+            },
+            Object {
+              "$token": Object {
+                "col": 37,
+                "line": 7,
+              },
+              "actions": Array [
+                Object {
+                  "src": Object {
+                    "$token": Object {
+                      "col": 25,
+                      "line": 8,
+                    },
+                    "args": Array [
+                      Object {
+                        "$ref": "a",
+                        "$token": Object {
+                          "col": 25,
+                          "line": 8,
+                        },
+                      },
+                      Object {
+                        "$primitive": 123,
+                      },
+                    ],
+                    "op": "add",
+                  },
+                  "target": Object {
+                    "$ref": "a",
+                  },
+                  "type": "Assign",
+                },
+              ],
+              "condition": Object {
+                "$ref": "something",
+                "$token": Object {
+                  "col": 42,
+                  "line": 7,
+                },
+              },
+              "event": Object {
+                "$ref": "otherState",
+              },
+              "type": "Transition",
+            },
+            Object {
+              "$token": Object {
+                "col": 37,
+                "line": 9,
+              },
+              "actions": Array [
+                Object {
+                  "src": Object {
+                    "$token": Object {
+                      "col": 25,
+                      "line": 10,
+                    },
+                    "args": Array [
+                      Object {
+                        "$ref": "a",
+                        "$token": Object {
+                          "col": 25,
+                          "line": 10,
+                        },
+                      },
+                      Object {
+                        "$primitive": 123,
+                      },
+                    ],
+                    "op": "add",
+                  },
+                  "target": Object {
+                    "$ref": "a",
+                  },
+                  "type": "Assign",
+                },
+              ],
+              "condition": Object {
+                "$token": Object {
+                  "col": 44,
+                  "line": 9,
+                },
+                "args": Array [
+                  Object {
+                    "$ref": "a",
+                    "$token": Object {
+                      "col": 42,
+                      "line": 9,
+                    },
+                  },
+                  Object {
+                    "$primitive": 1,
+                  },
+                ],
+                "op": "eq",
+              },
+              "event": Object {
+                "$ref": "otherState",
+              },
+              "type": "Transition",
+            },
+          ],
+          "name": "someState",
+          "type": "State",
+        },
+      },
+      "type": "Controller",
+    },
+  ],
+]
+`;
+
+exports[`kal controller long statechart 1`] = `
+Array [
+  Array [
+    Object {
+      "name": "myController",
+      "statechart": Object {
+        "root": Object {
+          "$token": Object {
+            "col": 17,
+            "line": 3,
+          },
+          "children": Array [
+            Object {
+              "$token": Object {
+                "col": 21,
+                "line": 4,
+              },
+              "children": Array [
+                Object {
+                  "$token": Object {
+                    "col": 25,
+                    "line": 5,
+                  },
+                  "actions": Array [
+                    Object {
+                      "src": Object {
+                        "$token": Object {
+                          "col": 29,
+                          "line": 6,
+                        },
+                        "args": Array [
+                          Object {
+                            "$ref": "a",
+                            "$token": Object {
+                              "col": 29,
+                              "line": 6,
+                            },
+                          },
+                          Object {
+                            "$primitive": 1,
+                          },
+                        ],
+                        "op": "add",
+                      },
+                      "target": Object {
+                        "$ref": "a",
+                      },
+                      "type": "Assign",
+                    },
+                  ],
+                  "event": Object {
+                    "$ref": "click",
+                  },
+                  "type": "Transition",
+                },
+              ],
+              "name": "anotherState",
+              "type": "State",
+            },
+            Object {
+              "$token": Object {
+                "col": 21,
+                "line": 7,
+              },
+              "actions": Array [
+                Object {
+                  "src": Object {
+                    "$primitive": 3,
+                  },
+                  "target": Object {
+                    "$ref": "abc",
+                  },
+                  "type": "Assign",
+                },
+              ],
+              "event": Object {
+                "$ref": "someEvent",
+              },
+              "type": "Transition",
+            },
+          ],
+          "name": "someState",
+          "type": "State",
+        },
+      },
+      "type": "Controller",
+    },
+  ],
+]
+`;
+
+exports[`kal controller on when 1`] = `
+Array [
+  Array [
+    Object {
+      "name": "myController",
+      "statechart": Object {
+        "root": Object {
+          "$token": Object {
+            "col": 17,
+            "line": 3,
+          },
+          "children": Array [
+            Object {
+              "$token": Object {
+                "col": 21,
+                "line": 4,
+              },
+              "actions": Array [
+                Object {
+                  "src": Object {
+                    "$token": Object {
+                      "col": 25,
+                      "line": 5,
+                    },
+                    "args": Array [
+                      Object {
+                        "$ref": "a",
+                        "$token": Object {
+                          "col": 25,
+                          "line": 5,
+                        },
+                      },
+                      Object {
+                        "$primitive": 1,
+                      },
+                    ],
+                    "op": "add",
+                  },
+                  "target": Object {
+                    "$ref": "a",
+                  },
+                  "type": "Assign",
+                },
+              ],
+              "event": Object {
+                "$ref": "event",
+              },
+              "type": "Transition",
+            },
+            Object {
+              "$token": Object {
+                "col": 30,
+                "line": 6,
+              },
+              "actions": Array [
+                Object {
+                  "src": Object {
+                    "$token": Object {
+                      "col": 25,
+                      "line": 7,
+                    },
+                    "args": Array [
+                      Object {
+                        "$ref": "a",
+                        "$token": Object {
+                          "col": 25,
+                          "line": 7,
+                        },
+                      },
+                      Object {
+                        "$primitive": 1,
+                      },
+                    ],
+                    "op": "add",
+                  },
+                  "target": Object {
+                    "$ref": "a",
+                  },
+                  "type": "Assign",
+                },
+              ],
+              "condition": Object {
+                "$ref": "condition",
+                "$token": Object {
+                  "col": 35,
+                  "line": 6,
+                },
+              },
+              "event": Object {
+                "$ref": "event",
+              },
+              "type": "Transition",
+            },
+            Object {
+              "$token": Object {
+                "col": 30,
+                "line": 8,
+              },
+              "actions": Array [
+                Object {
+                  "src": Object {
+                    "$token": Object {
+                      "col": 25,
+                      "line": 9,
+                    },
+                    "args": Array [
+                      Object {
+                        "$ref": "a",
+                        "$token": Object {
+                          "col": 25,
+                          "line": 9,
+                        },
+                      },
+                      Object {
+                        "$primitive": 1,
+                      },
+                    ],
+                    "op": "add",
+                  },
+                  "target": Object {
+                    "$ref": "a",
+                  },
+                  "type": "Assign",
+                },
+              ],
+              "condition": Object {
+                "$token": Object {
+                  "col": 35,
+                  "line": 8,
+                },
+                "args": Array [
+                  Object {
+                    "$ref": "bla",
+                    "$token": Object {
+                      "col": 36,
+                      "line": 8,
+                    },
+                  },
+                ],
+                "op": "not",
+              },
+              "event": Object {
+                "$ref": "event",
+              },
+              "type": "Transition",
+            },
+          ],
+          "name": "someState",
+          "type": "State",
+        },
+      },
+      "type": "Controller",
+    },
+  ],
+]
+`;
+
+exports[`kal controller when without on 1`] = `
+Array [
+  Array [
+    Object {
+      "name": "myController",
+      "statechart": Object {
+        "root": Object {
+          "$token": Object {
+            "col": 17,
+            "line": 3,
+          },
+          "children": Array [
+            Object {
+              "$token": Object {
+                "col": 21,
+                "line": 4,
+              },
+              "actions": Array [
+                Object {
+                  "src": Object {
+                    "$token": Object {
+                      "col": 25,
+                      "line": 5,
+                    },
+                    "args": Array [
+                      Object {
+                        "$ref": "a",
+                        "$token": Object {
+                          "col": 25,
+                          "line": 5,
+                        },
+                      },
+                      Object {
+                        "$primitive": 123,
+                      },
+                    ],
+                    "op": "add",
+                  },
+                  "target": Object {
+                    "$ref": "a",
+                  },
+                  "type": "Assign",
+                },
+              ],
+              "condition": Object {
+                "$ref": "condition",
+                "$token": Object {
+                  "col": 26,
+                  "line": 4,
+                },
+              },
+              "type": "Transition",
+            },
+            Object {
+              "$token": Object {
+                "col": 21,
+                "line": 6,
+              },
+              "actions": Array [
+                Object {
+                  "src": Object {
+                    "$token": Object {
+                      "col": 25,
+                      "line": 7,
+                    },
+                    "args": Array [
+                      Object {
+                        "$ref": "a",
+                        "$token": Object {
+                          "col": 25,
+                          "line": 7,
+                        },
+                      },
+                      Object {
+                        "$primitive": 1,
+                      },
+                    ],
+                    "op": "add",
+                  },
+                  "target": Object {
+                    "$ref": "a",
+                  },
+                  "type": "Assign",
+                },
+              ],
+              "condition": Object {
+                "$token": Object {
+                  "col": 26,
+                  "line": 6,
+                },
+                "args": Array [
+                  Object {
+                    "$ref": "something",
+                    "$token": Object {
+                      "col": 31,
+                      "line": 6,
+                    },
+                  },
+                ],
+                "op": "func",
+              },
+              "type": "Transition",
+            },
+            Object {
+              "$token": Object {
+                "col": 30,
+                "line": 8,
+              },
+              "actions": Array [
+                Object {
+                  "src": Object {
+                    "$ref": "b",
+                    "$token": Object {
+                      "col": 29,
+                      "line": 9,
+                    },
+                  },
+                  "target": Object {
+                    "$ref": "a",
+                  },
+                  "type": "Assign",
+                },
+              ],
+              "condition": Object {
+                "$token": Object {
+                  "col": 37,
+                  "line": 8,
+                },
+                "args": Array [
+                  Object {
+                    "$ref": "b",
+                    "$token": Object {
+                      "col": 35,
+                      "line": 8,
+                    },
+                  },
+                  Object {
+                    "$ref": "a",
+                    "$token": Object {
+                      "col": 44,
+                      "line": 8,
+                    },
+                  },
+                ],
+                "op": "max",
+              },
+              "event": Object {
+                "$ref": "event",
+              },
+              "type": "Transition",
+            },
+          ],
+          "name": "someState",
+          "type": "State",
+        },
+      },
+      "type": "Controller",
+    },
+  ],
+]
+`;
+
+exports[`kal files import 1`] = `
+Array [
+  Array [
+    Object {
+      "$token": Object {
+        "col": 13,
+        "line": 2,
+      },
+      "name": "hello",
+      "path": "hello.kal",
+      "type": "Import",
+    },
+  ],
+]
+`;
+
+exports[`kal formulas slot 1`] = `
+Array [
+  Array [
+    Object {
+      "formula": Object {
+        "$token": Object {
+          "col": 15,
+          "line": 3,
+        },
+        "args": Array [
+          Object {
+            "$ref": "a",
+            "$token": Object {
+              "col": 13,
+              "line": 3,
+            },
+          },
+          Object {
+            "$primitive": 1,
+          },
+        ],
+        "op": "add",
+      },
+      "name": "s",
+      "type": "Slot",
+    },
+  ],
+]
+`;
+
+exports[`kal formulas slot 2 1`] = `
+Array [
+  Array [
+    Object {
+      "formula": Object {
+        "$token": Object {
+          "col": 37,
+          "line": 3,
+        },
+        "args": Array [
+          Object {
+            "$token": Object {
+              "col": 21,
+              "line": 3,
+            },
+            "args": Array [
+              Object {
+                "$token": Object {
+                  "col": 16,
+                  "line": 3,
+                },
+                "args": Array [
+                  Object {
+                    "$ref": "a",
+                    "$token": Object {
+                      "col": 14,
+                      "line": 3,
+                    },
+                  },
+                  Object {
+                    "$primitive": 1,
+                  },
+                ],
+                "op": "add",
+              },
+              Object {
+                "$token": Object {
+                  "col": 32,
+                  "line": 3,
+                },
+                "args": Array [
+                  Object {
+                    "$token": Object {
+                      "col": 28,
+                      "line": 3,
+                    },
+                    "args": Array [
+                      Object {
+                        "$primitive": 13,
+                      },
+                      Object {
+                        "$primitive": 7,
+                      },
+                    ],
+                    "op": "div",
+                  },
+                  Object {
+                    "$ref": "X",
+                    "$token": Object {
+                      "col": 34,
+                      "line": 3,
+                    },
+                  },
+                ],
+                "op": "bwand",
+              },
+            ],
+            "op": "pow",
+          },
+        ],
+        "op": "sin",
+      },
+      "name": "Abc1",
+      "type": "Slot",
+    },
+  ],
+]
+`;
+
+exports[`kal formulas slot 3 1`] = `
+Array [
+  Array [
+    Object {
+      "formula": Object {
+        "$token": Object {
+          "col": 15,
+          "line": 3,
+        },
+        "args": Array [
+          Object {
+            "$primitive": 2,
+          },
+        ],
+        "op": "sin",
+      },
+      "name": "pipe",
+      "type": "Slot",
+    },
+  ],
+]
+`;
+
+exports[`kal macro no args 1`] = `
+Array [
+  Array [
+    Object {
+      "$macro": Object {
+        "args": Array [],
+        "formula": Object {
+          "$token": Object {
+            "col": 19,
+            "line": 3,
+          },
+          "args": Array [
+            Object {
+              "$ref": "a",
+              "$token": Object {
+                "col": 17,
+                "line": 3,
+              },
+            },
+            Object {
+              "$primitive": 1,
+            },
+          ],
+          "op": "add",
+        },
+      },
+      "$token": Object {
+        "col": 19,
+        "line": 2,
+      },
+    },
+  ],
+]
+`;
+
+exports[`kal macro several args 1`] = `
+Array [
+  Array [
+    Object {
+      "$macro": Object {
+        "args": Array [
+          "a",
+          "b",
+        ],
+        "formula": Object {
+          "$token": Object {
+            "col": 19,
+            "line": 3,
+          },
+          "args": Array [
+            Object {
+              "$ref": "a",
+              "$token": Object {
+                "col": 17,
+                "line": 3,
+              },
+            },
+            Object {
+              "$token": Object {
+                "col": 24,
+                "line": 3,
+              },
+              "args": Array [
+                Object {
+                  "$primitive": 13,
+                },
+                Object {
+                  "$ref": "b",
+                  "$token": Object {
+                    "col": 26,
+                    "line": 3,
+                  },
+                },
+              ],
+              "op": "mult",
+            },
+          ],
+          "op": "add",
+        },
+      },
+      "$token": Object {
+        "col": 19,
+        "line": 2,
+      },
+    },
+  ],
+]
+`;
+
+exports[`kal macro some args 1`] = `
+Array [
+  Array [
+    Object {
+      "$macro": Object {
+        "args": Array [
+          "a",
+        ],
+        "formula": Object {
+          "$token": Object {
+            "col": 19,
+            "line": 3,
+          },
+          "args": Array [
+            Object {
+              "$ref": "a",
+              "$token": Object {
+                "col": 17,
+                "line": 3,
+              },
+            },
+            Object {
+              "$primitive": 1,
+            },
+          ],
+          "op": "add",
+        },
+      },
+      "$token": Object {
+        "col": 19,
+        "line": 2,
+      },
+    },
+  ],
+]
+`;
+
+exports[`kal main main 1`] = `
+Array [
+  Array [
+    Object {
+      "$token": Object {
+        "col": 13,
+        "line": 2,
+      },
+      "declarations": Array [
+        Object {
+          "col": 17,
+          "line": 3,
+          "ref": "hello",
+          "type": "Use",
+        },
+        Object {
+          "col": 17,
+          "line": 4,
+          "ref": "view",
+          "type": "Use",
+        },
+      ],
+      "type": "Main",
+    },
+  ],
+]
+`;
+
+exports[`kal vars const 1`] = `
+Array [
+  Array [
+    Object {
+      "$token": Object {
+        "col": 13,
+        "line": 2,
+      },
+      "name": "hello",
+      "type": "Const",
+      "value": Object {
+        "$primitive": 1,
+      },
+    },
+    Object {
+      "$token": Object {
+        "col": 13,
+        "line": 3,
+      },
+      "name": "abc",
+      "type": "Let",
+      "value": Object {
+        "$primitive": "123",
+      },
+    },
+    Object {
+      "$token": Object {
+        "col": 13,
+        "line": 4,
+      },
+      "name": "ahf",
+      "type": "Let",
+      "value": Object {
+        "$primitive": "blabla",
+      },
+    },
+  ],
+]
+`;
+
+exports[`kal vars let 1`] = `
+Array [
+  Array [
+    Object {
+      "$token": Object {
+        "col": 13,
+        "line": 2,
+      },
+      "name": "abc",
+      "type": "Let",
+      "value": Object {
+        "$primitive": 1,
+      },
+    },
+  ],
+]
+`;
+
+exports[`kal vars with refs 1`] = `
+Array [
+  Array [
+    Object {
+      "$token": Object {
+        "col": 13,
+        "line": 2,
+      },
+      "name": "hello",
+      "type": "Const",
+      "value": Object {
+        "$ref": "abc",
+        "$token": Object {
+          "col": 27,
+          "line": 2,
+        },
+      },
+    },
+    Object {
+      "$token": Object {
+        "col": 13,
+        "line": 3,
+      },
+      "name": "abc",
+      "type": "Let",
+      "value": Object {
+        "$ref": "abc.a$0",
+        "$token": Object {
+          "col": 23,
+          "line": 3,
+        },
+      },
+    },
+  ],
+]
+`;
+
+exports[`kal view all kinda stuff 1`] = `
+Array [
+  Array [
+    Object {
+      "name": "myView",
+      "rules": Array [
+        Object {
+          "$token": Object {
+            "col": 17,
+            "line": 3,
+          },
+          "declarations": Array [
+            Object {
+              "col": 21,
+              "line": 4,
+              "src": Object {
+                "$ref": "someText",
+                "$token": Object {
+                  "col": 34,
+                  "line": 4,
+                },
+              },
+              "target": Object {
+                "$token": Object {
+                  "col": 26,
+                  "line": 4,
+                },
+                "type": "html",
+              },
+              "type": "Bind",
+            },
+            Object {
+              "$token": Object {
+                "col": 21,
+                "line": 5,
+              },
+              "actions": Array [
+                Object {
+                  "$token": Object {
+                    "col": 25,
+                    "line": 6,
+                  },
+                  "bus": "someController",
+                  "event": "someEvent",
+                  "type": "Dispatch",
+                },
+              ],
+              "eventType": "click",
+              "type": "DOMEvent",
+            },
+          ],
+          "selector": "#someId",
+          "type": "ViewRule",
+        },
+      ],
+      "type": "View",
+    },
+  ],
+]
+`;
+
+exports[`kal view strange selectors 1`] = `
+Array [
+  Array [
+    Object {
+      "name": "myView",
+      "rules": Array [
+        Object {
+          "$token": Object {
+            "col": 17,
+            "line": 3,
+          },
+          "declarations": Array [
+            Object {
+              "$token": Object {
+                "col": 21,
+                "line": 4,
+              },
+              "actions": Array [
+                Object {
+                  "$token": Object {
+                    "col": 25,
+                    "line": 5,
+                  },
+                  "type": "PreventDefault",
+                },
+              ],
+              "eventType": "click",
+              "type": "DOMEvent",
+            },
+          ],
+          "selector": "div",
+          "type": "ViewRule",
+        },
+        Object {
+          "$token": Object {
+            "col": 17,
+            "line": 6,
+          },
+          "declarations": Array [
+            Object {
+              "$token": Object {
+                "col": 21,
+                "line": 7,
+              },
+              "actions": Array [
+                Object {
+                  "$token": Object {
+                    "col": 25,
+                    "line": 8,
+                  },
+                  "bus": "someABC",
+                  "event": "someEvent",
+                  "type": "Dispatch",
+                },
+                Object {
+                  "$token": Object {
+                    "col": 25,
+                    "line": 9,
+                  },
+                  "type": "PreventDefault",
+                },
+              ],
+              "eventType": "click",
+              "type": "DOMEvent",
+            },
+          ],
+          "selector": "div[ab=123]",
+          "type": "ViewRule",
+        },
+        Object {
+          "$token": Object {
+            "col": 17,
+            "line": 10,
+          },
+          "declarations": Array [
+            Object {
+              "col": 21,
+              "line": 11,
+              "src": Object {
+                "$primitive": 123,
+              },
+              "target": Object {
+                "$token": Object {
+                  "col": 26,
+                  "line": 11,
+                },
+                "type": "html",
+              },
+              "type": "Bind",
+            },
+          ],
+          "selector": "*[yo]",
+          "type": "ViewRule",
+        },
+      ],
+      "type": "View",
+    },
+  ],
+]
+`;

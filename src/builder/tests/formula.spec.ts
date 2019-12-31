@@ -59,6 +59,9 @@ describe('formulas', () => {
         it('==', () => {
             expect(parseRaw('a == 0')).toEqual(parseRaw('eq(a, 0)'))
         })
+        it('==', () => {
+            expect(parseRaw('a != 0')).toEqual(parseRaw('neq(a, 0)'))
+        })
         it('<=', () => {
             expect(parseRaw('a <= 0')).toEqual(parseRaw('lte(a, 0)'))
         })
@@ -147,12 +150,8 @@ describe('formulas', () => {
             expect(parse("a['str']")).toMatchSnapshot()
             expect(parse("a['str']")).toEqual(parse('a["str"]'))
         })
-        it('[match]', () => {
-            expect(parseRaw('a["b"]')).toEqual(parseRaw('a.b'))
-            expect(parseRaw('a[b]')).not.toEqual(parseRaw('a.b'))
-        })
         it('?.', () => {
-            expect(parseRaw('a?.b')).toEqual(parseRaw('cond(isNil(a), a, a.b)'))
+            expect(parseRaw('a?.b')).toEqual(parseRaw('cond(isNil(a), a, a["b"])'))
         })
     })
 

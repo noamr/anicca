@@ -47,6 +47,7 @@ export default function createStore(def: StoreDefinition) : StartStore {
             shr: (a, b) => ctx => a(ctx) >> b(ctx),
             ushr: (a, b) => ctx => a(ctx) >>> b(ctx),
             eq: (a, b) => ctx => a(ctx) === b(ctx),
+            neq: (a, b) => ctx => a(ctx) != b(ctx),
             lt: (a, b) => ctx => a(ctx) < b(ctx),
             gt: (a, b) => ctx => a(ctx) > b(ctx),
             gte: (a, b) => ctx => a(ctx) >= b(ctx),
