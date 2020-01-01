@@ -1,6 +1,6 @@
 export type Primitive = string | number | boolean | null
 
-export type StatementType = "Const" | "View" | "App" | "Export" | "Controller"
+export type StatementType = "Const" | "View" | "Main" | "Let" | "Controller" | "Slot" | "Bus"
 
 export interface WithToken {
     $token?: {
@@ -17,11 +17,12 @@ export interface ConstStatement extends Statement {
     type: "Const"
     value: Primitive
 }
-
-export interface ExportStatement extends Statement {
-    type: "Export"
-    ref: Formula
+export interface LetStatement extends Statement {
+    type: "Let"
+    value: Primitive
 }
+
+
 
 export interface ViewDeclaration extends WithToken {
     type: "Bind" | "DOMEvent"
@@ -53,7 +54,8 @@ export interface FunctionFormula<Op extends string = string> extends Formula {
 export interface BindDeclaration extends ViewDeclaration{
     type: "Bind"
     src: Formula
-    target: BindTarget
+    target?: string
+    targetType: "content" | "attribute" | "data" | "style"
 }
 
 export interface DOMEventDeclaration extends ViewDeclaration {
@@ -63,13 +65,17 @@ export interface DOMEventDeclaration extends ViewDeclaration {
 }
 
 export interface DOMEventAction extends WithToken {
-    type: "PreventDefault" | "Dispatch"
+    type: "RunScript" | "Dispatch"
 }
 
 export interface DispatchAction extends DOMEventAction {
     type: "Dispatch"
-    controller: string
+    target: string
     event: string
+}
+export interface RunScriptAction extends DOMEventAction {
+    type: "RunScript"
+    source: string
 }
 
 export interface ViewRule extends WithToken  {
@@ -83,16 +89,15 @@ export interface AppDeclaration extends WithToken  {
     ref: string
 }
 
-export interface AppStatement extends Statement {
-    type: "App"
-    name: string
+export interface MainStatement extends Statement {
+    type: "Main"
     declarations: Array<AppDeclaration>
 }
 
 export interface ControllerStatement extends Statement {
     type: "Controller"
     name: string
-    statechart: Statechart
+    rootState: State
 }
 
 export type Statechart = {
@@ -116,7 +121,6 @@ export type TransitionAction = {
 
 export type AssignTransitionAction = {
     type: "Assign"
-    operand: "=" | "+=" | "-=" | "*=" | "/=" | "|=" | "&="
     source: string
     target: string
 }

@@ -4,7 +4,8 @@ module.exports = {
     "cypress"
   ],
   preset: 'ts-jest',
-  transform: {
+  "transform": {
+    "^.+\\.(ts|tsx)$": "ts-jest",
     "^.+\\.ne$": "./src/test-support/nearley-transform-jest"
   },
   testEnvironment: 'node'

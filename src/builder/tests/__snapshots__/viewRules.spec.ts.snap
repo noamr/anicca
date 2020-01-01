@@ -1,0 +1,42 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ViewRules rules 1`] = `
+Object {
+  "event": "click",
+  "type": "DomEvent",
+}
+`;
+
+exports[`ViewRules rules 2`] = `
+Object {
+  "attribute": "src",
+  "type": "BindAttribute",
+}
+`;
+
+exports[`ViewRules rules 3`] = `
+Object {
+  "type": "BindContent",
+}
+`;
+
+exports[`ViewRules rules 4`] = `
+Object {
+  "attribute": "custom",
+  "type": "BindData",
+}
+`;
+
+exports[`ViewRules rules 5`] = `
+Object {
+  "style": "border-width",
+  "type": "BindStyle",
+}
+`;
+
+exports[`ViewRules rules 6`] = `
+Object {
+  "style": "--yoyo",
+  "type": "BindStyle",
+}
+`;

@@ -1,0 +1,35 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Root rules 1`] = `
+Object {
+  "name": "abc",
+  "type": "Controller",
+}
+`;
+
+exports[`Root rules 2`] = `
+Object {
+  "name": "abc",
+  "type": "View",
+}
+`;
+
+exports[`Root rules 3`] = `
+Object {
+  "type": "Main",
+}
+`;
+
+exports[`Root rules 4`] = `
+Object {
+  "name": "abcSlot",
+  "type": "Slot",
+}
+`;
+
+exports[`Root rules 5`] = `
+Object {
+  "name": "bus",
+  "type": "Bus",
+}
+`;

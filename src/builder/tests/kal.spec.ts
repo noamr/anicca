@@ -19,7 +19,7 @@ const removeTokens = (a: any): any =>
 
 const parseRaw = (str: string) => removeTokens(parse(str))
 describe('kal', () => {
-    describe('formulas', () => {
+    describe.only('formulas', () => {
         it('slot', () => {
             expect(parse(`
         slot s
@@ -198,6 +198,79 @@ describe('kal', () => {
                     goto otherState when a == 1
                         a -= 123
             `)).toMatchSnapshot()
+        })
+
+        describe ('upon', () => {
+            it('entry', () => {
+                expect(parse(`
+                controller myController
+                    state someState
+                        upon entry
+                            a += 1
+                `)).toMatchSnapshot()    
+            })
+            it('exit', () => {
+                expect(parse(`
+                controller myController
+                    state someState
+                        upon exit
+                            a += 1
+                `)).toMatchSnapshot()    
+            })
+
+        })
+        it('initial', () => {
+            expect(parse(`
+            controller myController
+                state someState
+                    default to s1
+                        a += 1
+            `)).toMatchSnapshot()
+
+        })
+        it('final', () => {
+            expect(parse(`
+            controller myController
+                state someState
+                    final finalState
+                        a += 1
+            `)).toMatchSnapshot()
+        })
+        it('history', () => {
+            expect(parse(`
+            controller myController
+                state someState
+                    shallow history h1
+                    deep history h1
+                        default to s1
+                    history h2
+                        default to s1
+        `)).toMatchSnapshot()
+        })
+
+        describe('complex', () => {
+            it('a', () => {
+                expect(parse(`
+                controller abc
+                    state a
+                    state b
+                        default to c
+                        state d
+                        state c
+                            on e goto d
+                            when abc goto x
+                                someValue *= 2
+                        state e
+                        final f
+                    parallel x
+                        state x1
+                            default to x1a
+                            x1a
+                                upon entry
+                                    someV2 = 0
+                        state x2
+                `)).toMatchSnapshot()
+            })
         })
     })
     // when someCondition goto module.someState

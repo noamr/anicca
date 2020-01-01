@@ -27,6 +27,7 @@
     "@shieldsbetter/nearley-indentify": "^0.0.10",
     "@types/jest": "^24.0.25",
     "@types/nearley": "^2.11.1",
+    "@types/yaml": "^1.2.0",
     "cypress": "^3.8.0",
     "glob": "^7.1.6",
     "jest": "^24.9.0",
@@ -44,6 +45,8 @@
     "ts-node": "^8.5.4",
     "typescript": "^3.7.4",
     "webpack": "^4.41.4",
+    "yaml": "^1.7.2",
+    "yaml2json": "^1.0.2",
     "yargs": "^15.0.2"
   },
   "dependencies": {

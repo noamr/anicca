@@ -3,7 +3,7 @@ const moo = require("moo")
 const lexer = moo.compile({
   singleQuoteStringLiteral:  {match: /'(?:\\['\\]|[^\n'\\])*'/}, 
   doubleQuoteStringLiteral:  {match: /"(?:\\["\\]|[^\n"\\])*"/},
-  assigns: /[=\+*/?|%^&\-]?=/,
+  assigns: /[=+*/?|%^&\-]?=/,
   pipeline: /\|\>/,
   nullishCoalescing: /\?\?/,
   optionalChain: /\?\./,
@@ -21,12 +21,8 @@ const lexer = moo.compile({
   hex: /0x[0-9A-Fa-f]+/,
   binary: /0b[0-1]+/,
   selector: /[#*]?[A-Za-z$_][A-Za-z$_0-9]*\[?\]?(?:[~*$^]?\=[^\n])?/,
-  newline: { match: /[\n]/, lineBreaks: true }
+  newlines: { match: /[;\n]+/, lineBreaks: true }
 })
-
-const IndentifyLexer = require("@shieldsbetter/nearley-indentify")
-
-const indentAwareLexer = new IndentifyLexer(lexer)
 
 const NOOP = () => {}
 const partialSymbol = Symbol("partial")
@@ -41,17 +37,21 @@ function fixTokens({op, args, token, ...rest}) {
 
 const ExtractOp = (op, postprocess) => ([obj]) => (postprocess || (a => a))(({op, ...obj}))
 
+const removeTokens = a => 
+    a && Object.assign({},
+        a.args && {args: a.args.map(removeTokens)},
+        a.op && {op: a.op},
+        a.$primitive && {$primitive: a.$primitive},
+        a.$ref && {$ref: a.$ref})
+
 %}
 
-@lexer indentAwareLexer
+@lexer lexer
 @builtin "whitespace.ne"
 
 rawFormula -> anyExpression                          {% ([id]) => JSON.parse(JSON.stringify(fixTokens(id))) %}
+formulaWithoutTokens -> rawFormula {% ([formula]) => removeTokens(formula) %}
 
-WS ->
-    _ {% NOOP %}
-    | %eol  {% NOOP %}
-    | %indent  {% NOOP %}
 
 stringLiteral -> 
     %singleQuoteStringLiteral {% ([{value}]) => value %}
@@ -71,11 +71,10 @@ primitive ->
     | nil {%id %}
 
 anyExpression -> 
-    WS operand WS {% ([,e]) => e %}
+    _ operand _ {% ([,e]) => e %}
 
 Next[A] ->
-    W $A {% ([,a]) => a %}
-    | W %indent W $A %dedent {% ([,,,a]) => a %}
+    _ $A {% ([,a]) => a %}
 
 RValue[Op, Value] ->
     Next[$Op $Value] {% ([[token, [args]]]) => ({token, args}) %}
@@ -99,10 +98,10 @@ qvar =>
 # Follow the JS order of precendence 
 # https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
 ATOM ->
-    WS primitive WS             {% ([,$primitive]) => ({$primitive}) %}
-    | WS qvar WS             {% ([,token]) => ({$ref: token.value, token}) %}
+    _ primitive _             {% ([,$primitive]) => ({$primitive}) %}
+    | _ qvar _             {% ([,token]) => ({$ref: token.value, token}) %}
 
-P -> WS "(" Next[anyExpression] ")" WS {% ([,,[d]]) => d %}
+P -> _ "(" Next[anyExpression] ")" _ {% ([,,[d]]) => d %}
     | ATOM {% id %}
 
 optionalChain ->
@@ -135,10 +134,6 @@ MD -> Binary[MD, "*", E]    {% ExtractOp('mult') %}
     | Binary[MD, "/", E]    {% ExtractOp('div') %}
     | Binary[MD, "%", E]    {% ExtractOp('mod') %}
     | E                     {% id %}
-
-W ->
-    %eol {% NOOP %}
-    | _ {% NOOP %}
 
 # Addition and subtraction
 AS -> Binary[AS, "+", MD] {% ExtractOp('add') %}
@@ -187,27 +182,27 @@ LOR ->
     | LAND {% id %}
 
 COND ->
-    Ternary[COND, "?", COND, ":", LOR] {% ExtractOp('cond') %}
+    Ternary[COND, "?", LOR, ":", LOR] {% ExtractOp('cond') %}
     | LOR {% id %}
 
 operand -> COND {% id %}
     
 pipeFunctionCall ->
-    anyExpression WS %pipeline WS partialFunctionCall 
+    anyExpression _ %pipeline _ partialFunctionCall 
         {% ([input,, token,, resolvePartial]) => resolvePartial({token, input}) %}
 
 standardFunctionCall ->
-    WS %varname WS "(" WS arguments WS ")" WS {% ([,op,,,, args]) => ({token: op, op: op.value, args}) %}
+    _ %varname _ "(" _ arguments _ ")" _ {% ([,op,,,, args]) => ({token: op, op: op.value, args}) %}
 
 arrayConstructor ->
-    WS "[" WS arguments WS "]" WS {% ([,token,,args]) => ({token, op: 'array', args}) %}
+    _ "[" _ arguments _ "]" _ {% ([,token,,args]) => ({token, op: 'array', args}) %}
 
 objectKey ->
     stringLiteral {% ([p]) => ({$primitive: JSON.parse(p)}) %}
     | %varname {% ([p]) => ({$primitive: p.value}) %}
     | %int {% ([p]) => ({$primitive: +p.value}) %}
     | %float {% ([p]) => ({$primitive: +p.value}) %}
-    | "[" WS anyExpression WS "]" {% ([,,p]) => p %}
+    | "[" _ anyExpression _ "]" {% ([,,p]) => p %}
 
 objectEntry ->
     Binary[objectKey, ":", anyExpression]
@@ -216,14 +211,14 @@ objectEntry ->
 
 objectEntries ->
     objectEntry
-    | objectEntry WS "," WS objectEntries {% ([one,, additionalArgs]) => ([one, ...additionalArgs]) %}
+    | objectEntry _ "," _ objectEntries {% ([one,, additionalArgs]) => ([one, ...additionalArgs]) %}
     | null {% () => [] %}
 
 objectConstructor ->
-    WS "{" WS objectEntries WS "}" WS {% ([,token,,args]) => ({token, op: 'object', args}) %}
+    _ "{" _ objectEntries _ "}" _ {% ([,token,,args]) => ({token, op: 'object', args}) %}
 
 partialFunctionCall ->
-    WS %varname WS "(" WS partialArgs WS ")" {%
+    _ %varname _ "(" _ partialArgs _ ")" {%
         ([,op, , , , args], location, reject) => {
             const index = args.findIndex(a => a === partialSymbol)
             return ({token, input}) => {
@@ -241,11 +236,11 @@ arguments ->
 
 partialArg ->
     anyExpression {% id %}
-    | WS "?" WS {% () => partialSymbol %}
+    | _ "?" _ {% () => partialSymbol %}
 
 partialArgs ->
     partialArg
-    | partialArg WS "," WS partialArgs {% ([one,,,, additionalParialArgs], loc, reject) => {
+    | partialArg _ "," _ partialArgs {% ([one,,,, additionalParialArgs], loc, reject) => {
         if (one === partialSymbol && additionalParialArgs.findIndex(a => a === partialSymbol) >= 0) {
             return reject
         }

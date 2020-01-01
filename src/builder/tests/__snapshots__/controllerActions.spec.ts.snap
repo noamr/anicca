@@ -1,0 +1,91 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`controllerActions actions 1`] = `
+Object {
+  "target": "someState",
+  "type": "Goto",
+}
+`;
+
+exports[`controllerActions actions 2`] = `
+Object {
+  "event": "someEvent",
+  "type": "Raise",
+}
+`;
+
+exports[`controllerActions actions 3`] = `
+Object {
+  "event": "someEvent",
+  "target": "someController",
+  "type": "Dispatch",
+}
+`;
+
+exports[`controllerActions actions 4`] = `
+Object {
+  "src": Object {
+    "args": Array [
+      Object {
+        "$ref": "abc",
+      },
+      Object {
+        "$ref": "bla",
+      },
+    ],
+    "op": "add",
+  },
+  "target": Object {
+    "$ref": "abc",
+  },
+  "type": "Assign",
+}
+`;
+
+exports[`controllerActions actions 5`] = `
+Object {
+  "src": Object {
+    "args": Array [
+      Object {
+        "$ref": "tag",
+      },
+      Object {
+        "$primitive": 1.3,
+      },
+    ],
+    "op": "div",
+  },
+  "target": Object {
+    "$ref": "tag",
+  },
+  "type": "Assign",
+}
+`;
+
+exports[`controllerActions actions 6`] = `
+Object {
+  "src": Object {
+    "args": Array [
+      Object {
+        "$ref": "hello",
+      },
+      Object {
+        "args": Array [
+          Object {
+            "$primitive": 1,
+          },
+          Object {
+            "$ref": "ABC",
+          },
+        ],
+        "op": "add",
+      },
+    ],
+    "op": "div",
+  },
+  "target": Object {
+    "$ref": "hello",
+  },
+  "type": "Assign",
+}
+`;

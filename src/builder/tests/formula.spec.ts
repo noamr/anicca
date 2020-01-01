@@ -197,7 +197,7 @@ describe('formulas', () => {
             expect(parseRaw(`
                 8 **
                 max(3, 4)
-            `)).toEqual(parseRaw('pow(8, (3 |> max(?,  4))'))
+            `)).toEqual(parseRaw('pow(8, (3 |> max(?,  4)))'))
         })
     })
 

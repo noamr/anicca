@@ -1,0 +1,133 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`controller grammar state 1`] = `
+Object {
+  "name": "myState",
+  "type": "State",
+}
+`;
+
+exports[`controller grammar state 2`] = `
+Object {
+  "name": "myState",
+  "type": "Parallel",
+}
+`;
+
+exports[`controller grammar state 3`] = `
+Object {
+  "deep": true,
+  "name": "myState",
+  "type": "History",
+}
+`;
+
+exports[`controller grammar state 4`] = `
+Object {
+  "deep": true,
+  "name": "myState",
+  "type": "History",
+}
+`;
+
+exports[`controller grammar state 5`] = `
+Object {
+  "deep": false,
+  "name": "myState",
+  "type": "History",
+}
+`;
+
+exports[`controller grammar state 6`] = `
+Object {
+  "name": "myState",
+  "type": "Final",
+}
+`;
+
+exports[`controller grammar state 7`] = `
+Object {
+  "type": "Initial",
+}
+`;
+
+exports[`controller grammar transition 1`] = `
+Object {
+  "event": "someEvent",
+  "type": "Transition",
+}
+`;
+
+exports[`controller grammar transition 2`] = `
+Object {
+  "condition": Object {
+    "args": Array [
+      Object {
+        "$ref": "someCondition",
+      },
+      Object {
+        "args": Array [
+          Object {
+            "args": Array [
+              Object {
+                "$ref": "a",
+              },
+              Object {
+                "$primitive": 1,
+              },
+            ],
+            "op": "sub",
+          },
+          Object {
+            "args": Array [],
+            "op": "grumpy",
+          },
+        ],
+        "op": "mult",
+      },
+    ],
+    "op": "add",
+  },
+  "type": "Transition",
+}
+`;
+
+exports[`controller grammar transition 3`] = `
+Object {
+  "condition": Object {
+    "args": Array [
+      Object {
+        "$ref": "a",
+      },
+      Object {
+        "$primitive": 1,
+      },
+    ],
+    "op": "eq",
+  },
+  "event": "someEvent",
+  "type": "Transition",
+}
+`;
+
+exports[`controller grammar transition 4`] = `
+Object {
+  "type": "Transition",
+}
+`;
+
+exports[`controller grammar upon 1`] = `
+Array [
+  Object {
+    "type": "OnEntry",
+  },
+]
+`;
+
+exports[`controller grammar upon 2`] = `
+Array [
+  Object {
+    "type": "OnExit",
+  },
+]
+`;
