@@ -38,11 +38,11 @@ function fixTokens({op, args, token, ...rest}) {
 const ExtractOp = (op, postprocess) => ([obj]) => (postprocess || (a => a))(({op, ...obj}))
 
 const removeTokens = a => 
-    a && Object.assign({},
+    a ? Object.assign({},
         a.args && {args: a.args.map(removeTokens)},
         a.op && {op: a.op},
-        a.$primitive && {$primitive: a.$primitive},
-        a.$ref && {$ref: a.$ref})
+        (typeof a.$primitive !== 'undefined') && {$primitive: a.$primitive},
+        a.$ref && {$ref: a.$ref}) : a
 
 %}
 

@@ -24,6 +24,11 @@ describe('formulas', () => {
             expect(parse('\'abc\'')).toMatchSnapshot()
         })
     })
+    describe('constant', () => {
+        it('zero', () => {
+            expect(parse('0')).toMatchSnapshot()
+        })
+    })
     describe('single', () => {
         it('plus', () => {
             expect(parse('a + 1')).toMatchSnapshot()

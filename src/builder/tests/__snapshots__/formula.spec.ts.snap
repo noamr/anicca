@@ -18,6 +18,12 @@ Object {
 }
 `;
 
+exports[`formulas constant zero 1`] = `
+Object {
+  "$primitive": 0,
+}
+`;
+
 exports[`formulas functions multiple args 1`] = `
 Object {
   "$token": Object {
@@ -262,6 +268,28 @@ Object {
     },
     Object {
       "$primitive": 1,
+    },
+  ],
+  "op": "add",
+}
+`;
+
+exports[`formulas single zero 1`] = `
+Object {
+  "$token": Object {
+    "col": 3,
+    "line": 1,
+  },
+  "args": Array [
+    Object {
+      "$ref": "a",
+      "$token": Object {
+        "col": 1,
+        "line": 1,
+      },
+    },
+    Object {
+      "$primitive": 0,
     },
   ],
   "op": "add",

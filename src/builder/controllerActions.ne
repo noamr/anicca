@@ -27,16 +27,16 @@ incrementAction ->
     %varname _ "+=" _ formula {% relAction('add') %}
 
 decrementAction ->
-    %varname _ "-=" _ formula {% relAction('add') %}
+    %varname _ "-=" _ formula {% relAction('sub') %}
 
 multAction ->
-    %varname _ "*=" _ formula {% relAction('div') %}
+    %varname _ "*=" _ formula {% relAction('mult') %}
 
 divAction ->
     %varname _ "/=" _ formula {% relAction('div') %}
 
 assignAction ->
-    %varname _ "=" _ formula {% ([target,, op,, src]) => 
+    %varname _ "=" _ formula {% ([target,,,, src]) => 
         ({type: "Assign", target: {$ref: target.value}, src}) %}
 
 assign ->

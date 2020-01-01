@@ -35,7 +35,7 @@ Array [
                 "type": "RunScript",
               },
             ],
-            "eventType": undefined,
+            "eventType": "click",
             "type": "DOMEvent",
           },
         ],
@@ -51,7 +51,9 @@ Array [
         Object {
           "actions": Array [
             Object {
-              "src": Object {},
+              "src": Object {
+                "$primitive": 0,
+              },
               "target": Object {
                 "$ref": "value",
               },
