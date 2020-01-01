@@ -70,7 +70,7 @@ const mapViewDeclaration = (key: any, value: any): ViewDeclaration => {
         case 'DomEvent':
             return {
                 type: 'DOMEvent',
-                eventType: key.event,
+                eventType: key.eventType,
                 actions: toArray(value).map(parseDOMEventAction)
             } as DOMEventDeclaration
         case 'BindAttribute':

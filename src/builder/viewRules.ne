@@ -8,7 +8,7 @@ viewRule ->
     | cssRule {% id %}
     
 eventRule ->
-    "on" __ %varname {% ([,,event]) => ({type: 'DomEvent', event: event.value}) %}
+    "on" __ %varname {% ([,,event]) => ({type: 'DomEvent', eventType: event.value}) %}
 
 contentRule ->
     "content" {% () => ({type: 'BindContent'}) %}
