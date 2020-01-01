@@ -1,0 +1,123 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`kal yaml parsing should be parsed to json 1`] = `
+Array [
+  Object {
+    "name": "myView",
+    "rules": Array [
+      Object {
+        "declarations": Array [
+          Object {
+            "src": Object {
+              "$ref": "value",
+              "$token": Object {
+                "col": 1,
+                "line": 1,
+              },
+            },
+            "targetType": "content",
+            "type": "Bind",
+          },
+        ],
+        "selector": "#output",
+      },
+      Object {
+        "declarations": Array [
+          Object {
+            "actions": Array [
+              Object {
+                "event": "increment",
+                "target": "myController",
+                "type": "Dispatch",
+              },
+              Object {
+                "source": "e => e.preventDefault()",
+                "type": "RunScript",
+              },
+            ],
+            "eventType": undefined,
+            "type": "DOMEvent",
+          },
+        ],
+        "selector": "#increment",
+      },
+    ],
+    "type": "View",
+  },
+  Object {
+    "name": "myController",
+    "rootState": Object {
+      "children": Array [
+        Object {
+          "actions": Array [
+            Object {
+              "src": Object {},
+              "target": Object {
+                "$ref": "value",
+              },
+              "type": "Assign",
+            },
+          ],
+          "type": "OnEntry",
+        },
+        Object {
+          "actions": Array [
+            Object {
+              "src": Object {
+                "args": Array [
+                  Object {
+                    "$ref": "value",
+                  },
+                  Object {
+                    "$primitive": 1,
+                  },
+                ],
+                "op": "add",
+              },
+              "target": Object {
+                "$ref": "value",
+              },
+              "type": "Assign",
+            },
+          ],
+          "event": "increment",
+          "type": "Transition",
+        },
+      ],
+      "name": "root",
+      "type": "State",
+    },
+    "type": "Controller",
+  },
+  Object {
+    "name": "value",
+    "type": "Let",
+    "value": "u32",
+  },
+]
+`;
+
+exports[`kal yaml parsing should be valid yaml 1`] = `
+Object {
+  "Controller myController": Object {
+    "state root": Object {
+      "entering": "value = 0",
+      "on increment": "value += 1",
+    },
+  },
+  "Let value": "u32",
+  "View myView": Object {
+    "#increment": Object {
+      "on click": Array [
+        "dispatch increment to myController",
+        Object {
+          "run script": "e => e.preventDefault()",
+        },
+      ],
+    },
+    "#output": Object {
+      "content": "value",
+    },
+  },
+}
+`;

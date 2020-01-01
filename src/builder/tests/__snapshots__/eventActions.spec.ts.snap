@@ -1,0 +1,15 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`controllerActions actions 1`] = `
+Object {
+  "event": "someEvent",
+  "target": "someController",
+  "type": "Dispatch",
+}
+`;
+
+exports[`controllerActions actions 2`] = `
+Object {
+  "type": "RunScript",
+}
+`;
