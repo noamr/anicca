@@ -23,7 +23,7 @@ Object {
 
 exports[`Root rules 4`] = `
 Object {
-  "name": "bus",
+  "name": "myBus",
   "type": "Bus",
 }
 `;

@@ -97,14 +97,14 @@ Array [
 
 exports[`kal yaml parsing should be valid yaml 1`] = `
 Object {
-  "Controller myController": Object {
+  "controller myController": Object {
     "state root": Object {
       "entering": "value = 0",
       "on increment": "value += 1",
     },
   },
-  "Let value": "u32",
-  "View myView": Object {
+  "let value": "u32",
+  "view myView": Object {
     "#increment": Object {
       "on click": Array [
         "dispatch increment to myController",

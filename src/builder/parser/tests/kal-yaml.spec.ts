@@ -2,7 +2,7 @@ import {parse} from 'yaml'
 const {parseKal} = require('../index')
 
 const kalYaml = `
-View myView:
+view myView:
     '#output':
         content: value
     '#increment':
@@ -10,7 +10,7 @@ View myView:
         - dispatch increment to myController
         - run script:
             e => e.preventDefault()
-Controller myController:
+controller myController:
     state root:
         entering:
             value = 0
@@ -18,7 +18,7 @@ Controller myController:
         on increment:
             value += 1
 
-Let value: u32
+let value: u32
 `
 
 describe('kal yaml parsing', () => {
@@ -30,12 +30,28 @@ describe('kal yaml parsing', () => {
     })
     it('should fail on internals', () => {
         expect(() => parseKal(parse(`
-            Let @internal: u32
+            let @internal: u32
         `))).toThrow()
+    })
+    it('should fail on internal in states', () => {
+        expect(() => parseKal(parse(`
+        controller myController:
+            state @root:
+                entering:
+                    value = 0
+            `))).toThrow()
+    })
+    it('should allow internal in states in internal mode', () => {
+        expect(() => parseKal(parse(`
+        controller myController:
+            state @root:
+                entering:
+                    value = 0
+            `), {internal: true})).not.toThrow()
     })
     it('should accept internals in internal mode', () => {
         expect(() => parseKal(parse(`
-            Let @internal: u32
+            let @internal: u32
         `), {internal: true})).not.toThrow()
     })
 })

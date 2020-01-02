@@ -13,14 +13,14 @@ historyHeader ->
    | "deep" __ "history" {% () => true %}
 
 state ->
-    "state" __ %varname {% ([,,name]) => ({type: 'State', name: name.value}) %}
-    | "parallel" __ %varname {% ([,,name]) => ({type: 'Parallel', name: name.value}) %}
-    | "final" __ %varname {% ([,,name]) => ({type: 'Final', name: name.value}) %}
+    "state" __ V {% ([,,name]) => ({type: 'State', name: name.value}) %}
+    | "parallel" __ V {% ([,,name]) => ({type: 'Parallel', name: name.value}) %}
+    | "final" __ V {% ([,,name]) => ({type: 'Final', name: name.value}) %}
     | "initial" {% () => ({type: 'Initial'}) %}
-    | historyHeader __ %varname {% ([deep,,name]) => ({deep, type: 'History', name: name.value}) %}
+    | historyHeader __ V {% ([deep,,name]) => ({deep, type: 'History', name: name.value}) %}
 
 trigger ->
-    "on" __ %varname {% ([,,event]) => ({event: event.value}) %}
+    "on" __ V {% ([,,event]) => ({event: event.value}) %}
 
 condition ->
     "when" __ formulaWithoutTokens {% ([,,condition]) => ({condition}) %}

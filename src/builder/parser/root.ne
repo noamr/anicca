@@ -1,14 +1,14 @@
 @include "./formula.ne"
 
 RootTypeDeclaration ->
-    RootType __ ref {% ([[{value}],,ref]) => ({type: value, name: ref.$ref}) %}
+    RootType __ ref {% ([[{value}],,ref]) => ({type: value[0].toUpperCase() + value.substr(1), name: ref.$ref}) %}
 
 RootType ->
-    "Controller" 
-    | "View" 
-    | "Let" 
-    | "Table" 
-    | "Slot"
-    | "Bus"
-    | "Import"
+    "controller" 
+    | "view" 
+    | "let" 
+    | "table" 
+    | "slot"
+    | "bus"
+    | "import"
 

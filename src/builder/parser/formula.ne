@@ -55,8 +55,11 @@ formulaWithoutTokens -> rawFormulaWithTokens {% ([formula]) => removeTokens(form
 rawFormulaWithTokens -> anyExpression                          {% ([id]) => JSON.parse(JSON.stringify(fixTokens(id))) %}
 
 ref -> 
-    _ %varname _             {% ([,token]) => ({$ref: token.value, token}) %}
-    | _ %internalVar _             {% ([,token]) => ({$ref: token.value, token}) %}
+    _ V _             {% ([,token]) => ({$ref: token.value, token}) %}
+
+V ->
+    %varname {% id %}
+    | %internalVar {% id %}
 
 stringLiteral -> 
     %singleQuoteStringLiteral {% ([{value}]) => value %}

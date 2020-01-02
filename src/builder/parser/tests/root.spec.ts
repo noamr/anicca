@@ -6,9 +6,9 @@ const parse = (str: string) => new nearley.Parser(grammar).feed(str).finish()[0]
 
 describe('Root', () => {
     it('rules', () => {
-        expect(parse('Controller abc')).toMatchSnapshot()
-        expect(parse('View abc')).toMatchSnapshot()
-        expect(parse('Slot abcSlot')).toMatchSnapshot()
-        expect(parse('Bus bus')).toMatchSnapshot()
+        expect(parse('controller abc')).toMatchSnapshot()
+        expect(parse('view abc')).toMatchSnapshot()
+        expect(parse('slot abcSlot')).toMatchSnapshot()
+        expect(parse('bus myBus')).toMatchSnapshot()
     })
 })

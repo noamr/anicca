@@ -6,11 +6,11 @@ import {
 describe('post-processors', () => {
     it('let to table', () => {
         expect(letToTable(parse(`
-        Let variable: u32
+        let variable: u32
     `))).toEqual(parse(`
-        Table @let_variable: u32
+        table @let_variable: u32
 
-        Slot variable:
+        slot variable:
             @let_variable[0]
         `, {
             internal: true
