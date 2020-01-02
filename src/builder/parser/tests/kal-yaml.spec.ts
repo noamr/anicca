@@ -1,5 +1,5 @@
 import {parse} from 'yaml'
-const parseKal = require('../parser.ts')
+const {parseKal} = require('../index')
 
 const kalYaml = `
 View myView:
@@ -27,5 +27,15 @@ describe('kal yaml parsing', () => {
     })
     it('should be parsed to json', () => {
         expect(parseKal(parse(kalYaml))).toMatchSnapshot()
+    })
+    it('should fail on internals', () => {
+        expect(() => parseKal(parse(`
+            Let @internal: u32
+        `))).toThrow()
+    })
+    it('should accept internals in internal mode', () => {
+        expect(() => parseKal(parse(`
+            Let @internal: u32
+        `), {internal: true})).not.toThrow()
     })
 })

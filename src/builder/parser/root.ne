@@ -1,13 +1,13 @@
 @include "./formula.ne"
 
 RootTypeDeclaration ->
-    RootType __ %varname {% ([[{value}],,name]) => ({type: value, name: name.value}) %}
-    | "Main" {% () => ({type: "Main"}) %}
+    RootType __ ref {% ([[{value}],,ref]) => ({type: value, name: ref.$ref}) %}
 
 RootType ->
     "Controller" 
     | "View" 
     | "Let" 
+    | "Table" 
     | "Slot"
     | "Bus"
     | "Import"

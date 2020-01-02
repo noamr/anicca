@@ -10,10 +10,6 @@ Array [
           Object {
             "src": Object {
               "$ref": "value",
-              "$token": Object {
-                "col": 1,
-                "line": 1,
-              },
             },
             "targetType": "content",
             "type": "Bind",
@@ -94,7 +90,7 @@ Array [
   Object {
     "name": "value",
     "type": "Let",
-    "value": "u32",
+    "valueType": "u32",
   },
 ]
 `;

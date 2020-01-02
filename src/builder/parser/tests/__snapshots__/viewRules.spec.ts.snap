@@ -2,7 +2,7 @@
 
 exports[`ViewRules rules 1`] = `
 Object {
-  "event": "click",
+  "eventType": "click",
   "type": "DomEvent",
 }
 `;

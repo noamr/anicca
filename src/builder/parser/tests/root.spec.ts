@@ -8,7 +8,6 @@ describe('Root', () => {
     it('rules', () => {
         expect(parse('Controller abc')).toMatchSnapshot()
         expect(parse('View abc')).toMatchSnapshot()
-        expect(parse('Main')).toMatchSnapshot()
         expect(parse('Slot abcSlot')).toMatchSnapshot()
         expect(parse('Bus bus')).toMatchSnapshot()
     })

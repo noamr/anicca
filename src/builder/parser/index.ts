@@ -1,4 +1,4 @@
-import { Bundle, LetStatement, ControllerStatement, ViewStatement, ViewDeclaration, DOMEventDeclaration, BindDeclaration, DOMEventAction, DispatchAction, RunScriptAction } from './types'
+import { Bundle, LetStatement, ControllerStatement, SlotStatement, TableStatement, ViewStatement, ViewDeclaration, DOMEventDeclaration, BindDeclaration, DOMEventAction, DispatchAction, RunScriptAction } from '../types'
 import {execSync} from 'child_process'
 import { Parser, Grammar} from 'nearley'
 import {resolve} from 'path'
@@ -111,11 +111,21 @@ const valueParser = {
         name: key.name,
         rootState: parseStateChildren(value)[0]
     } as ControllerStatement),
-    "Let": (key: any, value: any) => ({
+    "Let": (key: any, valueType: any) => ({
         type: "Let",
         name: key.name,
-        value
+        valueType
     } as LetStatement),
+    "Table": (key: any, valueType: any) => ({
+        type: "Table",
+        name: key.name,
+        valueType
+    } as TableStatement),
+    "Slot": (key: any, formula: any) => ({
+        type: "Slot",
+        name: key.name,
+        formula: parseAtom(formulaParser)(formula)
+    } as SlotStatement),
     "View": (key: any, value: any) => ({
         type: "View",
         name: key.name,
@@ -126,15 +136,36 @@ const valueParser = {
     } as ViewStatement),
 }
 
+export type ParseOptions = {
+    internal: boolean
+}
+
+function failOnInternals(b: any) {
+    if (!b || typeof b !== 'object') {
+        return
+    }
+    if (b.$internal || (b.name && b.name.startsWith('@')))
+        throw new Error(`Internal refs not allowed: ${JSON.stringify(b)}`)
+
+    for (let key in b)
+        failOnInternals(b[key])
+}
+
 const toArray = (a: any) => Array.isArray(a) ? a : [a]
-module.exports = function parseKal(parsedYaml: {[k: string]: any}) : Bundle {
+export function parseKal(parsedYaml: {[k: string]: any}, options: ParseOptions = {internal: false}) : Bundle {
     return Object.keys(parsedYaml).map(key => {
         const rootKey = parseAtom(rootParser)(key) as ({type: keyof typeof valueParser})
         const value = parsedYaml[key]
-        if (!rootKey) {
+        if (!rootKey)
             throw new Error(`Unknown key: ${key}`)
-        }
 
-        return valueParser[rootKey.type](rootKey, value)
+        const p = valueParser[rootKey.type]
+        if (!p)
+            throw new Error(`No parser found for ${rootKey.type}`)
+        const v = p(rootKey, value)
+        if (!options.internal)
+            failOnInternals(v)
+
+        return v
     })
 }

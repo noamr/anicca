@@ -1,7 +1,7 @@
 /// </ reference "jest" />
 import nearley from 'nearley'
 const formulaGrammar = require('../formula.ne')
-import { Formula, FunctionFormula, PrimitiveFormula, ReferenceFormula } from '../types'
+import { Formula  } from '../../types'
 
 const parse = (str: string) : Formula => new nearley.Parser(formulaGrammar).feed(str).finish()[0]
 const removeTokens = (a: any): Formula => 

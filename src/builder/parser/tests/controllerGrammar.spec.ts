@@ -22,7 +22,7 @@ describe('controller grammar', () => {
         expect(parse('always')).toMatchSnapshot()
     })
     it('upon', () => {
-        expect(parse('upon entry')).toMatchSnapshot()
-        expect(parse('upon exit')).toMatchSnapshot()
+        expect(parse('entering')).toMatchSnapshot()
+        expect(parse('leaving')).toMatchSnapshot()
     })
 })

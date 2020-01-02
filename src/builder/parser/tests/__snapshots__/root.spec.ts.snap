@@ -16,18 +16,12 @@ Object {
 
 exports[`Root rules 3`] = `
 Object {
-  "type": "Main",
-}
-`;
-
-exports[`Root rules 4`] = `
-Object {
   "name": "abcSlot",
   "type": "Slot",
 }
 `;
 
-exports[`Root rules 5`] = `
+exports[`Root rules 4`] = `
 Object {
   "name": "bus",
   "type": "Bus",

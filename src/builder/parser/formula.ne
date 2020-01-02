@@ -16,6 +16,7 @@ const lexer = moo.compile({
   operator: /[!~+*/?|%\^&\-,.:]/,
   parentheses: /[(){}[\]]/,
   varname: /[A-Za-z$_][A-Za-z$_0-9]*/,
+  internalVar: /@[A-Za-z$_][A-Za-z$_0-9]*/,
   ws: /[ \t]+/,
   int: /-?[0-9]+/,
   hex: /0x[0-9A-Fa-f]+/,
@@ -49,9 +50,13 @@ const removeTokens = a =>
 @lexer lexer
 @builtin "whitespace.ne"
 
-rawFormula -> anyExpression                          {% ([id]) => JSON.parse(JSON.stringify(fixTokens(id))) %}
-formulaWithoutTokens -> rawFormula {% ([formula]) => removeTokens(formula) %}
+rawFormula -> formulaWithoutTokens {% id %}
+formulaWithoutTokens -> rawFormulaWithTokens {% ([formula]) => removeTokens(formula) %}
+rawFormulaWithTokens -> anyExpression                          {% ([id]) => JSON.parse(JSON.stringify(fixTokens(id))) %}
 
+ref -> 
+    _ %varname _             {% ([,token]) => ({$ref: token.value, token}) %}
+    | _ %internalVar _             {% ([,token]) => ({$ref: token.value, token}) %}
 
 stringLiteral -> 
     %singleQuoteStringLiteral {% ([{value}]) => value %}
@@ -91,15 +96,11 @@ Binary[L, Op, R] ->
 Unary[Op, R] ->
     RValue[$Op, $R] {% ([{token, args}]) => ({token, args}) %}
 
-qvar =>
-    %varname _ ":" _ qvar {% ([first,,,,next]) => ({...first, value: `${first}.${next}`}) %}
-    | %varname {% id %}
-
 # Follow the JS order of precendence 
 # https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
 ATOM ->
     _ primitive _             {% ([,$primitive]) => ({$primitive}) %}
-    | _ qvar _             {% ([,token]) => ({$ref: token.value, token}) %}
+    | ref {% id %}
 
 P -> _ "(" Next[anyExpression] ")" _ {% ([,,[d]]) => d %}
     | ATOM {% id %}

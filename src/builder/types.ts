@@ -1,6 +1,6 @@
 export type Primitive = string | number | boolean | null
 
-export type StatementType = "Const" | "View" | "Main" | "Let" | "Controller" | "Slot" | "Bus"
+export type StatementType = "Const" | "View" | "Main" | "Let" | "Controller" | "Slot" | "Bus" | "Table"
 
 export interface WithToken {
     $token?: {
@@ -13,13 +13,26 @@ export interface Statement extends WithToken {
     name?: string
     type: StatementType
 }
+
+export type PostProcessor = (bundle: Bundle) => Bundle
+
 export interface ConstStatement extends Statement {
     type: "Const"
     value: Primitive
 }
+
+export interface SlotStatement extends Statement {
+    type: "Slot"
+    formula: Formula
+}
 export interface LetStatement extends Statement {
     type: "Let"
-    value: Primitive
+    valueType: Primitive
+}
+
+export interface TableStatement extends Statement {
+    type: "Table"
+    valueType: Primitive
 }
 
 

@@ -117,17 +117,13 @@ Object {
 `;
 
 exports[`controller grammar upon 1`] = `
-Array [
-  Object {
-    "type": "OnEntry",
-  },
-]
+Object {
+  "type": "OnEntry",
+}
 `;
 
 exports[`controller grammar upon 2`] = `
-Array [
-  Object {
-    "type": "OnExit",
-  },
-]
+Object {
+  "type": "OnExit",
+}
 `;
