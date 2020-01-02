@@ -86,6 +86,11 @@ export interface DispatchAction extends DOMEventAction {
     target: string
     event: string
 }
+export interface GotoAction extends TransitionAction {
+    type: "Goto"
+    target: string
+}
+
 export interface RunScriptAction extends DOMEventAction {
     type: "RunScript"
     source: string
@@ -124,12 +129,13 @@ export interface ViewStatement extends Statement {
 }
 
 export interface Transition extends WithToken {
+    type: 'Transition'
     event?: string
     actions?: Array<TransitionAction>
 }
 
 export type TransitionAction = {
-    type: "Assign" | "Dispatch"
+    type: "Assign" | "Dispatch" | "Goto"
 }
 
 export type AssignTransitionAction = {
@@ -139,8 +145,9 @@ export type AssignTransitionAction = {
 }
 
 export type State = {
-    type: "State"
+    type: "State" | "Parallel" | "Final" | "History" | "Initial"
     name: string
+    deep?: boolean
     children: Array<State|Transition>
 }
 

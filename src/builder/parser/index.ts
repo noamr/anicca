@@ -28,22 +28,24 @@ const parseStateActions = (s: any) =>
     toArray(s).map(action =>parseAtom(controllerActionsParser)(action))
 
 const parseStateChildren = (s: any): any =>
-    Object.keys(s).map(key => {
+    s && Object.keys(s).map(key => {
         const value = s[key]
         const atom = parseAtom(controllerParser)(key)
         switch (atom.type) {
             case 'State':                
             case 'Parallel':
-            case 'Initial':
             case 'Final':
             case 'History':
                 return {...atom, children: parseStateChildren(value)}
-            case 'Transition':
+            case 'Initial':
+                return {...atom, default: parseStateActions(value)}
             case 'OnEntry':
             case 'OnExit':
                 return {...atom, actions: parseStateActions(value)}
+            case 'Transition':
+                return {...atom, actions: value && parseStateActions(value)}
             default:
-                throw new Error(`Unknown controller key: ${key}`)
+                throw new Error(`Unknown controller key: ${key}, ${JSON.stringify(atom)}`)
         }         
     })
 
@@ -144,7 +146,11 @@ function failOnInternals(b: any) {
     if (!b || typeof b !== 'object') {
         return
     }
-    if (b.$internal || (b.name && b.name.startsWith('@')))
+    if (b.$internal 
+        || (b.name && b.name.startsWith('@'))
+        || (b.$ref && b.$ref.startsWith('@'))
+        || (b.event && b.event.startsWith('@'))
+        )
         throw new Error(`Internal refs not allowed: ${JSON.stringify(b)}`)
 
     for (let key in b)

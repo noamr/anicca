@@ -14,6 +14,7 @@ historyHeader ->
 
 state ->
     "state" __ V {% ([,,name]) => ({type: 'State', name: name.value}) %}
+    | V {% ([name]) => ({type: 'State', name: name.value}) %}
     | "parallel" __ V {% ([,,name]) => ({type: 'Parallel', name: name.value}) %}
     | "final" __ V {% ([,,name]) => ({type: 'Final', name: name.value}) %}
     | "initial" {% () => ({type: 'Initial'}) %}

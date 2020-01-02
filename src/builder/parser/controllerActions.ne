@@ -9,14 +9,14 @@ controllerAction ->
 formula -> formulaWithoutTokens {% id %}
 
 goto ->
-    "goto" __ %varname {% ([,,target]) => ({type: 'Goto', target: target.value}) %}    
+    "goto" __ V {% ([,,target]) => ({type: 'Goto', target: target.value}) %}    
 
 dispatchExternal ->
-    "dispatch" __ %varname __ "to" __ %varname {% ([,,event,,,,target]) => ({type: 'Dispatch', event: event.value, target: target.value}) %}
+    "dispatch" __ V __ "to" __ V {% ([,,event,,,,target]) => ({type: 'Dispatch', event: event.value, target: target.value}) %}
 
 dispatch ->
     dispatchExternal {% id %}
-    | "dispatch" __ %varname {% ([,,event]) => ({type: 'Raise', event: event.value}) %}
+    | "dispatch" __ V {% ([,,event]) => ({type: 'Raise', event: event.value}) %}
 
 @{%
     const relAction = op => ([target,,,,src]) => 

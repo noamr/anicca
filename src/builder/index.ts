@@ -3,6 +3,7 @@ import {Bundle} from './types'
 import YAML from 'yaml'
 import { ParseOptions, parseKal } from './parser/index'
 import nearley from 'nearley'
+import { removeUndefined } from './postprocessors/postProcessHelpers'
 
 type BuildOptions = {
     inputPath: string
@@ -13,7 +14,7 @@ type BuildOptions = {
 
 
 export function parse(yamlString: string, opt: ParseOptions = {internal: false}) {
-    return parseKal(YAML.parse(yamlString), opt)
+    return removeUndefined(parseKal(YAML.parse(yamlString), opt))
 }
 
 export async function build({inputPath, jsOutputPath, rsOutputPath, wasmOutputPath}: BuildOptions) : Promise<void> {
