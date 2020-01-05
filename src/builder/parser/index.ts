@@ -1,4 +1,4 @@
-import { Bundle, LetStatement, ControllerStatement, SlotStatement, TableStatement, ViewStatement, ViewDeclaration, DOMEventDeclaration, BindDeclaration, DOMEventAction, DispatchAction, RunScriptAction } from '../types'
+import { Bundle, LetStatement, ControllerStatement, SlotStatement, TableStatement, ViewStatement, ViewDeclaration, DOMEventDeclaration, BindDeclaration, DOMEventAction, DispatchAction, RunScriptAction, TransitionAction, GotoAction } from '../types'
 import {execSync} from 'child_process'
 import { Parser, Grammar} from 'nearley'
 import {resolve} from 'path'
@@ -15,6 +15,7 @@ const controllerParser = buildParser('./controller.ne')
 const controllerActionsParser = buildParser('./controllerActions.ne')
 const viewRulesParser = buildParser('./viewRules.ne')
 const domEventActionParser = buildParser('./eventActions.ne')
+const toArray = (a: any) => Array.isArray(a) ? a : [a]
 const parseAtom = (p: Parser) => (s: string) => {
     const before = p.save()
     p.feed(s)
@@ -24,9 +25,25 @@ const parseAtom = (p: Parser) => (s: string) => {
     return r
 }
 
-const parseStateActions = (s: any) =>
-    toArray(s).map(action =>parseAtom(controllerActionsParser)(action))
+const parseStateActions = (s: any): TransitionAction[] =>
+    toArray(s).map((action: any) =>parseAtom(controllerActionsParser)(action))
 
+const parseDefaults = (actions: TransitionAction[]) => ({
+    defaultTargets: actions.filter(a => a.type === 'Goto').map(a => (a as GotoAction).target),
+    defaultActions: actions.filter(a => a.type !== 'Goto')
+})
+
+const withDefaults = (children: any[]) => {
+    if (!children || !children.length)
+        return {}
+
+    const initial = children.find(s => s.type === 'Initial')
+    if (!initial)
+        return {children, default: children[0].name}
+    return {children: children.filter(c => c != initial), 
+        ...parseDefaults(initial.default)}
+        
+}
 const parseStateChildren = (s: any): any =>
     s && Object.keys(s).map(key => {
         const value = s[key]
@@ -36,7 +53,7 @@ const parseStateChildren = (s: any): any =>
             case 'Parallel':
             case 'Final':
             case 'History':
-                return {...atom, children: parseStateChildren(value)}
+                return {...atom, ...withDefaults(parseStateChildren(value))}
             case 'Initial':
                 return {...atom, default: parseStateActions(value)}
             case 'OnEntry':
@@ -157,7 +174,6 @@ function failOnInternals(b: any) {
         failOnInternals(b[key])
 }
 
-const toArray = (a: any) => Array.isArray(a) ? a : [a]
 export function parseKal(parsedYaml: {[k: string]: any}, options: ParseOptions = {internal: false}) : Bundle {
     return Object.keys(parsedYaml).map(key => {
         const rootKey = parseAtom(rootParser)(key) as ({type: keyof typeof valueParser})

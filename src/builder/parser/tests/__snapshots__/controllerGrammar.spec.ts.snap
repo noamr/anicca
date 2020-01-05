@@ -112,6 +112,9 @@ Object {
 
 exports[`controller grammar transition 4`] = `
 Object {
+  "condition": Object {
+    "$primitive": true,
+  },
   "type": "Transition",
 }
 `;

@@ -19,7 +19,7 @@ describe('controller grammar', () => {
         expect(parse('on someEvent')).toMatchSnapshot()
         expect(parse('when someCondition + (a - 1) * grumpy()')).toMatchSnapshot()
         expect(parse('on someEvent when a == 1')).toMatchSnapshot()
-        expect(parse('always')).toMatchSnapshot()
+        expect(parse('when true')).toMatchSnapshot()
     })
     it('upon', () => {
         expect(parse('entering')).toMatchSnapshot()

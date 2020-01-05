@@ -13,7 +13,7 @@ type BuildOptions = {
 }
 
 
-export function parse(yamlString: string, opt: ParseOptions = {internal: false}) {
+export function parse(yamlString: string, opt: ParseOptions = {internal: false}): Bundle {
     return removeUndefined(parseKal(YAML.parse(yamlString), opt))
 }
 

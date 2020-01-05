@@ -3,6 +3,7 @@ const moo = require("moo")
 const lexer = moo.compile({
   singleQuoteStringLiteral:  {match: /'(?:\\['\\]|[^\n'\\])*'/}, 
   doubleQuoteStringLiteral:  {match: /"(?:\\["\\]|[^\n"\\])*"/},
+  booleanPrimitive: /true|false/,
   assigns: /[=+*/?|%^&\-]?=/,
   pipeline: /\|\>/,
   nullishCoalescing: /\?\?/,
@@ -70,12 +71,12 @@ type -> "string" {%id %}
         | "f32" {%id %}
 number -> %float  {% ([a]) => parseFloat(a) %}
         | %int {% ([a]) => parseInt(a) %}
-boolean -> "true" {%id %} | "false" {%id %}
+boolean -> %booleanPrimitive {% ([{value}]) => value %}
 nil -> "null" {%id %}
 primitive -> 
     number {% ([n]) => +n %}
     | stringLiteral {% ([s]) => eval(s) %}
-    | boolean {%id %}
+    | boolean {% ([b]) =>  b === 'true' %}
     | nil {%id %}
 
 anyExpression -> 

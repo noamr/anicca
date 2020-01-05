@@ -1,8 +1,8 @@
 @include "./formula.ne"
 
 conrtollerAtom ->
-  state {% id %}
-  | transition {% id %}
+  transition {% id %}
+  | state {% id %}
   | onEntry {% id %}
   | onExit {% id %}
 
@@ -26,13 +26,9 @@ trigger ->
 condition ->
     "when" __ formulaWithoutTokens {% ([,,condition]) => ({condition}) %}
 
-always ->
-    "always" {% () => ({}) %}
-
 transitionHeader ->
     trigger {% id %}
     | condition {% id %}
-    | always {% id %}
     | trigger __ condition {% ([t,,c]) => ({...t, ...c}) %}
 
 transition ->
@@ -43,3 +39,4 @@ onEntry ->
 
 onExit ->
     "leaving" {% () => ({type: 'OnExit'}) %}
+

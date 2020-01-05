@@ -18,6 +18,12 @@ Object {
 }
 `;
 
+exports[`formulas constant true 1`] = `
+Object {
+  "$primitive": true,
+}
+`;
+
 exports[`formulas constant zero 1`] = `
 Object {
   "$primitive": 0,

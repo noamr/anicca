@@ -28,6 +28,9 @@ describe('formulas', () => {
         it('zero', () => {
             expect(parse('0')).toMatchSnapshot()
         })
+        it('true', () => {
+            expect(parse('true')).toMatchSnapshot()
+        })
     })
     describe('single', () => {
         it('plus', () => {

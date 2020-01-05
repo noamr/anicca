@@ -20,7 +20,7 @@ describe('post-processors', () => {
         }))
     })
 
-    describe('controllers', () => {
+    describe.skip('controllers', () => {
         it('combine controllers', () => {
             expect(combineControllers(parse(`
             controller a:
@@ -54,40 +54,6 @@ describe('post-processors', () => {
                                             goto b_s2
                                     b_s2:
             `, {internal: true}))
-            it('atomize transitions', () => {
-                expect(flatten(parse(`
-                controller myController:
-                    state root:
-                        state a:
-                            exiting:
-                                value0 /= 2
-                            initial:
-                                goto a1
-                            a1:
-                                on e1:
-                                    goto b
-                        state b:
-                            entering:
-                                value *= 3
-                            initial:
-                                - goto b1
-                                - value1 = 1
-                            b1:
-                                initial:
-                                    goto b1a
-                                b1a:                                    
-                                b1b:
-0               `))).toEqual(parse(`
-                    state root:
-                        a1:
-                            on e1:
-                                - goto b1a
-                                - value0 /= 2
-                                - value1 = 1
-                        b1a:
-                        b1b:
-                `, {internal: true}))
-            
-        })
     })
+})
 })

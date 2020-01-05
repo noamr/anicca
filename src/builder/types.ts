@@ -1,6 +1,6 @@
 export type Primitive = string | number | boolean | null
 
-export type StatementType = "Const" | "View" | "Main" | "Let" | "Controller" | "Slot" | "Bus" | "Table"
+export type StatementType = "Const" | "View" | "Main" | "Let" | "Controller" | "Slot" | "Bus" | "Table" | "FlatController"
 
 export interface WithToken {
     $token?: {
@@ -118,6 +118,7 @@ export interface ControllerStatement extends Statement {
     rootState: State
 }
 
+
 export type Statechart = {
     root: State
 }
@@ -138,7 +139,6 @@ export interface Transition extends WithToken {
 export type TransitionAction = {
     type: "Assign" | "Dispatch" | "Goto"
 }
-
 export type AssignTransitionAction = {
     type: "Assign"
     source: string
