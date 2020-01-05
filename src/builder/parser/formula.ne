@@ -16,7 +16,7 @@ const lexer = moo.compile({
   operator: /[!~+*/?|%\^&\-,.:]/,
   parentheses: /[(){}[\]]/,
   varname: /[A-Za-z$_][A-Za-z$_0-9]*/,
-  internalVar: /@[A-Za-z$_][A-Za-z$_0-9]*/,
+  internalVar: /@[A-Za-z$_@][A-Za-z$_0-9@]*/,
   ws: /[ \t]+/,
   int: /-?[0-9]+/,
   hex: /0x[0-9A-Fa-f]+/,

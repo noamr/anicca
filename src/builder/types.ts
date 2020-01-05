@@ -131,6 +131,7 @@ export interface ViewStatement extends Statement {
 export interface Transition extends WithToken {
     type: 'Transition'
     event?: string
+    condition?: Formula
     actions?: Array<TransitionAction>
 }
 
@@ -148,6 +149,10 @@ export type State = {
     type: "State" | "Parallel" | "Final" | "History" | "Initial"
     name: string
     deep?: boolean
+    defaultTargets?: string[]
+    defaultActions?: TransitionAction[]
+    onEntry?: TransitionAction[]
+    onExit?: TransitionAction[]
     children: Array<State|Transition>
 }
 
