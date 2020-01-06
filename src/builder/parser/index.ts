@@ -1,12 +1,12 @@
-import { Bundle, LetStatement, ControllerStatement, SlotStatement, TableStatement, ViewStatement, ViewDeclaration, DOMEventDeclaration, BindDeclaration, DOMEventAction, DispatchAction, RunScriptAction, TransitionAction, GotoAction } from '../types'
+import { Bundle, LetStatement, ControllerStatement, SlotStatement, TableStatement, ViewStatement, ViewDeclaration, DOMEventDeclaration, BindDeclaration, DOMEventAction, DispatchAction, RunScriptAction, TransitionAction, GotoAction, Formula } from '../types'
 import {execSync} from 'child_process'
 import { Parser, Grammar} from 'nearley'
 import {resolve} from 'path'
 
-function buildParser(filename: string): Parser {
+function buildParser(filename: string): () => Parser {
     const module = {exports: {}} as {exports: Grammar | {}}
     eval(execSync(`nearleyc ${resolve(__dirname, filename)}`).toString('utf8'))
-    return new Parser(module.exports as Grammar)
+    return () => new Parser(module.exports as Grammar)
 }
 
 const rootParser = buildParser('./root.ne')
@@ -16,12 +16,11 @@ const controllerActionsParser = buildParser('./controllerActions.ne')
 const viewRulesParser = buildParser('./viewRules.ne')
 const domEventActionParser = buildParser('./eventActions.ne')
 const toArray = (a: any) => Array.isArray(a) ? a : [a]
-const parseAtom = (p: Parser) => (s: string) => {
-    const before = p.save()
+const parseAtom = (b: () => Parser) => (s: string) => {
+    const p = b()
     p.feed(s)
-    const r = p.results[0]
     p.finish()
-    p.restore(before)
+    const r = p.results[0]
     return r
 }
 
@@ -83,6 +82,10 @@ const parseDOMEventAction = (action: any, value: any): DOMEventAction => {
     }    
 }
 
+export function parseFormula(str: string): Formula {
+    return parseAtom(formulaParser)(`(${str})`) as Formula
+}
+
 const mapViewDeclaration = (key: any, value: any): ViewDeclaration => {
     const action = parseAtom(viewRulesParser)(key)
     switch (action.type) {
@@ -95,28 +98,28 @@ const mapViewDeclaration = (key: any, value: any): ViewDeclaration => {
         case 'BindAttribute':
             return {
                 type: 'Bind',
-                src: parseAtom(formulaParser)(value),
+                src: parseFormula(value),
                 target: key.attribute,
                 targetType: "attribute"
             } as BindDeclaration
         case 'BindData':
             return {
                 type: 'Bind',
-                src: parseAtom(formulaParser)(value),
+                src: parseFormula(value),
                 target: key.attribute,
                 targetType: "data"
             } as BindDeclaration
         case 'BindStyle':
             return {
                 type: 'Bind',
-                src: parseAtom(formulaParser)(value),
+                src: parseFormula(value),
                 target: key.style,
                 targetType: "style"
             } as BindDeclaration
         case 'BindContent':
             return {
                 type: 'Bind',
-                src: parseAtom(formulaParser)(value),
+                src: parseFormula(value),
                 targetType: "content"
             } as BindDeclaration
         default:

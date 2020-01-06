@@ -1,9 +1,10 @@
-import { Formula, Statement, Bundle } from '../types'
+import { Formula, Statement, Bundle, PrimitiveFormula, FormulaBuilder } from '../types'
+export const P = ($primitive: any) => ({$primitive}) as PrimitiveFormula
 export const F = new Proxy({}, {
-    get: (t, op) => (...args: any[]) => ({
+    get: (t, op: string) => (...args: any[]) => ({
         op, args: args.map(a => typeof a === 'object' ? a : {$primitive: a})
     })
-}) as {[any: string]: (...args: any[]) => Formula}
+}) as FormulaBuilder
 
 export const S = new Proxy({}, {
     get: (t, type) => (name: string, stuff: any) => ({

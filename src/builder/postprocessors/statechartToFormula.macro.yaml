@@ -1,0 +1,73 @@
+input:
+    - id
+    - idle
+    - initialAssignments
+    - effectiveMap
+    - assignmentMap
+    - phases
+    - modi
+    - inbox
+
+output:
+    assignments
+
+formulas:
+    INIT: 0
+    AUTO: 1
+    INTERNAL: 2
+    EXTERNAL: 3
+    IDLE: 4
+
+    currentPhase: |
+        phases[id]
+
+    modus: |
+        modi[id]
+
+    internalEvent: |
+        inbox |> filter(value().internal && value().target == id) |> head
+    externalEvent: |
+        inbox |> filter(!value().internal && value().target == id) |> head
+
+    currentEvent: |
+        currentPhase == INIT ? null :
+        currentPhase == AUTO ? {event: null} :
+        currentPhase == INTERNAL ? inbox[internalEvent] :
+        currentPhase == EXTERNAL ? inbox[externalEvent] :
+        null
+
+    currentEventType: |
+        currentEvent ?? currentEvent.type
+
+    currentEventPayload: |
+        currentEvent ?? currentEvent.payload
+        
+    dequeue: inbox |> without(currentEvent)
+
+    baseAssignments: |
+        currentPhase == INIT ? initialAssignments :
+        currentPhase == IDLE ? [] :
+        assignmentMap[modus][currentEventType]
+
+    effective: |
+        effectiveMap[modus][currentEventType]
+    
+    phaseMap: |
+            [
+                [AUTO, AUTO],
+                [AUTO, INTERNAL],
+                [AUTO, EXTERNAL],
+                [AUTO, IDLE],
+            ]
+
+    nextPhase: |
+            effective ? AUTO : 
+            (currentPhase == AUTO ? INTERNAL : (
+                currentPhase == INTERNAL ? EXTERNAL: (currentPhase == EXTERNAL ? IDLE: AUTO)
+            ))
+
+    assignments: |
+        baseAssignments
+            |> push([currentPhase, nextPhase])
+            |> push([idle, currentPhase == IDLE])
+            |> push([inbox, dequeue])

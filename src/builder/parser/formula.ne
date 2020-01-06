@@ -1,9 +1,9 @@
 @{%
 const moo = require("moo")
 const lexer = moo.compile({
+  keywords: ['null', 'true', 'false'],
   singleQuoteStringLiteral:  {match: /'(?:\\['\\]|[^\n'\\])*'/}, 
   doubleQuoteStringLiteral:  {match: /"(?:\\["\\]|[^\n"\\])*"/},
-  booleanPrimitive: /true|false/,
   assigns: /[=+*/?|%^&\-]?=/,
   pipeline: /\|\>/,
   nullishCoalescing: /\?\?/,
@@ -33,7 +33,10 @@ const extractToken = t =>
         extractToken(t[0]) :
         t.col ? {col: t.col, line: t.line} : undefined
 
-function fixTokens({op, args, token, ...rest}) {
+function fixTokens(f) {
+    if (!f)
+        return f
+    const {op, args, token, ...rest} = f
     return ({op, $token: token ? extractToken(token): undefined, args: args ? args.map(fixTokens).flat() : undefined, ...rest})
 }
 
@@ -51,7 +54,9 @@ const removeTokens = a =>
 @lexer lexer
 @builtin "whitespace.ne"
 
-rawFormula -> formulaWithoutTokens {% id %}
+rawFormula -> 
+    formulaWithoutTokens {% id %}
+
 formulaWithoutTokens -> rawFormulaWithTokens {% ([formula]) => removeTokens(formula) %}
 rawFormulaWithTokens -> anyExpression                          {% ([id]) => JSON.parse(JSON.stringify(fixTokens(id))) %}
 
@@ -71,13 +76,12 @@ type -> "string" {%id %}
         | "f32" {%id %}
 number -> %float  {% ([a]) => parseFloat(a) %}
         | %int {% ([a]) => parseInt(a) %}
-boolean -> %booleanPrimitive {% ([{value}]) => value %}
-nil -> "null" {%id %}
+boolean -> "true" | "false" {% ([{value}]) => value %}
+
 primitive -> 
-    number {% ([n]) => +n %}
+    number {% ([n]) => eval(n) %}
     | stringLiteral {% ([s]) => eval(s) %}
-    | boolean {% ([b]) =>  b === 'true' %}
-    | nil {%id %}
+    | %keywords {% ([k]) => eval(k.value) %}
 
 anyExpression -> 
     _ operand _ {% ([,e]) => e %}
@@ -90,9 +94,9 @@ RValue[Op, Value] ->
 
 Ternary[A, Op1, B, Op2, C] ->
     Binary[$A, $Op1, Binary[$B, $Op2, $C]]
-        {% ([{token, args}]) => {
-            return ({token, args: [...args[0], ...args[1].args.map(([a]) => a)]})
-         } %}
+        {% ([{token, args}]) =>
+                ({token, args: [...args[0], ...args[1].args.map(([a]) => a)]})
+         %}
 
 Binary[L, Op, R] ->
     $L RValue[$Op, $R] {% ([[l], {token, args}]) => ({token, args: [l, ...args]}) %}
@@ -223,7 +227,8 @@ objectConstructor ->
     _ "{" _ objectEntries _ "}" _ {% ([,token,,args]) => ({token, op: 'object', args}) %}
 
 partialFunctionCall ->
-    _ %varname _ "(" _ partialArgs _ ")" {%
+    _ %varname _ {% ([,op]) => (({token, input}) => ({op: op.value, token, args: [input]})) %}
+    | _ %varname _ "(" _ partialArgs _ ")" {%
         ([,op, , , , args], location, reject) => {
             const index = args.findIndex(a => a === partialSymbol)
             return ({token, input}) => {

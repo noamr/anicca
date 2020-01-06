@@ -30,7 +30,8 @@ const sort = <T>(a: Iterable<T>, p: (a: T, b: T) => number) => a ? Array.from(a)
 
 
 export type FlatStatechart = {
-    junctures: Map<Juncture<string>|null, StepResults<string>[]>,
+    junctures: Map<Juncture<string>|null, StepResults<string>[]>
+    events: string[]
     debugInfo?: {}
 }
 
@@ -102,7 +103,9 @@ export default function flattenState(rootState: State) : FlatStatechart {
         [null, ...allEvents].forEach(event => resolveJuncture({event, modus}))
 
     resolveJuncture(null)    
-    return {junctures: new Map(Object.values(junctures).map(({juncture, results}) => 
+    return {
+        events: [...allEvents],
+        junctures: new Map(Object.values(junctures).map(({juncture, results}) => 
         ([juncture ? {event: juncture.event, modus: hashModus(juncture.modus)}: null, results.map(({condition, execution, modus}) => ({
             condition, execution, modus: hashModus(modus)
         }))] as [Juncture<string>|null, StepResults<string>[]]))) 

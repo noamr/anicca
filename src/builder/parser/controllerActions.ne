@@ -16,7 +16,7 @@ dispatchExternal ->
 
 dispatch ->
     dispatchExternal {% id %}
-    | "dispatch" __ V {% ([,,event]) => ({type: 'Raise', event: event.value}) %}
+    | "dispatch" __ V {% ([,,event]) => ({type: 'Dispatch', event: event.value}) %}
 
 @{%
     const relAction = op => ([target,,,,src]) => 

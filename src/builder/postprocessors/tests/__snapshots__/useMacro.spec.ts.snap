@@ -1,0 +1,36 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`macros basic 1`] = `
+Object {
+  "args": Array [
+    Object {
+      "args": Array [
+        Object {
+          "args": Array [
+            Object {
+              "args": Array [
+                Object {
+                  "$primitive": 3,
+                },
+              ],
+              "op": "ceil",
+            },
+            Object {
+              "$primitive": 5.5,
+            },
+          ],
+          "op": "pow",
+        },
+        Object {
+          "$primitive": 123,
+        },
+      ],
+      "op": "mult",
+    },
+    Object {
+      "$ref": "bla",
+    },
+  ],
+  "op": "add",
+}
+`;
