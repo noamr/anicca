@@ -169,7 +169,7 @@ type ArrayType = NT<'array'>
 type NullType = NT<'null'>
 type MapType<K,V> = NT<[K, V]>
 type Nullable<T> = NullType | T
-type NativeType = {$T: any}
+export type NativeType = {$T: any}
 
 type JSType<T extends NativeType> =
     T extends Pair<infer K, infer V> ? JSPairTypeFor<K, V> :
@@ -271,12 +271,9 @@ interface SimpleFunctions {
     formatNumber(n: number, r: number): string
     now(): number
     uid(): number
-
-    index(): number
     source(): Map<any, any>
     toLowerCase(s: string): string
     toUpperCase(s: string): string
-    concatStrings(...args: string[]): string
     startsWith(s: string, a: string): boolean
     endsWith(s: string, a: string): boolean
     stringIncludes(s: string, a: string): boolean
@@ -320,7 +317,8 @@ export type FormulaBuilder = {
     first<P>(s: P): ResolveType<P> extends ResolveType<[infer A, any]> ? toFormula<A> : never
     second<P>(s: P): ResolveType<P> extends ResolveType<[any, infer B]> ? toFormula<B> : never
     map<M, P>(input: M, predicate: P): toFormula<P> extends toFormula<[infer K2, infer V2]> ? toFormula<Map<K2, V2>> : never
-    reduce<M, P>(map: M, predicate: P): toFormula<P> extends MapEntryType<M> ? toFormula<MapEntryType<M>> : never
+    reduce<M, P>(map: M, predicate: P): 
+        ResolveType<P> extends [infer R, boolean] ? toFormula<R> : never
     head<M>(a: M): toFormula<KeyType<M>>
     findFirst<T, P>(t: T, p: P): IsMapType<T> extends true ? toFormula<KeyType<T>> : never
     concat<A, B>(a: A, b: B): toFormula<Array<ValueType<A> | ValueType<B>>>
@@ -336,13 +334,28 @@ export type FormulaBuilder = {
     isnil<A>(a: A): toFormula<A extends null ? true : boolean>
     cond<Condition, Consequent, Alternate>(c: Condition, t: Consequent, a: Alternate): 
         toFormula<Consequent | Alternate>
-    cell<T, K>(table: T, key: K): Pair<T, toFormula<K>>
     put<T, K, V>(table: T, key: K, value: V): toFormula<AssignmentDirective<K, V>>
     delete<T, K>(table: T, key: K): toFormula<AssignmentDirective<K, any>>
     replace(): toFormula<AssignmentDirective>
-
+    merge(): toFormula<AssignmentDirective>
     filter<T, P>(t: T, p: P): IsMapType<T> extends true ? toFormula<T> : never
-    without<T, P>(t: T, p: P): ResolveType<P> extends KeyType<T>|null ? toFormula<T> : never
 }
 
 export type Bundle = Array<Statement>
+
+
+export type RawFormula = {
+    op: string
+    args: number[]
+} | {value: any}
+
+
+export interface StoreSpec {
+    roots: {
+        [key in 'inbox' | 'outbox' | 'idle' | 'staging']: number
+    }
+
+    slots: RawFormula[]
+    tables?: NativeType[]
+    debugInfo?: any[]
+}

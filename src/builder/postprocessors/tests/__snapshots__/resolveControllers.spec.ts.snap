@@ -1,0 +1,70 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`flatten statechart basic 1`] = `
+Object {
+  "events": Array [
+    "e",
+  ],
+  "junctures": Map {
+    null => Array [
+      Object {
+        "condition": Object {
+          "$primitive": true,
+        },
+        "execution": Array [],
+        "modus": "root,a;",
+      },
+    ],
+    Object {
+      "event": null,
+      "modus": "root,a;",
+    } => Array [
+      Object {
+        "condition": Object {
+          "args": Array [],
+          "op": "and",
+        },
+        "execution": Array [],
+        "modus": "root,a;",
+      },
+    ],
+    Object {
+      "event": "e",
+      "modus": "root,a;",
+    } => Array [
+      Object {
+        "condition": Object {
+          "$primitive": true,
+        },
+        "execution": Array [],
+        "modus": "root,b;",
+      },
+    ],
+    Object {
+      "event": null,
+      "modus": "root,b;",
+    } => Array [
+      Object {
+        "condition": Object {
+          "args": Array [],
+          "op": "and",
+        },
+        "execution": Array [],
+        "modus": "root,b;",
+      },
+    ],
+    Object {
+      "event": "e",
+      "modus": "root,b;",
+    } => Array [
+      Object {
+        "condition": Object {
+          "$ref": "condition",
+        },
+        "execution": Array [],
+        "modus": "root,a;",
+      },
+    ],
+  },
+}
+`;
