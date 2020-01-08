@@ -1,4 +1,5 @@
 export type Primitive = string | number | boolean | null
+import flattenState from './postprocessors/flattenStatechart';
 
 export type StatementType = "Const" | "View" | "Main" | "Let" | "Controller" | "Slot" | "Bus" | "Table" | "FlatController"
 
@@ -144,7 +145,8 @@ export type TransitionAction = {
 export type AssignTransitionAction = {
     type: "Assign"
     source: Formula
-    target: ReferenceFormula
+    method?: 'post' | 'put' | 'delete' 
+    target: Formula
 }
 
 export type State = {
@@ -185,7 +187,7 @@ type JSToNativeType<T> =
     T extends null ? {$: NullType} : 
     T extends boolean ? {$: BoolType} :
     T extends Map<infer K, infer V> ? NativeMapTypeFor<K, V>:
-    T extends {[key: string]: any} ? NativeMapTypeFor<string, T[keyof T]> :
+    T extends {[key: string]: infer V} ? NativeMapTypeFor<string, T[keyof T]> :
     T extends Array<any> ? NativeMapTypeFor<keyof T, T[keyof T]>:
     never
 
@@ -193,7 +195,7 @@ type JSToNativeType<T> =
         $: Map<JSType<K>, JSType<V>>
     }
 interface JSPairTypeFor<K, V> {
-    $: Pair<toJSType<K>, toJSType<V>>
+    $: [toJSType<K>, toJSType<V>]
 }
         
 interface NativeMapTypeFor<K, V> {
@@ -208,14 +210,11 @@ type ArgumentTypes<F extends Function> = F extends (...args: (infer A)[]) => any
 type ReturnType<F extends Function> = F extends (...args: (infer A)[]) => infer R ? R : never;
 
 export interface TypedFormula<T> extends Formula {
-    $T?: T
+    $T: toJSType<T>
 }
 
-type toJSType<T> = T extends NativeType 
-    ? JSType<T>["$"] :
-    T extends {[key: string]: infer ValueType} ? Map<keyof T, ValueType> :
-    T extends Array<infer ValueType> ? Map<keyof T, ValueType> :
-    T
+type toJSType<T> = T extends NativeType ? JSType<T>["$"] : T
+
 type toNativeType<T> = T extends NativeType ? T : JSToNativeType<T>["$"]
 
 
@@ -271,6 +270,7 @@ interface SimpleFunctions {
     parseFloat(a: string, r: number): number
     formatNumber(n: number, r: number): string
     now(): number
+    uid(): number
 
     index(): number
     source(): Map<any, any>
@@ -280,36 +280,53 @@ interface SimpleFunctions {
     startsWith(s: string, a: string): boolean
     endsWith(s: string, a: string): boolean
     stringIncludes(s: string, a: string): boolean
+    noop(): null
 }
 
+export function tuple<A, B>(a: A, b: B) {
+    return [a, b] as [A, B]
+}
 
-type toArgType<T> = ResolveType<T> | toFormula<T> | toNativeType<T>
-
-type toFormula<T> = T extends TypedFormula<any> ? T : TypedFormula<toJSType<T>>
-type ValueTypeOf<T> = 
+type IsTuple<T> = T extends Array<any> ? number extends T["length"] ? false : true : false
+export type toArgType<T> = T | toJSType<T> | toFormula<T>
+export type toFormula<T> = 
+    T extends TypedFormula<infer R> ? T : T extends {$T: infer R} ? TypedFormula<R> : TypedFormula<toJSType<T>>
+type ValueTypeOf<T, K = any> = 
     T extends Map<any, infer V> ? V :
+    T extends {[key: number]: infer V} ? V :
     T extends {[key: string]: infer V} ? V :
+    IsTuple<T> extends true ? never :
     T extends Array<infer V> ? V :
     never
 
 type KeyTypeOf<T> = 
     T extends Map<infer K, any> ? K :
+    T extends {[key: number]: infer V} ? number :
+    T extends {[key: string]: infer V} ? string :
     keyof T
 
 type KeyType<T> = KeyTypeOf<ResolveType<T>>
-type ValueType<T> = ValueTypeOf<ResolveType<T>>
-type ResolveType<P> = P extends TypedFormula<infer T> ? toJSType<T> : toJSType<P>
+type ValueType<T, K = any> = ResolveType<ValueTypeOf<ResolveType<T>, K>>
+type ResolveType<P> = P extends {$T: infer T} ? toJSType<T> : toJSType<P>
 type IsMapType<T> = toJSType<T> extends Map<any, any> ? true : never
+
+export type AssignmentDirective<K = any, V = any> = [number, ResolveType<K>, ResolveType<V>]
+
 export type FormulaBuilder = {
     [k in keyof SimpleFunctions]: (...args: toArgType<ArgumentTypes<SimpleFunctions[k]>>[])=> toFormula<ReturnType<SimpleFunctions[k]>>
 } & {
     entry<K, V>(k: K, v: V): toFormula<Pair<K, V>>
-    get<M, K>(s: M, k: K): toFormula<ValueType<M>>
-    map<M, P>(input: M, predicate: P): toFormula<P> extends Array<MapEntryType<infer M2>> ? toFormula<M2> : never
+    get<M, K>(s: M, k: K): toFormula<ValueType<M, K>>
+    first<P>(s: P): ResolveType<P> extends ResolveType<[infer A, any]> ? toFormula<A> : never
+    second<P>(s: P): ResolveType<P> extends ResolveType<[any, infer B]> ? toFormula<B> : never
+    map<M, P>(input: M, predicate: P): toFormula<P> extends toFormula<[infer K2, infer V2]> ? toFormula<Map<K2, V2>> : never
     reduce<M, P>(map: M, predicate: P): toFormula<P> extends MapEntryType<M> ? toFormula<MapEntryType<M>> : never
     head<M>(a: M): toFormula<KeyType<M>>
-    object<P>(...entries: P[]): P extends Pair<infer K, infer V> ? toFormula<Map<K, V>> : never
-    array<V>(...entries: V[]): toFormula<Map<number, V>>
+    findFirst<T, P>(t: T, p: P): IsMapType<T> extends true ? toFormula<KeyType<T>> : never
+    concat<A, B>(a: A, b: B): toFormula<Array<ValueType<A> | ValueType<B>>>
+    object<P>(...entries: P[]): P extends toArgType<Pair<infer K, infer V>> ? toFormula<Map<K, V>> : never
+    array<V>(...entries: V[]): toFormula<V[]>
+    pair<A, B>(a: A, b: B): toFormula<[ResolveType<A>, ResolveType<B>]>
     not<T>(o: any): toFormula<boolean>
     and<A>(...args: A[]): toFormula<A>
     or<A>(...args: A[]): toFormula<A>
@@ -317,8 +334,12 @@ export type FormulaBuilder = {
     value<T = any>(): toFormula<T>
     size<T>(m: T): toFormula<number>
     isnil<A>(a: A): toFormula<A extends null ? true : boolean>
-    cond<Condition, Consequent, Alternate>(c: Condition, t: Consequent, a: Alternate): toFormula<Consequent|Alternate>
-    constObject<O>(obj: O): toFormula<MapType<keyof O, O[keyof O]>>
+    cond<Condition, Consequent, Alternate>(c: Condition, t: Consequent, a: Alternate): 
+        toFormula<Consequent | Alternate>
+    cell<T, K>(table: T, key: K): Pair<T, toFormula<K>>
+    put<T, K, V>(table: T, key: K, value: V): toFormula<AssignmentDirective<K, V>>
+    delete<T, K>(table: T, key: K): toFormula<AssignmentDirective<K, any>>
+    replace(): toFormula<AssignmentDirective>
 
     filter<T, P>(t: T, p: P): IsMapType<T> extends true ? toFormula<T> : never
     without<T, P>(t: T, p: P): ResolveType<P> extends KeyType<T>|null ? toFormula<T> : never

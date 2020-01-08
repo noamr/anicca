@@ -1,73 +1,49 @@
 input:
     - id
-    - idle
-    - initialAssignments
     - effectiveMap
     - assignmentMap
     - phases
     - modi
     - inbox
+    - TARGET_BITS
+    - INTERNAL_BITS
+    - MODUS_BITS
+    - INIT_PHASE
+    - AUTO_PHASE
+    - INTERNAL_PHASE
+    - EXTERNAL_PHASE
+    - IDLE_PHASE
 
 output:
     assignments
 
 formulas:
-    INIT: 0
-    AUTO: 1
-    INTERNAL: 2
-    EXTERNAL: 3
-    IDLE: 4
+    currentPhase: phases[id]
+    modus: modi[id]
 
-    currentPhase: |
-        phases[id]
-
-    modus: |
-        modi[id]
-
-    internalEvent: |
-        inbox |> filter(value().internal && value().target == id) |> head
-    externalEvent: |
-        inbox |> filter(!value().internal && value().target == id) |> head
+    currentEventKey: |
+        inbox
+        |> filter(
+            ((value()[0] & ((1 << INTERNAL_BITS) - 1)) >> TARGET_BITS == id) &&
+            ((value()[0] >> INTERNAL_BITS) == (currentPhase == INTERNAL_PHASE ? 1 : 0))
+        |> head
 
     currentEvent: |
-        currentPhase == INIT ? null :
-        currentPhase == AUTO ? {event: null} :
-        currentPhase == INTERNAL ? inbox[internalEvent] :
-        currentPhase == EXTERNAL ? inbox[externalEvent] :
-        null
+        currentPhase == AUTO_PHASE ? null : inbox[currentEventKey]
 
     currentEventType: |
-        currentEvent ?? currentEvent.type
+        currentEvent ? currentEvent[0] & ((1 << TARGET_BITS) - 1) : 0
 
-    currentEventPayload: |
-        currentEvent ?? currentEvent.payload
-        
-    dequeue: inbox |> without(currentEvent)
+    juncture: |
+        currentPhase == INIT_PHASE ? 0 : ((modus << MODUS_BITS) | currentEventType)
 
-    baseAssignments: |
-        currentPhase == INIT ? initialAssignments :
-        currentPhase == IDLE ? [] :
-        assignmentMap[modus][currentEventType]
-
-    effective: |
-        effectiveMap[modus][currentEventType]
-    
-    phaseMap: |
-            [
-                [AUTO, AUTO],
-                [AUTO, INTERNAL],
-                [AUTO, EXTERNAL],
-                [AUTO, IDLE],
-            ]
+    baseAssignments: assignmentMap[juncture]
+    effective: effectiveMap[juncture]
 
     nextPhase: |
-            effective ? AUTO : 
-            (currentPhase == AUTO ? INTERNAL : (
-                currentPhase == INTERNAL ? EXTERNAL: (currentPhase == EXTERNAL ? IDLE: AUTO)
-            ))
+            (effective || currentPhase == IDLE_PHASE) ? AUTO_PHASE : currentPhase + 1
 
     assignments: |
-        baseAssignments
-            |> push([currentPhase, nextPhase])
-            |> push([idle, currentPhase == IDLE])
-            |> push([inbox, dequeue])
+        concat(baseAssignments,
+            [put(phases, id, nextPhase),
+             delete(inbox, currentEventID)])

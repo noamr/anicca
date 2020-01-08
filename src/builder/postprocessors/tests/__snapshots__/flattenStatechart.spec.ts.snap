@@ -2,6 +2,9 @@
 
 exports[`flatten statechart basic 1`] = `
 Object {
+  "events": Array [
+    "e",
+  ],
   "junctures": Map {
     null => Array [
       Object {

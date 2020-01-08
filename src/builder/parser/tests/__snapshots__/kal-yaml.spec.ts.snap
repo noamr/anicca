@@ -26,10 +26,6 @@ Array [
                 "target": "myController",
                 "type": "Dispatch",
               },
-              Object {
-                "source": "e => e.preventDefault()",
-                "type": "RunScript",
-              },
             ],
             "eventType": "click",
             "type": "DOMEvent",
@@ -107,12 +103,7 @@ Object {
   "let value": "u32",
   "view myView": Object {
     "#increment": Object {
-      "on click": Array [
-        "dispatch increment to myController",
-        Object {
-          "run script": "e => e.preventDefault()",
-        },
-      ],
+      "on click": "dispatch increment to myController",
     },
     "#output": Object {
       "content": "value",

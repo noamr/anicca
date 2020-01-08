@@ -7,9 +7,8 @@ view myView:
         content: value
     '#increment':
         on click:
-        - dispatch increment to myController
-        - run script:
-            e => e.preventDefault()
+            dispatch increment to myController
+
 controller myController:
     state root:
         entering:
@@ -32,7 +31,7 @@ describe('kal yaml parsing', () => {
         expect(() => parseKal(parse(`
             let @internal: u32
         `))).toThrow()
-    })
+})
     it('should fail on internal in states', () => {
         expect(() => parseKal(parse(`
         controller myController:

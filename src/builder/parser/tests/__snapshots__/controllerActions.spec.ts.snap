@@ -10,7 +10,7 @@ Object {
 exports[`controllerActions actions 2`] = `
 Object {
   "event": "someEvent",
-  "type": "Raise",
+  "type": "Dispatch",
 }
 `;
 
