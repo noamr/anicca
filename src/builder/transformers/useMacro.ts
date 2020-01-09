@@ -1,6 +1,6 @@
 import YAML from 'yaml'
 import { Formula, ReferenceFormula, FunctionFormula } from '../types'
-import {F, S, R, fmap, removeUndefined} from './postProcessHelpers'
+import {F, S, R, removeUndefined} from './helpers'
 import * as _ from 'lodash'
 import { parseFormula } from '../parser/index';
 
@@ -9,7 +9,7 @@ interface RawMacro {
     output: string
     formulas: {[name: string]: string}
 }
-export default function useMacro(macroYaml: string, externalFormulas: {[key: string]: Formula}): Formula {
+export default function useMacro(macroYaml: string, externalFormulas: {[key: string]: any}): Formula {
     const raw = YAML.parse(macroYaml) as RawMacro
     const internalFormulas = _.mapValues(raw.formulas, parseFormula)
     const resolvedFormulas = {...externalFormulas}

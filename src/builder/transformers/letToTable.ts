@@ -1,8 +1,8 @@
 import { Bundle, LetStatement } from '../types'
-import {F, S, R, fmap} from './postProcessHelpers'
+import {F, S, R} from './helpers'
 
-export default function processLetToTable(bundle: Bundle) : Bundle {
-    return fmap(bundle, statement => {
+export default function transformLetToTable(bundle: Bundle) : Bundle {
+    return bundle.flatMap(statement => {
         if (statement.type === 'Let') {
             const tableName = `@let_${statement.name}`
             return [

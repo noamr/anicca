@@ -1,7 +1,6 @@
 export type Primitive = string | number | boolean | null
-import flattenState from './postprocessors/flattenStatechart';
 
-export type StatementType = "Const" | "View" | "Main" | "Let" | "Controller" | "Slot" | "Bus" | "Table" | "FlatController"
+export type StatementType = "Const" | "View" | "Main" | "Let" | "Controller" | "Slot" | "Bus" | "Table" 
 
 export interface WithToken {
     $token?: {

@@ -1,5 +1,5 @@
 import { Bundle, GotoAction, ControllerStatement, State, Transition, DispatchAction, TransitionAction, Formula, Statechart } from '../types'
-import {F, S, R, fmap, removeUndefined} from './postProcessHelpers'
+import {F, S, R, removeUndefined} from './helpers'
 import * as _ from 'lodash-es'
 
 export type Configuration = Set<State>
@@ -36,7 +36,7 @@ export type FlatStatechart = {
 }
 
 
-export default function flattenState(rootState: State) : FlatStatechart {
+export function flattenState(rootState: State) : FlatStatechart {
     const byName: {[name: string]: State} = {}
     const parentMap = new WeakMap<State, State|null>()
     const transitionSourceMap = new WeakMap<Transition, State>()

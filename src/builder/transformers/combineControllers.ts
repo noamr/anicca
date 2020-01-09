@@ -1,5 +1,5 @@
 import { Bundle, GotoAction, ControllerStatement, State, Transition, DispatchAction } from '../types'
-import {F, S, R, fmap, removeUndefined} from './postProcessHelpers'
+import {F, S, R, removeUndefined} from './helpers'
 
 export default function combineControllers(bundle: Bundle) : Bundle {
     const controllers: State[] = []
@@ -36,7 +36,7 @@ export default function combineControllers(bundle: Bundle) : Bundle {
         type: 'State',
         children: [qualifyStateOrTransition(controller.rootState, controller.name)]
     })
-    const withoutControllers = fmap(bundle, statement => {
+    const withoutControllers = bundle.flatMap(statement => {
         if (statement.type === 'Controller') {
             controllers.push(removeUndefined(qualify(statement as ControllerStatement)))
             return []

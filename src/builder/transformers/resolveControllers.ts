@@ -1,6 +1,5 @@
-import {F, P, S, R, fmap, removeUndefined} from './postProcessHelpers'
-import { FlatStatechart, Juncture, StepResults } from './flattenStatechart'
-import flattenState from './flattenStatechart'
+import {F, P, S, R, removeUndefined} from './helpers'
+import { FlatStatechart, Juncture, StepResults, flattenState } from './flattenStatechart'
 import { tuple, Statement, toFormula, TransitionAction, AssignTransitionAction, DispatchAction, Formula, ReferenceFormula, LetStatement, TypedRef, SlotStatement, FunctionFormula, Bundle, ControllerStatement, AssignmentDirective, TypedFormula } from '../types'
 import {keys, forEach, values, flatten, pickBy, map, assign, mapValues, filter} from 'lodash'
 import useMacro from './useMacro'

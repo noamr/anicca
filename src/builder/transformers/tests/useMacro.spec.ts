@@ -2,7 +2,7 @@ import useMacro from '../useMacro'
 import {parse} from '../../index'
 import { ControllerStatement, ReferenceFormula } from '../../types'
 import { FlatStatechart } from '../flattenStatechart'
-import {P, R, F} from '../postProcessHelpers'
+import {F} from '../helpers'
 
 describe('macros', () => {
     it('basic', () => {
@@ -20,9 +20,9 @@ describe('macros', () => {
             result: |
                 internal * a + b
         `, {
-            a: P(123),
-            b: {$ref: 'bla'} as ReferenceFormula,
-            external: F.ceil(P(3))
+            a: {$primitive: 123},
+            b: {$ref: 'bla'},
+            external: F.ceil(3)
         })).toMatchSnapshot()
     })
 })

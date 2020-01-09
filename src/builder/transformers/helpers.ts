@@ -33,7 +33,4 @@ export const S = new Proxy({}, {
 
 export const R = ($ref: string) => ({$ref})
 
-export const fmap = (b: Bundle, pred: (s: Statement) => Statement[]) => 
-    b.map(pred).reduce((a: any, o: any) => [...a, ...o], [])
-
 export const removeUndefined = (a: any) => JSON.parse(JSON.stringify(a))
