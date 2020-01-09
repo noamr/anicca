@@ -1,10 +1,26 @@
-import { Bundle, LetStatement, ControllerStatement, SlotStatement, TableStatement, ViewStatement, ViewDeclaration, DOMEventDeclaration, BindDeclaration, DOMEventAction, DispatchAction, RunScriptAction, TransitionAction, GotoAction, Formula } from '../types'
 import {execSync} from 'child_process'
-import { Parser, Grammar} from 'nearley'
+import { Grammar, Parser} from 'nearley'
 import {resolve} from 'path'
+import {
+  BindDeclaration,
+  Bundle,
+  ControllerStatement,
+  DispatchAction,
+  DOMEventAction,
+  DOMEventDeclaration,
+  Formula,
+  GotoAction,
+  LetStatement,
+  SlotStatement,
+  TableStatement,
+  TransitionAction,
+  ViewDeclaration,
+  ViewStatement
+} from '../types'
 
 function buildParser(filename: string): () => Parser {
     const module = {exports: {}} as {exports: Grammar | {}}
+    // tslint:disable-next-line
     eval(execSync(`nearleyc ${resolve(__dirname, filename)}`).toString('utf8'))
     return () => new Parser(module.exports as Grammar)
 }
@@ -25,11 +41,11 @@ const parseAtom = (b: () => Parser) => (s: string) => {
 }
 
 const parseStateActions = (s: any): TransitionAction[] =>
-    toArray(s).map((action: any) =>parseAtom(controllerActionsParser)(action))
+    toArray(s).map((action: any) => parseAtom(controllerActionsParser)(action))
 
 const parseDefaults = (actions: TransitionAction[]) => ({
+    defaultActions: actions.filter(a => a.type !== 'Goto'),
     defaultTargets: actions.filter(a => a.type === 'Goto').map(a => (a as GotoAction).target),
-    defaultActions: actions.filter(a => a.type !== 'Goto')
 })
 
 const withDefaults = (children: any[]) => {
@@ -39,16 +55,16 @@ const withDefaults = (children: any[]) => {
     const initial = children.find(s => s.type === 'Initial')
     if (!initial)
         return {children, default: children[0].name}
-    return {children: children.filter(c => c != initial), 
+    return {children: children.filter(c => c !== initial),
         ...parseDefaults(initial.default)}
-        
+
 }
 const parseStateChildren = (s: any): any =>
     s && Object.keys(s).map(key => {
         const value = s[key]
         const atom = parseAtom(controllerParser)(key)
         switch (atom.type) {
-            case 'State':                
+            case 'State':
             case 'Parallel':
             case 'Final':
             case 'History':
@@ -62,15 +78,20 @@ const parseStateChildren = (s: any): any =>
                 return {...atom, actions: value && parseStateActions(value)}
             default:
                 throw new Error(`Unknown controller key: ${key}, ${JSON.stringify(atom)}`)
-        }         
+        }
     })
 
 const parseDOMEventAction = (action: any, value: any): DOMEventAction => {
-    if (typeof action === 'object' && action['run script']) {
+    if (action === 'prevent default') {
         return {
-            type: 'RunScript',
-            source: action['run script']
-        } as RunScriptAction
+            type: 'PreventDefault'
+        } as DOMEventAction
+    }
+
+    if (action === 'stop propagation') {
+        return {
+            type: 'StopPropagation'
+        } as DOMEventAction
     }
 
     const a = parseAtom(domEventActionParser)(action)
@@ -79,7 +100,7 @@ const parseDOMEventAction = (action: any, value: any): DOMEventAction => {
             return a as DispatchAction
         default:
             throw new Error(`Unknown action ${a.type}`)
-    }    
+    }
 }
 
 export function parseFormula(str: string): Formula {
@@ -91,36 +112,36 @@ const mapViewDeclaration = (key: any, value: any): ViewDeclaration => {
     switch (action.type) {
         case 'DomEvent':
             return {
-                type: 'DOMEvent',
+                actions: toArray(value).map(parseDOMEventAction),
                 eventType: action.eventType,
-                actions: toArray(value).map(parseDOMEventAction)
+                type: 'DOMEvent'
             } as DOMEventDeclaration
         case 'BindAttribute':
             return {
-                type: 'Bind',
                 src: parseFormula(value),
                 target: key.attribute,
-                targetType: "attribute"
+                targetType: 'attribute',
+                type: 'Bind'
             } as BindDeclaration
         case 'BindData':
             return {
-                type: 'Bind',
                 src: parseFormula(value),
                 target: key.attribute,
-                targetType: "data"
+                targetType: 'data',
+                type: 'Bind',
             } as BindDeclaration
         case 'BindStyle':
             return {
-                type: 'Bind',
                 src: parseFormula(value),
                 target: key.style,
-                targetType: "style"
+                targetType: 'style',
+                type: 'Bind',
             } as BindDeclaration
         case 'BindContent':
             return {
-                type: 'Bind',
                 src: parseFormula(value),
-                targetType: "content"
+                targetType: 'content',
+                type: 'Bind',
             } as BindDeclaration
         default:
             throw new Error(`Unknow view type ${key.type}`)
@@ -128,37 +149,38 @@ const mapViewDeclaration = (key: any, value: any): ViewDeclaration => {
 }
 
 const valueParser = {
-    "Controller": (key: any, value: any) => ({
-        type: "Controller",
+    Controller: (key: any, value: any) => ({
+        type: 'Controller',
         name: key.name,
-        rootState: parseStateChildren(value)[0]
+        rootState: parseStateChildren(value)[0],
     } as ControllerStatement),
-    "Let": (key: any, valueType: any) => ({
-        type: "Let",
+    Let: (key: any, valueType: any) => ({
+        type: 'Let',
         name: key.name,
-        valueType
+        valueType,
     } as LetStatement),
-    "Table": (key: any, valueType: any) => ({
-        type: "Table",
+    Table: (key: any, valueType: any) => ({
+        type: 'Table',
         name: key.name,
-        valueType
+        valueType,
     } as TableStatement),
-    "Slot": (key: any, formula: any) => ({
-        type: "Slot",
+    Slot: (key: any, formula: any) => ({
+        type: 'Slot',
         name: key.name,
-        formula: parseAtom(formulaParser)(formula)
+        formula: parseAtom(formulaParser)(formula),
     } as SlotStatement),
-    "View": (key: any, value: any) => ({
-        type: "View",
+    View: (key: any, value: any) => ({
+        type: 'View',
         name: key.name,
         rules: Object.keys(value).map(selector => ({
             selector,
-            declarations: Object.keys(value[selector]).map(dkey => mapViewDeclaration(dkey, value[selector][dkey]))
-        }))
+            declarations: Object.keys(value[selector]).map(
+                dkey => mapViewDeclaration(dkey, value[selector][dkey])),
+        })),
     } as ViewStatement),
 }
 
-export type ParseOptions = {
+export interface ParseOptions {
     internal: boolean
 }
 
@@ -166,18 +188,20 @@ function failOnInternals(b: any) {
     if (!b || typeof b !== 'object') {
         return
     }
-    if (b.$internal 
+    if (b.$internal
         || (b.name && b.name.startsWith('@'))
         || (b.$ref && b.$ref.startsWith('@'))
         || (b.event && b.event.startsWith('@'))
         )
         throw new Error(`Internal refs not allowed: ${JSON.stringify(b)}`)
 
-    for (let key in b)
+    for (const key in b)
         failOnInternals(b[key])
 }
 
-export function parseKal(parsedYaml: {[k: string]: any}, options: ParseOptions = {internal: false}) : Bundle {
+export function parseKal(
+                        parsedYaml: {[k: string]: any},
+                        options: ParseOptions = {internal: false}): Bundle {
     return Object.keys(parsedYaml).map(key => {
         const rootKey = parseAtom(rootParser)(key) as ({type: keyof typeof valueParser})
         const value = parsedYaml[key]

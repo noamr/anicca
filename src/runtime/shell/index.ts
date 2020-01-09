@@ -1,39 +1,36 @@
-
-
-interface PublicSpec {
-    staging: number
-    idle: number
-}
-
-interface PrivateSpec {
-    slots: Formula[]
-
-}
+import { Store } from './RuntimeTypes'
+import { StoreSpec } from '../../builder/types'
 
 interface ShellParams {
-    spec: PublicSpec
-    factory: StoreFactory
-    outgoingPorts: MessagePort[]
+    spec: {
+        outputNames: {[name: string]: number}
+    }
+    store: Store
+    outgoingPorts: {[key: string]: MessagePort}
     incomingPorts: MessagePort[]
 }
 
-export default function createShell(params: ShellParams) {
-    const store = params.factory.initStore(([bus, payload]: [number, ArrayBuffer]) =>
-                        params.outgoingPorts[bus].postMessage({payload}, [payload]))
-
+export default function createShell({spec, store, outgoingPorts, incomingPorts}: ShellParams) {
     let running = false
-    const run = async() => {
+    const outPorts = Object.keys(spec.outputNames).map(name => ({[spec.outputNames[name]]: outgoingPorts[name]}))
+    const run = async () => {
+        if (running)
+            return
         running = true
-        while (!(await store.readFlag(params.spec.idle)))
-            store.commit(params.spec.staging)
+        while (!(await store.awaitIdle())) {
+            store.commit()
+            const outbox = await store.dequeue()
+            outbox.forEach(([target, payload]) => {
+                outgoingPorts[target].postMessage({payload}, [payload])
+            })
+        }
+
         running = false
     }
-
-    params.incomingPorts.forEach((port, i) => {
+    incomingPorts.forEach((port, i) => {
         port.addEventListener('message', ({data}) => {
             store.enqueue(data.type | (i << 16), data.payload)
-            if (!running)
-                run()
+            run()
         })
         port.start()
     })

@@ -1,4 +1,4 @@
-import { Formula, Statement, Bundle, PrimitiveFormula, FormulaBuilder } from '../types'
+import { Bundle, Formula, FormulaBuilder, PrimitiveFormula, Statement } from '../types'
 export const P = ($primitive: any) => ({$primitive}) as PrimitiveFormula
 
 function fixArg(a: any) {
@@ -15,21 +15,20 @@ function fixArg(a: any) {
 
     if (!a.$T)
         return F.object(...Object.entries(a).map(([key, value]) => F.pair(key, value)))
-    
-}
 
+}
 
 export const F = new Proxy({}, {
     get: (t, op: string) => (...args: any[]) => ({
-        op, args: args.map(fixArg)
-    })
+        op, args: args.map(fixArg),
+    }),
 }) as FormulaBuilder
 
 export const S = new Proxy({}, {
     get: (t, type) => (name: string, stuff?: any) => ({
-        type, name, ...stuff
-    })
-}) as {[any: string]: (name: any, stuff?: any) => Statement}
+        type, name, ...stuff,
+    }),
+}) as {[x: string]: (name: any, stuff?: any) => Statement}
 
 export const R = ($ref: string) => ({$ref})
 

@@ -204,7 +204,7 @@ standardFunctionCall ->
     _ %varname _ "(" _ arguments _ ")" _ {% ([,op,,,, args]) => ({token: op, op: op.value, args}) %}
 
 arrayConstructor ->
-    _ "[" _ arguments _ "]" _ {% ([,token,,args]) => ({token, op: 'array', args}) %}
+    _ "[" _ arguments _ "]" _ {% ([,token,,args]) => ({token, op: args.length == 2 ? 'pair' : 'array', args}) %}
 
 objectKey ->
     stringLiteral {% ([p]) => ({$primitive: JSON.parse(p)}) %}
@@ -216,7 +216,7 @@ objectKey ->
 objectEntry ->
     Binary[objectKey, ":", anyExpression]
         {% ([{token, args}]) => 
-        ({op: 'entry', token, args}) %}    
+        ({op: 'pair', token, args}) %}    
 
 objectEntries ->
     objectEntry

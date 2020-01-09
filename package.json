@@ -17,7 +17,10 @@
     "build:dev": "rollup --environment BUILD:dev -c rollup.config.js",
     "build:prod": "rollup --environment BUILD:production -c rollup.config.js",
     "build:serve": "rollup --environment SERVE=1;BUILD:dev -c rollup.config.js",
-    "jest": "jest"
+    "jest": "jest",
+    "lint": "tslint --project .",
+    "tsc": "tsc",
+    "test": "yarn lint && yarn tsc && yarn jest"
   },
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.7.5",
@@ -49,6 +52,7 @@
     "ts-jest": "^24.2.0",
     "ts-loader": "^6.2.1",
     "ts-node": "^8.5.4",
+    "tslint": "^5.20.1",
     "typescript": "^3.7.4",
     "webpack": "^4.41.4",
     "yaml": "^1.7.2",

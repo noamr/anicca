@@ -1,8 +1,8 @@
-import YAML from 'yaml'
-import { Formula, ReferenceFormula, FunctionFormula } from '../types'
-import {F, S, R, removeUndefined} from './helpers'
 import * as _ from 'lodash'
-import { parseFormula } from '../parser/index';
+import YAML from 'yaml'
+import { parseFormula } from '../parser/index'
+import { Formula, FunctionFormula, ReferenceFormula } from '../types'
+import {F, R, removeUndefined, S} from './helpers'
 
 interface RawMacro {
     inputs: string[]
@@ -18,7 +18,7 @@ export default function useMacro(macroYaml: string, externalFormulas: {[key: str
         if ($ref)
             return resolvedFormulas[$ref] || (
                 internalFormulas[$ref] ?
-                (resolvedFormulas[$ref] = resolveFormula(internalFormulas[$ref])): (() => {
+                (resolvedFormulas[$ref] = resolveFormula(internalFormulas[$ref])) : (() => {
                     throw new Error(`Unknown formula: ${$ref}`)
                 })())
 
@@ -27,7 +27,7 @@ export default function useMacro(macroYaml: string, externalFormulas: {[key: str
             return {...f, args: args.map((a, i) => a ? resolveFormula(a) : (() => {
                 throw new Error(`Null arg. Formula: ${JSON.stringify(f)}, arg: ${i}`)
             })())} as FunctionFormula
-        return f        
+        return f
     }
 
     return resolveFormula({$ref: raw.output} as ReferenceFormula)

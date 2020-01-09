@@ -3,14 +3,14 @@ import nearley from 'nearley'
 const formulaGrammar = require('../formula.ne')
 import { Formula  } from '../../types'
 
-const parse = (str: string) : Formula => new nearley.Parser(formulaGrammar).feed(str).finish()[0]
-const removeTokens = (a: any): Formula => 
+const parse = (str: string): Formula => new nearley.Parser(formulaGrammar).feed(str).finish()[0]
+const removeTokens = (a: any): Formula =>
     a && Object.assign({},
         a.args && {args: a.args.map(removeTokens)},
         a.op && {op: a.op},
         a.$primitive && {$primitive: a.$primitive},
         a.$ref && {$ref: a.$ref})
-        
+
 const parseRaw = (str: string) => removeTokens(parse(str))
 describe('formulas', () => {
     describe('const', () => {
@@ -85,7 +85,7 @@ describe('formulas', () => {
         it('>=', () => {
             expect(parseRaw('a >= .3')).toEqual(parseRaw('gte(a, 0.3)'))
         })
-        
+
     })
 
     describe('bitwise', () => {
@@ -119,7 +119,7 @@ describe('formulas', () => {
         it('cond', () => {
             expect(parseRaw('a ? b : c')).toEqual(parseRaw('cond(a, b, c)'))
         })
-        
+
         it('nullish', () => {
             expect(parseRaw('a ?? 3')).toEqual(parseRaw('cond(isNil(a), a, 3)'))
         })
@@ -129,7 +129,7 @@ describe('formulas', () => {
         it('or', () => {
             expect(parseRaw('a || b')).toEqual(parseRaw('or(a, b)'))
         })
-        
+
     })
 
     describe('parantheses', () => {
@@ -158,8 +158,8 @@ describe('formulas', () => {
             expect(parse('a["str"]')).toMatchSnapshot()
         })
         it('[singleQuote]', () => {
-            expect(parse("a['str']")).toMatchSnapshot()
-            expect(parse("a['str']")).toEqual(parse('a["str"]'))
+            expect(parse('a[\'str\']')).toMatchSnapshot()
+            expect(parse('a[\'str\']')).toEqual(parse('a["str"]'))
         })
         it('?.', () => {
             expect(parseRaw('a?.b')).toEqual(parseRaw('cond(isNil(a), a, a["b"])'))
@@ -182,13 +182,13 @@ describe('formulas', () => {
             })
             it('one arg', () => {
                 expect(parseRaw('1 |> max(2)')).toEqual(parseRaw('max(1, 2)'))
-            })    
+            })
             it('placeholder', () => {
                 expect(parseRaw('1 |> max(2, ?)')).toEqual(parseRaw('max(2, 1)'))
-            })    
+            })
             it('mid placeholder', () => {
                 expect(parseRaw('abc |> func(2, ?, now())')).toEqual(parseRaw('func(2, abc, now())'))
-            })    
+            })
         })
     })
 
@@ -221,7 +221,7 @@ describe('formulas', () => {
                 expect(parseRaw('[3]')).toEqual(parseRaw('array(3)'))
             })
             it('multiple args', () => {
-                expect(parseRaw("[.3, 'bla', done]")).toEqual(parseRaw('array(0.3, "bla", done)'))
+                expect(parseRaw('[.3, \'bla\', done]')).toEqual(parseRaw('array(0.3, "bla", done)'))
             })
         })
         describe('object constructor', () => {
@@ -229,15 +229,15 @@ describe('formulas', () => {
                 expect(parseRaw('{}')).toEqual(parseRaw('object()'))
             })
             it('one arg', () => {
-                expect(parseRaw('{a: 3}')).toEqual(parseRaw('object(entry("a", 3))'))
-                expect(parseRaw('{2: 3}')).toEqual(parseRaw('object(entry(2, 3))'))
-                expect(parseRaw('{["a"]: 3}')).toEqual(parseRaw('object(entry("a", 3))'))
-                expect(parseRaw('{"a": 3}')).toEqual(parseRaw('object(entry("a", 3))'))
-                expect(parseRaw('{[abc]: "def"}')).toEqual(parseRaw('object(entry(abc, "def"))'))
+                expect(parseRaw('{a: 3}')).toEqual(parseRaw('object(pair("a", 3))'))
+                expect(parseRaw('{2: 3}')).toEqual(parseRaw('object(pair(2, 3))'))
+                expect(parseRaw('{["a"]: 3}')).toEqual(parseRaw('object(pair("a", 3))'))
+                expect(parseRaw('{"a": 3}')).toEqual(parseRaw('object(pair("a", 3))'))
+                expect(parseRaw('{[abc]: "def"}')).toEqual(parseRaw('object(pair(abc, "def"))'))
             })
             it('multiple args', () => {
-                expect(parseRaw("[.3, 'bla', done]")).toEqual(parseRaw('array(0.3, "bla", done)'))
-            })            
+                expect(parseRaw('[.3, \'bla\', done]')).toEqual(parseRaw('array(0.3, "bla", done)'))
+            })
         })
     })
 
@@ -248,9 +248,9 @@ describe('formulas', () => {
             expect(parseRaw('a * b + c')).not.toEqual(parseRaw('a *  (b+c)'))
             expect(parseRaw('a * 2 + b')).toEqual(parseRaw('(a * 2) + b'))
             expect(parseRaw('a[0].c * (2 + b)')).toEqual(parseRaw('((a[0])["c"]) * (2 + b)'))
-            expect(parseRaw(`a * 2 + 
+            expect(parseRaw(`a * 2 +
                 b`)).toEqual(parseRaw('(a * 2) + (b)'))
-            
+
         })
     })
 })

@@ -1,8 +1,8 @@
-import { Bundle, GotoAction, ControllerStatement, State, Transition, DispatchAction, TransitionAction, Formula, Statechart,
-    FlatStatechart, Configuration, HistoryConfiguration, Modus, Juncture, StepResults
- } from '../types'
-import {F, S, R, removeUndefined} from './helpers'
 import * as _ from 'lodash-es'
+import { Bundle, Configuration, ControllerStatement, DispatchAction, FlatStatechart, Formula,
+    GotoAction, HistoryConfiguration, Juncture, Modus, State, Statechart, StepResults, Transition, TransitionAction,
+ } from '../types'
+import {F, R, removeUndefined, S} from './helpers'
 
 const head = <T>(a: T[]) => a.length ? a[0] : null
 const flatten = <T>(a: Iterable<Iterable<T>>): Iterable<T> => Array.from(a).reduce((a, b) => [...a, ...b], [])
@@ -11,23 +11,22 @@ const some = <T>(a: Iterable<T>, p: Predicate<boolean, T>) => Array.from(a).some
 const intersectSets = <T>(a: Set<T>, b: Set<T>) => some(a, x => some(b, y => y === x))
 const sort = <T>(a: Iterable<T>, p: (a: T, b: T) => number) => a ? Array.from(a).sort(p) : a
 
-
-export function flattenState(rootState: State) : FlatStatechart {
+export function flattenState(rootState: State): FlatStatechart {
     const byName: {[name: string]: State} = {}
     const parentMap = new WeakMap<State, State|null>()
     const transitionSourceMap = new WeakMap<Transition, State>()
     const docIndex = new WeakMap<State, number>()
     const allEvents = new Set<string>()
 
-    const getDefault = (state: State) : State[] => (state.defaultTargets || []).map(id => byName[id])
+    const getDefault = (state: State): State[] => (state.defaultTargets || []).map(id => byName[id])
     const isParallelState = (s: State) => s.type === 'Parallel'
-    const documentIndex = (s: State) : number => docIndex.get(s) || 0
+    const documentIndex = (s: State): number => docIndex.get(s) || 0
 
     const entryOrder = (a: State, b: State) => documentIndex(a) - documentIndex(b)
     const exitOrder = (a: State, b: State) => documentIndex(b) - documentIndex(a)
 
     const isAtomicState = (s: State) => s.type === 'State' && !childStates(s).length
-    const conditionFor = (t: Transition|null): Formula => (t && t.condition) ||trueCondition
+    const conditionFor = (t: Transition|null): Formula => (t && t.condition) || trueCondition
     const trueCondition = {$primitive: true} as Formula
     const falseCondition = {$primitive: true} as Formula
 
@@ -36,17 +35,17 @@ export function flattenState(rootState: State) : FlatStatechart {
     const hashHistory = (c: HistoryConfiguration) => [...c.keys()].sort(entryOrder).map((hs: State) => `${hashState(hs)}:${hashConfig(c.get(hs) || new Set<State>())}`).join('|')
     const hashModus = (m: Modus): string => `${hashConfig(m.configuration)};${hashHistory(m.history)}`
     const hashJuncture = (j: Juncture|null): string => j ? `${j.event || ''}:${hashModus(j.modus)}` : ''
-    
+
     const junctures: {[hash: string]: {
         juncture: Juncture|null
-        results: StepResults[]
+        results: StepResults[],
     }} = {}
 
     const visitedModi = new Set<string>()
-    const childStates = (s: State): State[] => 
+    const childStates = (s: State): State[] =>
         ((s.children || []).filter(({type}) => ['State', 'Parallel', 'Final'].includes(type)) as State[])
 
-    const childTransitions = (s: State): Transition[] => 
+    const childTransitions = (s: State): Transition[] =>
         ((s.children || []).filter(({type}) => type === 'Transition') as Transition[])
 
     const getParent = (s: State) => parentMap.get(s) || rootState
@@ -61,10 +60,9 @@ export function flattenState(rootState: State) : FlatStatechart {
         if (junctures[junctureHash])
             return
 
-        debugger
         const results = step(juncture)
         junctures[junctureHash] = {juncture, results}
-        for (let r of results) {
+        for (const r of results) {
             const modusHash = hashModus(r.modus)
             if (visitedModi.has(modusHash))
                 continue
@@ -78,13 +76,14 @@ export function flattenState(rootState: State) : FlatStatechart {
     const resolveModus = (modus: Modus) =>
         [null, ...allEvents].forEach(event => resolveJuncture({event, modus}))
 
-    resolveJuncture(null)    
+    resolveJuncture(null)
     return {
         events: [...allEvents],
-        junctures: new Map(Object.values(junctures).map(({juncture, results}) => 
-        ([juncture ? {event: juncture.event, modus: hashModus(juncture.modus)}: null, results.map(({condition, execution, modus}) => ({
-            condition, execution, modus: hashModus(modus)
-        }))] as [Juncture<string>|null, StepResults<string>[]]))) 
+        junctures: new Map(Object.values(junctures).map(({juncture, results}) =>
+        ([juncture ? {event: juncture.event, modus: hashModus(juncture.modus)} : null,
+            results.map(({condition, execution, modus}) => ({
+                condition, execution, modus: hashModus(modus),
+            }))] as [Juncture<string>|null, Array<StepResults<string>>]))),
     }
 
     function resolveTransition(t: Transition, s: State) {
@@ -114,18 +113,20 @@ export function flattenState(rootState: State) : FlatStatechart {
         return e.map(g => byName[(g as GotoAction).target])
     }
 
-    type ConditionalTransitionSet = {
+    interface ConditionalTransitionSet {
         condition: Formula
         transitions: Transition[]
     }
 
     function step(juncture: Juncture|null): StepResults[] {
         if (!juncture) {
-            const {modus, execution} = microstep([{type: 'Transition', actions: [{type: 'Goto', target: rootState.name} as GotoAction]}], new Set<State>(), new Map())
+            const {modus, execution} = microstep(
+                [{type: 'Transition', actions: [{type: 'Goto', target: rootState.name} as GotoAction]}],
+                new Set<State>(), new Map())
             return [{
                 modus,
                 execution,
-                condition: trueCondition
+                condition: trueCondition,
             }]
         }
 
@@ -139,17 +140,16 @@ export function flattenState(rootState: State) : FlatStatechart {
             const atomicTransitionSets = atomicStates.map(state => {
                 const transitions = new Set<Transition>()
                 const states = [state, ...getProperAncestors(state, null)]
-                for (let i = 0; i < states.length; ++i)
-                    for (let t of childTransitions(states[i]).filter(
-                        (t => event ? (event === t.event) : !t.event)))
+                for (const s of states)
+                    for (const t of childTransitions(s).filter((t => event ? (event === t.event) : !t.event)))
                         transitions.add(t)
                 const tlist = [...transitions]
                 return tlist.map((t, i) => ({
                     ...t,
                     condition:
-                        i == 0 ? conditionFor(t) :
-                        i == 1 ? (F.and(F.not(conditionFor(tlist[0])), conditionFor(t))) :
-                        F.and(F.not(conditionFor(tlist[0])), conditionFor(t))
+                        i === 0 ? conditionFor(t) :
+                        i === 1 ? (F.and(F.not(conditionFor(tlist[0])), conditionFor(t))) :
+                        F.and(F.not(conditionFor(tlist[0])), conditionFor(t)),
                 }) as Transition)
             })
 
@@ -158,18 +158,18 @@ export function flattenState(rootState: State) : FlatStatechart {
                     return []
                 if (!next.length)
                     return [current]
-                    
 
-                return computePivot(...next).map((p: Transition[]) => [...flatten(current.map(t => ([t, ...p])))] as Transition[])
+                return computePivot(...next).map(
+                    (p: Transition[]) => [...flatten(current.map(t => ([t, ...p])))] as Transition[])
             }
 
             const pivot: Transition[][] = computePivot(...atomicTransitionSets)
             return pivot.map((transitions) => ({
-                condition: 
+                condition:
                     transitions.length === 1 ?
                     conditionFor(head(transitions)) :
                     F.and(...transitions.map(conditionFor)),
-                transitions: filterConflicts(transitions)
+                transitions: filterConflicts(transitions),
             }))
 
             function filterConflicts(selected: Transition[]): Transition[] {
@@ -177,7 +177,7 @@ export function flattenState(rootState: State) : FlatStatechart {
                 selected.forEach((t1, i) => {
                     let t1Preempted = false
                     const transitionsToRemove = new Set<Transition>()
-                    for (let t2 of selected.slice(i + 1)) {
+                    for (const t2 of selected.slice(i + 1)) {
                         if (intersectSets(computeExitSet([t1]), computeExitSet([t2]))) {
                             if (isDescendant(getTransitionSource(t1), getTransitionSource(t2)))
                                 transitionsToRemove.add(t2)
@@ -186,7 +186,7 @@ export function flattenState(rootState: State) : FlatStatechart {
                         }
                     }
                     if (!t1Preempted) {
-                        for (let t3 of transitionsToRemove)
+                        for (const t3 of transitionsToRemove)
                             filteredTransitions.delete(t3)
                         filteredTransitions.add(t1)
                     }
@@ -197,15 +197,14 @@ export function flattenState(rootState: State) : FlatStatechart {
 
         function getEffectiveTargetStates(t: Transition): State[] {
             let targets: State[] = []
-            for (let s of getTransitionTargets(t))
+            for (const s of getTransitionTargets(t))
                 if (s.type === 'History')
                     if (history.has(s))
                         targets = [...targets, ...(history.get(s) || [])]
                     else
                         targets = [...targets, ...getDefault(s)]
             return [...new Set(targets)]
-        }    
-
+        }
 
         function getTransitionDomain(t: Transition) {
             const targets = getEffectiveTargetStates(t)
@@ -217,7 +216,6 @@ export function flattenState(rootState: State) : FlatStatechart {
             return findLCCA([source, ...targets]) || rootState
         }
 
-
         function computeExitSet(transitions: Transition[]): Set<State> {
             if (!juncture)
                 return new Set<State>()
@@ -227,7 +225,7 @@ export function flattenState(rootState: State) : FlatStatechart {
                 .filter(t => getTransitionTargets(t).length)
                 .forEach(t => {
                     const domain = getTransitionDomain(t)
-                    for (let s of configuration)
+                    for (const s of configuration)
                         if (!domain || isDescendant(s, domain))
                             statesToExit.add(s)
                 })
@@ -235,56 +233,58 @@ export function flattenState(rootState: State) : FlatStatechart {
             return statesToExit
         }
 
-        function microstep(transitions: Transition[], prevConfiguration: Configuration, prevHistory: HistoryConfiguration): {
+        function microstep( transitions: Transition[],
+                            prevConfiguration: Configuration,
+                            prevHistory: HistoryConfiguration): {
             modus: Modus,
-            execution: TransitionAction[]
+            execution: TransitionAction[],
         } {
             const configuration = new Set([...prevConfiguration])
             const history = new Map([...prevHistory])
-            const onExit = computeStateExit(transitions)       
+            const onExit = computeStateExit(transitions)
             const onEntry = computeStateEntry(transitions)
-            const transitionExec = transitions.map(t => (t.actions || []).filter(a => a.type !== 'Goto')).reduce((a, o) => a.concat(o), [])
+            const transitionExec = transitions.map(t => (t.actions || []).filter(a => a.type !== 'Goto'))
+                .reduce((a, o) => a.concat(o), [])
 
             return {
                 modus: {configuration, history},
-                execution: [...onExit, ...transitionExec, ...onEntry]
+                execution: [...onExit, ...transitionExec, ...onEntry],
             }
-
 
             function computeStateExit(transitions: Transition[]): TransitionAction[] {
                 let execution: TransitionAction[] = []
-        
+
                 const statesToExit = [...computeExitSet(transitions)].sort(exitOrder)
-                for (let s of statesToExit) {
-                    for (let h of s.children.filter(c => c.type === 'History') as State[]) {
+                for (const s of statesToExit) {
+                    for (const h of s.children.filter(c => c.type === 'History') as State[]) {
                         history.set(h, new Set([...configuration].filter(
-                            s0 => h.deep 
+                            s0 => h.deep
                                 ? (isAtomicState(s0) && isDescendant(s0, s))
                                 : getParent(s0) === s)))
                     }
                     execution = [...execution, ...(s.onExit || [])]
                     configuration.delete(s)
                 }
-        
+
                 return execution
             }
-        
+
             function computeStateEntry(transitions: Transition[]): TransitionAction[] {
                 const statesToEnter = new Set<State>()
                 const defaultHistoryContent = new Map<State, TransitionAction[]>()
                 const statesForDefaultEntry = new Set<State>()
                 let execution: TransitionAction[] = []
 
-                for (let t of transitions) {
+                for (const t of transitions) {
                     const targets = getTransitionTargets(t)
-                    for (let s of targets)
+                    for (const s of targets)
                         addDescendantStatesToEnter(s)
                     const ancestor = getTransitionDomain(t)
-                    for (let s of getEffectiveTargetStates(t))
+                    for (const s of getEffectiveTargetStates(t))
                         addAncestorStatesToEnter(s, ancestor)
                 }
 
-                for (let state of [...statesToEnter].sort(entryOrder)) {
+                for (const state of [...statesToEnter].sort(entryOrder)) {
                     configuration.add(state)
                     const onEntry = (state.onEntry || []) as TransitionAction[]
                     const defaultActions = (state.defaultActions || []) as TransitionAction[]
@@ -297,13 +297,13 @@ export function flattenState(rootState: State) : FlatStatechart {
                     if (state.type === 'History') {
                         const hs = history.get(state)
                         if (hs) {
-                            for (let s of hs)
+                            for (const s of hs)
                                 addDescendantStatesToEnter(s)
-                            for (let s of hs)
+                            for (const s of hs)
                                 addAncestorStatesToEnter(s, getParent(s))
                         } else {
                             defaultHistoryContent.set(getParent(state), state.defaultActions || [])
-                            for (let s of getDefault(state)) {
+                            for (const s of getDefault(state)) {
                                 addDescendantStatesToEnter(s)
                                 addAncestorStatesToEnter(s, getParent(state))
                             }
@@ -313,22 +313,22 @@ export function flattenState(rootState: State) : FlatStatechart {
                     statesToEnter.add(state)
                     if (isCompound(state)) {
                         statesForDefaultEntry.add(state)
-                        for (let s of getDefault(state)) {
+                        for (const s of getDefault(state)) {
                             addDescendantStatesToEnter(s)
                             addAncestorStatesToEnter(s, state)
                         }
                     } else if (isParallelState(state)) {
-                        for (let child of childStates(state))
+                        for (const child of childStates(state))
                             if (!some(statesToEnter, s => isDescendant(s, child)))
                                 addDescendantStatesToEnter(child)
                     }
                 }
-            
+
                 function addAncestorStatesToEnter(state: State, ancestor: State) {
-                    for (let anc of getProperAncestors(state,ancestor)) {
+                    for (const anc of getProperAncestors(state, ancestor)) {
                         statesToEnter.add(anc)
                         if (isParallelState(anc))
-                            for (let child of childStates(anc))
+                            for (const child of childStates(anc))
                                 if (!some(statesToEnter, s => isDescendant(s, child)))
                                     addDescendantStatesToEnter(child)
                     }
@@ -344,11 +344,11 @@ export function flattenState(rootState: State) : FlatStatechart {
             return state === rootState || isCompound(state)
         }
 
-        function findLCCA(states: State[]) : State {
+        function findLCCA(states: State[]): State {
             if (!states.length)
                 return rootState
 
-            for (let anc of getProperAncestors(states[0], null).filter(isCompoundOrRoot)) {
+            for (const anc of getProperAncestors(states[0], null).filter(isCompoundOrRoot)) {
                 if (states.slice(1).every(s => isDescendant(s, anc)))
                     return anc
             }
@@ -366,7 +366,7 @@ export function flattenState(rootState: State) : FlatStatechart {
             const a = getAncestors(s1)
             if (!s2)
                 return a
-            
+
             const b = getAncestors(s2)
             if (b.indexOf(s1))
                 return []
@@ -374,7 +374,7 @@ export function flattenState(rootState: State) : FlatStatechart {
             const s2Index = a.indexOf(s2)
             if (s2Index < 0)
                 return a
-            
+
             return a.slice(0, s2Index)
         }
     }

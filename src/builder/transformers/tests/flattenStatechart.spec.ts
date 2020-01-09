@@ -1,7 +1,6 @@
-import {flattenState} from '../flattenStatechart'
 import {parse} from '../../index'
-import { ControllerStatement } from '../../types'
-import { FlatStatechart } from '../flattenStatechart'
+import { ControllerStatement, FlatStatechart } from '../../types'
+import {flattenState} from '../flattenStatechart'
 
 function parseAndFlatten(s: string): FlatStatechart {
     return flattenState((parse(`

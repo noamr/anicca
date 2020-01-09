@@ -1,23 +1,22 @@
 import * as fs from 'fs'
-import {Bundle} from './types'
-import YAML from 'yaml'
-import { ParseOptions, parseKal } from './parser/index'
 import nearley from 'nearley'
+import YAML from 'yaml'
+import { parseKal, ParseOptions } from './parser/index'
 import { removeUndefined } from './transformers/helpers'
+import {Bundle} from './types'
 
-type BuildOptions = {
+interface BuildOptions {
     inputPath: string
     jsOutputPath?: string
     rsOutputPath?: string
     wasmOutputPath?: string
 }
 
-
 export function parse(yamlString: string, opt: ParseOptions = {internal: false}): Bundle {
     return removeUndefined(parseKal(YAML.parse(yamlString), opt))
 }
 
-export async function build({inputPath, jsOutputPath, rsOutputPath, wasmOutputPath}: BuildOptions) : Promise<void> {
+export async function build({inputPath, jsOutputPath, rsOutputPath, wasmOutputPath}: BuildOptions): Promise<void> {
 //     jsOutputPath = jsOutputPath || `${inputPath}.mjs`
 //     rsOutputPath = rsOutputPath || `${inputPath}.rs`
 //     wasmOutputPath = wasmOutputPath || `${inputPath}.wasm`
