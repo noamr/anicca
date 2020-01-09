@@ -4,9 +4,9 @@ exports[` 1`] = `
 Object {
   "outputNames": Object {},
   "roots": Object {
-    "idle": 133,
-    "outbox": 141,
-    "staging": 140,
+    "idle": 129,
+    "outbox": 137,
+    "staging": 136,
   },
   "slots": Array [
     Object {
@@ -20,69 +20,22 @@ Object {
     },
     Object {
       "args": Array [
-        0,
+        2,
         1,
+        2,
       ],
-      "op": "pair",
-    },
-    Object {
-      "value": false,
-    },
-    Object {
-      "args": Array [],
-      "op": "noop",
-    },
-    Object {
-      "args": Array [
-        4,
-        5,
-      ],
-      "op": "pair",
+      "op": "array",
     },
     Object {
       "args": Array [
         3,
-        6,
-      ],
-      "op": "object",
-    },
-    Object {
-      "args": Array [
-        0,
-      ],
-      "op": "not",
-    },
-    Object {
-      "args": Array [
-        8,
-      ],
-      "op": "not",
-    },
-    Object {
-      "args": Array [
-        7,
-        9,
-      ],
-      "op": "get",
-    },
-    Object {
-      "args": Array [
-        2,
-        10,
-        2,
-      ],
-      "op": "array",
-    },
-    Object {
-      "args": Array [
-        11,
       ],
       "op": "array",
     },
     Object {
       "args": Array [
         1,
-        12,
+        4,
       ],
       "op": "pair",
     },
@@ -95,8 +48,8 @@ Object {
     },
     Object {
       "args": Array [
-        14,
-        15,
+        6,
+        7,
       ],
       "op": "pair",
     },
@@ -111,7 +64,7 @@ Object {
     },
     Object {
       "args": Array [
-        18,
+        10,
         1,
       ],
       "op": "get",
@@ -121,46 +74,56 @@ Object {
     },
     Object {
       "args": Array [
-        19,
-        20,
+        11,
+        12,
       ],
       "op": "plus",
     },
     Object {
       "args": Array [
         1,
-        10,
-        21,
+        1,
+        13,
       ],
       "op": "array",
     },
     Object {
       "args": Array [
-        22,
-        11,
+        14,
+        3,
       ],
       "op": "pair",
+    },
+    Object {
+      "args": Array [
+        9,
+        15,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        5,
+        8,
+        16,
+      ],
+      "op": "array",
     },
     Object {
       "args": Array [
         17,
-        23,
+      ],
+      "op": "object",
+    },
+    Object {
+      "args": Array [
+        0,
+        1,
       ],
       "op": "pair",
     },
     Object {
-      "args": Array [
-        13,
-        16,
-        24,
-      ],
-      "op": "array",
-    },
-    Object {
-      "args": Array [
-        25,
-      ],
-      "op": "object",
+      "value": false,
     },
     Object {
       "args": Array [
@@ -170,7 +133,7 @@ Object {
     },
     Object {
       "args": Array [
-        27,
+        21,
         1,
       ],
       "op": "get",
@@ -178,46 +141,46 @@ Object {
     Object {
       "args": Array [
         0,
-        28,
+        22,
       ],
       "op": "pair",
     },
     Object {
       "args": Array [
-        4,
+        20,
         1,
       ],
       "op": "pair",
     },
     Object {
       "args": Array [
-        29,
-        30,
+        23,
+        24,
       ],
       "op": "object",
     },
     Object {
       "args": Array [
-        27,
+        21,
       ],
       "op": "size",
     },
     Object {
       "args": Array [
-        32,
+        26,
       ],
       "op": "not",
     },
     Object {
       "args": Array [
-        33,
+        27,
       ],
       "op": "not",
     },
     Object {
       "args": Array [
-        31,
-        34,
+        25,
+        28,
       ],
       "op": "get",
     },
@@ -226,8 +189,8 @@ Object {
     },
     Object {
       "args": Array [
-        35,
-        36,
+        29,
+        30,
       ],
       "op": "shl",
     },
@@ -237,13 +200,13 @@ Object {
     Object {
       "args": Array [
         0,
-        38,
+        32,
       ],
       "op": "pair",
     },
     Object {
       "args": Array [
-        20,
+        12,
       ],
       "op": "table",
     },
@@ -257,48 +220,48 @@ Object {
     },
     Object {
       "args": Array [
-        41,
-        42,
+        35,
+        36,
       ],
       "op": "pair",
     },
     Object {
       "args": Array [
-        43,
+        37,
       ],
       "op": "array",
     },
     Object {
       "args": Array [
-        40,
-        44,
+        34,
+        38,
       ],
       "op": "flatMap",
     },
     Object {
       "args": Array [
-        45,
+        39,
       ],
       "op": "head",
     },
     Object {
       "args": Array [
+        34,
         40,
-        46,
       ],
       "op": "get",
     },
     Object {
       "args": Array [
-        4,
-        47,
+        20,
+        41,
       ],
       "op": "pair",
     },
     Object {
       "args": Array [
-        39,
-        48,
+        33,
+        42,
       ],
       "op": "object",
     },
@@ -307,13 +270,13 @@ Object {
     },
     Object {
       "args": Array [
-        50,
+        44,
       ],
       "op": "table",
     },
     Object {
       "args": Array [
-        51,
+        45,
         1,
       ],
       "op": "get",
@@ -321,71 +284,71 @@ Object {
     Object {
       "args": Array [
         0,
-        52,
+        46,
       ],
       "op": "pair",
     },
     Object {
       "args": Array [
-        53,
-        30,
+        47,
+        24,
       ],
       "op": "object",
     },
     Object {
       "args": Array [
-        51,
+        45,
       ],
       "op": "size",
     },
     Object {
       "args": Array [
-        55,
+        49,
       ],
       "op": "not",
     },
     Object {
       "args": Array [
-        56,
+        50,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        48,
+        51,
+      ],
+      "op": "get",
+    },
+    Object {
+      "args": Array [
+        52,
+        12,
+      ],
+      "op": "eq",
+    },
+    Object {
+      "args": Array [
+        53,
       ],
       "op": "not",
     },
     Object {
       "args": Array [
         54,
-        57,
-      ],
-      "op": "get",
-    },
-    Object {
-      "args": Array [
-        58,
-        20,
-      ],
-      "op": "eq",
-    },
-    Object {
-      "args": Array [
-        59,
       ],
       "op": "not",
     },
     Object {
       "args": Array [
-        60,
-      ],
-      "op": "not",
-    },
-    Object {
-      "args": Array [
-        49,
-        61,
+        43,
+        55,
       ],
       "op": "get",
     },
     Object {
       "args": Array [
-        62,
+        56,
       ],
       "op": "first",
     },
@@ -394,37 +357,78 @@ Object {
     },
     Object {
       "args": Array [
-        63,
-        64,
+        57,
+        58,
       ],
       "op": "bwand",
     },
     Object {
       "args": Array [
-        4,
-        65,
+        20,
+        59,
       ],
       "op": "pair",
     },
     Object {
       "args": Array [
-        3,
-        66,
+        19,
+        60,
       ],
       "op": "object",
     },
     Object {
       "args": Array [
-        62,
-        38,
+        56,
+        32,
       ],
       "op": "neq",
     },
     Object {
       "args": Array [
-        68,
+        62,
       ],
       "op": "not",
+    },
+    Object {
+      "args": Array [
+        63,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        61,
+        64,
+      ],
+      "op": "get",
+    },
+    Object {
+      "args": Array [
+        31,
+        65,
+      ],
+      "op": "bwor",
+    },
+    Object {
+      "args": Array [
+        20,
+        66,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        19,
+        67,
+      ],
+      "op": "object",
+    },
+    Object {
+      "args": Array [
+        52,
+        1,
+      ],
+      "op": "eq",
     },
     Object {
       "args": Array [
@@ -434,137 +438,108 @@ Object {
     },
     Object {
       "args": Array [
-        67,
         70,
       ],
-      "op": "get",
+      "op": "not",
     },
     Object {
       "args": Array [
-        37,
+        68,
         71,
       ],
-      "op": "bwor",
-    },
-    Object {
-      "args": Array [
-        4,
-        72,
-      ],
-      "op": "pair",
-    },
-    Object {
-      "args": Array [
-        3,
-        73,
-      ],
-      "op": "object",
-    },
-    Object {
-      "args": Array [
-        58,
-        1,
-      ],
-      "op": "eq",
-    },
-    Object {
-      "args": Array [
-        75,
-      ],
-      "op": "not",
-    },
-    Object {
-      "args": Array [
-        76,
-      ],
-      "op": "not",
-    },
-    Object {
-      "args": Array [
-        74,
-        77,
-      ],
       "op": "get",
     },
     Object {
       "args": Array [
-        26,
-        78,
+        18,
+        72,
       ],
       "op": "get",
     },
     Object {
       "args": Array [
         0,
-        20,
+        12,
       ],
       "op": "pair",
     },
     Object {
       "args": Array [
-        58,
-        20,
+        52,
+        12,
       ],
       "op": "plus",
     },
     Object {
       "args": Array [
-        4,
+        20,
+        75,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        74,
+        76,
+      ],
+      "op": "object",
+    },
+    Object {
+      "args": Array [
+        20,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        78,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        6,
+        79,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        0,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
         81,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        9,
+        82,
       ],
       "op": "pair",
     },
     Object {
       "args": Array [
         80,
-        82,
+        83,
       ],
       "op": "object",
-    },
-    Object {
-      "args": Array [
-        4,
-      ],
-      "op": "not",
     },
     Object {
       "args": Array [
         84,
-      ],
-      "op": "not",
-    },
-    Object {
-      "args": Array [
-        14,
-        85,
-      ],
-      "op": "pair",
-    },
-    Object {
-      "args": Array [
-        17,
-        9,
-      ],
-      "op": "pair",
-    },
-    Object {
-      "args": Array [
-        86,
-        87,
-      ],
-      "op": "object",
-    },
-    Object {
-      "args": Array [
-        88,
-        78,
+        72,
       ],
       "op": "get",
     },
     Object {
       "args": Array [
         0,
-        89,
+        85,
       ],
       "op": "pair",
     },
@@ -573,121 +548,121 @@ Object {
     },
     Object {
       "args": Array [
-        58,
-        91,
+        52,
+        87,
       ],
       "op": "eq",
     },
     Object {
       "args": Array [
-        4,
-        92,
+        20,
+        88,
       ],
       "op": "pair",
     },
     Object {
       "args": Array [
-        90,
-        93,
+        86,
+        89,
       ],
       "op": "object",
     },
     Object {
       "args": Array [
-        89,
+        85,
       ],
       "op": "not",
     },
     Object {
       "args": Array [
-        95,
+        91,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        90,
+        92,
+      ],
+      "op": "get",
+    },
+    Object {
+      "args": Array [
+        93,
       ],
       "op": "not",
     },
     Object {
       "args": Array [
         94,
-        96,
-      ],
-      "op": "get",
-    },
-    Object {
-      "args": Array [
-        97,
       ],
       "op": "not",
     },
     Object {
       "args": Array [
-        98,
-      ],
-      "op": "not",
-    },
-    Object {
-      "args": Array [
-        83,
-        99,
+        77,
+        95,
       ],
       "op": "get",
     },
     Object {
       "args": Array [
-        51,
+        45,
         1,
-        100,
+        96,
       ],
       "op": "put",
     },
     Object {
       "args": Array [
+        34,
         40,
-        46,
       ],
       "op": "delete",
     },
     Object {
       "args": Array [
-        101,
-        102,
+        97,
+        98,
       ],
       "op": "pair",
     },
     Object {
       "args": Array [
-        79,
-        103,
+        73,
+        99,
       ],
       "op": "concat",
     },
     Object {
       "args": Array [
-        104,
+        100,
       ],
       "op": "array",
     },
     Object {
       "args": Array [
-        105,
-        44,
+        101,
+        38,
       ],
       "op": "flatMap",
     },
     Object {
       "args": Array [
-        106,
+        102,
       ],
       "op": "head",
     },
     Object {
       "args": Array [
         0,
-        107,
+        103,
       ],
       "op": "pair",
     },
     Object {
       "args": Array [
-        42,
+        36,
       ],
       "op": "first",
     },
@@ -696,8 +671,8 @@ Object {
     },
     Object {
       "args": Array [
-        109,
-        110,
+        105,
+        106,
       ],
       "op": "bwand",
     },
@@ -706,48 +681,48 @@ Object {
     },
     Object {
       "args": Array [
-        111,
-        112,
+        107,
+        108,
       ],
       "op": "shr",
     },
     Object {
       "args": Array [
-        113,
+        109,
         0,
       ],
       "op": "pair",
     },
     Object {
       "args": Array [
-        114,
+        110,
       ],
       "op": "array",
     },
     Object {
       "args": Array [
-        41,
-        115,
+        35,
+        111,
       ],
       "op": "pair",
     },
     Object {
       "args": Array [
-        40,
-        116,
+        34,
+        112,
       ],
       "op": "flatMap",
     },
     Object {
       "args": Array [
-        117,
+        113,
       ],
       "op": "head",
     },
     Object {
       "args": Array [
         0,
-        118,
+        114,
       ],
       "op": "pair",
     },
@@ -756,62 +731,116 @@ Object {
     },
     Object {
       "args": Array [
-        4,
-        120,
+        20,
+        116,
       ],
       "op": "pair",
     },
     Object {
       "args": Array [
-        119,
-        121,
+        115,
+        117,
       ],
       "op": "object",
     },
     Object {
       "args": Array [
-        117,
+        113,
       ],
       "op": "size",
     },
     Object {
       "args": Array [
+        119,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        120,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        118,
+        121,
+      ],
+      "op": "get",
+    },
+    Object {
+      "args": Array [
+        20,
+        122,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        104,
         123,
+      ],
+      "op": "object",
+    },
+    Object {
+      "args": Array [
+        102,
+      ],
+      "op": "size",
+    },
+    Object {
+      "args": Array [
+        125,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        126,
       ],
       "op": "not",
     },
     Object {
       "args": Array [
         124,
-      ],
-      "op": "not",
-    },
-    Object {
-      "args": Array [
-        122,
-        125,
+        127,
       ],
       "op": "get",
     },
     Object {
       "args": Array [
-        4,
-        126,
+        128,
+        116,
+      ],
+      "op": "eq",
+    },
+    Object {
+      "args": Array [
+        0,
+        7,
       ],
       "op": "pair",
     },
     Object {
       "args": Array [
-        108,
-        127,
+        101,
+        128,
       ],
-      "op": "object",
+      "op": "get",
     },
     Object {
       "args": Array [
-        106,
+        20,
+        131,
       ],
-      "op": "size",
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        130,
+        132,
+      ],
+      "op": "object",
     },
     Object {
       "args": Array [
@@ -821,75 +850,21 @@ Object {
     },
     Object {
       "args": Array [
-        130,
+        134,
       ],
       "op": "not",
-    },
-    Object {
-      "args": Array [
-        128,
-        131,
-      ],
-      "op": "get",
-    },
-    Object {
-      "args": Array [
-        132,
-        120,
-      ],
-      "op": "eq",
-    },
-    Object {
-      "args": Array [
-        0,
-        15,
-      ],
-      "op": "pair",
-    },
-    Object {
-      "args": Array [
-        105,
-        132,
-      ],
-      "op": "get",
-    },
-    Object {
-      "args": Array [
-        4,
-        135,
-      ],
-      "op": "pair",
-    },
-    Object {
-      "args": Array [
-        134,
-        136,
-      ],
-      "op": "object",
     },
     Object {
       "args": Array [
         133,
-      ],
-      "op": "not",
-    },
-    Object {
-      "args": Array [
-        138,
-      ],
-      "op": "not",
-    },
-    Object {
-      "args": Array [
-        137,
-        139,
+        135,
       ],
       "op": "get",
     },
     Object {
       "args": Array [
-        15,
-        44,
+        7,
+        38,
       ],
       "op": "flatMap",
     },
