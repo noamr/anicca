@@ -25,8 +25,7 @@ const INTERNAL_BITS = 30
 type EventType = [number, ArrayBuffer]
 type ChangeRequest = [number, string]
 
-const getTargetFromEventHeader = F.shr(F.bwand(F.first(F.value<EventType>()),
-    F.minus(F.shl(1, INTERNAL_BITS), 1)), TARGET_BITS)
+const getTargetFromEventHeader = F.shr(F.bwand(F.first(F.value<EventType>()), (1 << INTERNAL_BITS) - 1), TARGET_BITS)
 const getInternalFromEventHeader = F.shr(F.first(F.value<EventType>()), INTERNAL_BITS)
 
 const INBOX_TABLE = '@inbox'
@@ -41,9 +40,9 @@ export default function resolveControllers(bundle: Bundle, im: TransformData): B
     im = im || {}
     const bundleWithControllerTables = [
         ...bundle,
-        S.table(INBOX_TABLE, {valueType: {tuple: ['u32', 'ByteArray']}}),
-        S.table(MODI_TABLE, {valueType: 'u32'}),
-        S.table(PHASE_TABLE, {valueType: 'u32'}),
+        S.Table(INBOX_TABLE, {valueType: {tuple: ['u32', 'ByteArray']}}),
+        S.Table(MODI_TABLE, {valueType: 'u32'}),
+        S.Table(PHASE_TABLE, {valueType: 'u32'}),
     ]
     const flatControllers = mapValues(
         map(filter(bundleWithControllerTables, ({type}) => type === 'Controller'),
@@ -62,11 +61,11 @@ export default function resolveControllers(bundle: Bundle, im: TransformData): B
     }
 
     const tables = map(filter(bundleWithControllerTables, ({type}) => type === 'Table'), (v: Statement, i) =>
-        ({[v.name || '']: i})).reduce(assign)
+        ({[v.name || '']: i})).reduce(assign, {})
     im.tables = tables
 
     const stagingByController = Object.entries(flatControllers).map(([name, [index, rootState]], i, controllers) =>
-        convertControllerToFormulas([name, rootState], index, im))
+        convertControllerToFormulas([name, rootState], index, bundle, im))
 
     const activeControllers = F.filter(stagingByController, F.neq(F.get(phases, F.key()), IDLE_PHASE))
     const controllersWithMessages = F.map(inbox, [F.pair(getTargetFromEventHeader, true)])
@@ -77,15 +76,20 @@ export default function resolveControllers(bundle: Bundle, im: TransformData): B
     const staging = F.cond(idle, [] as AssignmentDirective[], F.get(stagingByController, currentControllerIndex))
 
     im.roots = assign({}, im.roots, {
-        idle, staging,
+        idle: {$ref: '@idle'}, staging: {$ref: '@staging'},
     })
 
-    return bundleWithControllerTables.filter(({type}) => type !== 'Controller')
+    return [
+        ...bundleWithControllerTables.filter(({type}) => type !== 'Controller'),
+        S.Slot('@idle', {formula: idle}),
+        S.Slot('@staging', {formula: staging})
+    ]
 }
 
 function convertControllerToFormulas(
     current: [string, FlatStatechart],
     index: number,
+    bundle: Bundle,
     {tables, getEventHeader}: TransformData):
         toFormula<AssignmentDirective[]> {
     const hashToIndex: {[hash: string]: number} = {}
@@ -111,8 +115,16 @@ function convertControllerToFormulas(
 
         const asRef = target as ReferenceFormula
         const asFunction = target as FunctionFormula
-        if (asRef.$ref)
-            return [parseTable(asRef), F.replace(), source]
+        if (asRef.$ref) {
+            const byName = bundle.find(s => s.name === asRef.$ref)
+            if (!byName)
+                throw new Error(`Undefined ref: ${asRef.$ref}`)
+            if(byName.type === 'Slot')
+                return parseAssignment((byName as SlotStatement).formula, source)
+            if(byName.type === 'Table')
+                return [parseTable(asRef), F.replace(), source]
+            throw new Error(`Ref pointing to ${byName.type} is not assignable`)
+        }
 
         if (asFunction.op !== 'get' || !asFunction.args || asFunction.args.length !== 2)
             throw new Error(`Invalid assignment target. op: ${asFunction.op}`)
@@ -121,6 +133,9 @@ function convertControllerToFormulas(
         if (!ref || !ref.$ref)
             throw new Error(`Invalid assignment target. op: ${asFunction.op}, arg: ${ref}`)
 
+        if (typeof source === 'undefined')
+            throw new Error(`Undefined assignment: ${ref}`)
+
         return [parseTable(ref), asFunction.args[1], source]
     }
 
@@ -128,6 +143,7 @@ function convertControllerToFormulas(
         switch (a.type) {
             case 'Assign':
                 const {source, target} = a as AssignTransitionAction
+                console.log(JSON.stringify(a))
                 return parseAssignment(target, source)
             case 'Dispatch': {
                 const {event, payload, target} = a as DispatchAction
@@ -172,11 +188,11 @@ function convertControllerToFormulas(
     const modusMap = ([...junctures].filter(([j]) => j) as Array<[Juncture<number>, JValue]>)
         .map(([j, v]) => tuple(j.modus << MODUS_BITS | getEventIndex(fsc, j.event), tuple(v.condition, v.assignments)))
 
-    const effectiveMap = [...modusMap].map(([j, [e]]) => ({[j]: e})).reduce(assign)
-    const assignmentMap = {
-        [0 as number]: (junctures.get(null) as JValue).assignments,
-        ...[...modusMap].map(([j, [, a]]) => ({[j]: a})).reduce(assign),
-    }
+    const effectiveMap = F.object(...[...modusMap].map(([j, [e]]) => F.pair(j, e)))
+
+    const assignmentMap = F.object([
+        [0 ,(junctures.get(null) as JValue).assignments],
+        ...[...modusMap].map(([j, [, a]]) => ([+j, a]))])
 
     const modus = F.cond(F.size(modi), F.get(modi, index), 0)
     const currentPhase = F.cond(F.size(phases), F.get(phases, index), INIT_PHASE)
@@ -187,8 +203,7 @@ function convertControllerToFormulas(
     ))
 
     const currentEvent = F.cond(F.eq(currentPhase, AUTO_PHASE), null, F.get(inbox, currentEventKey))
-    const currentEventType = F.cond(F.isnil(currentEvent), 0, F.bwand(F.first(currentEvent),
-        F.minus(F.shl(1, TARGET_BITS), 1)))
+    const currentEventType = F.cond(F.isnil(currentEvent), 0, F.bwand(F.first(currentEvent), (1 << TARGET_BITS) - 1))
     const currentEventPayload = F.cond(F.isnil(currentEvent), null, F.last(currentEvent) as toFormula<ArrayBuffer>)
     const juncture = F.cond(F.eq(currentPhase, INIT_PHASE), 0, F.bwor(F.shl(modus, MODUS_BITS), currentEventType))
     const effective = F.get(effectiveMap, juncture)

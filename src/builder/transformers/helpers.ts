@@ -1,20 +1,25 @@
 import { Bundle, Formula, FormulaBuilder, PrimitiveFormula, Statement } from '../types'
 export const P = ($primitive: any) => ({$primitive}) as PrimitiveFormula
 
-function fixArg(a: any) {
-    if (typeof a === 'undefined')
+function fixArg(a: any): any {
+    if (typeof a === 'undefined') {
+        debugger
         throw new Error('Unexpected undefined')
+    }
+
     if (typeof a !== 'object' || a === null)
         return {$primitive: a}
 
-    if (a.$ref || a.$primitive)
+    if (a.$ref || Reflect.has(a, '$primitive'))
         return a
 
     if (Array.isArray(a))
-        return F.array(...a)
+        return {op: a.length === 2 ? 'pair' : 'array', args: a.map(fixArg)}
 
-    if (!a.$T)
-        return F.object(...Object.entries(a).map(([key, value]) => F.pair(key, value)))
+    if (a.op)
+        return {op: a.op, args: (a.args || []).map(fixArg)}
+
+    return {op: 'object', args: Object.entries(a).map(([key, value]) => F.pair(key, value))}
 
 }
 

@@ -259,6 +259,7 @@ export interface TransformData {
     outputNames: {[name: string]: number}
     outputs: {[name: string]: TypedFormula<ArrayBuffer>}
     getEventHeader: (event: string, target: string) => number
+    debugInfo: any
     views: {
         bindings: Array<{
             view: string

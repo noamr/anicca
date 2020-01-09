@@ -20,14 +20,14 @@ dispatch ->
 
 @{%
     const relAction = op => ([target,,,,src]) => 
-        ({type: "Assign", target: {$ref: target.value}, src: {op, args: [{$ref: target.value}, src]}})
+        ({type: "Assign", target: {$ref: target.value}, source: {op, args: [{$ref: target.value}, src]}})
 %}
 
 incrementAction ->
-    %varname _ "+=" _ formula {% relAction('add') %}
+    %varname _ "+=" _ formula {% relAction('plus') %}
 
 decrementAction ->
-    %varname _ "-=" _ formula {% relAction('sub') %}
+    %varname _ "-=" _ formula {% relAction('minus') %}
 
 multAction ->
     %varname _ "*=" _ formula {% relAction('mult') %}

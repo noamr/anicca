@@ -33,6 +33,7 @@ import useMacro from './useMacro'
 
 export default function resolveViews(bundle: Bundle, im: TransformData): Bundle {
     const prevTable = S.Table('@view_prev', {valueType: 'string'})
+    im.tables[prevTable.name as string] = Object.keys(im.tables).length
     const viewStatements = bundle.filter(({type}) => type === 'View')
 
     const flatViewDeclarations = viewStatements.flatMap((s, viewIndex) => {

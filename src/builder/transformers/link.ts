@@ -11,6 +11,7 @@ export default function link(bundle: Bundle, data: TransformData): StoreSpec {
     const indexCache = new WeakMap<Formula, number>()
     const hashIndices = new Map<string, number>()
     const slots: RawFormula[] = []
+    console.log( bundle.filter(({type}) => type === 'Table'))
 
     const tableTypes: {[x: number]: NativeType} =
         bundle.filter(({type}) => type === 'Table')
@@ -18,14 +19,20 @@ export default function link(bundle: Bundle, data: TransformData): StoreSpec {
             .reduce(assign)
 
     const hashFormula = (f: Formula): string => {
+        if (typeof f !== 'object')
+            return JSON.stringify(f)
+
         if (Reflect.has(f, '$primitive'))
             return JSON.stringify(Reflect.get(f, '$primitive'))
 
         const {op, args} = f as FunctionFormula
-        return `${op}(${(args || [].map(a => `@${formulaToIndex(a)}`).join(','))})`
+        return `${op}(${(args || []).map(a => `@${formulaToIndex(a)}`).join(',')})`
     }
 
     const toRawFormula = (f: Formula): RawFormula => {
+        if (typeof f !== 'object')
+            return {value: f}
+
         if (Reflect.has(f, '$primitive'))
             return {value: Reflect.get(f, '$primitive')} as RawFormula
 
@@ -42,7 +49,11 @@ export default function link(bundle: Bundle, data: TransformData): StoreSpec {
             return hashIndices.get(hash) as number
 
         const index = slots.length
-        slots[index] = toRawFormula(f)
+        const rf = toRawFormula(f)
+        slots[index] = rf
+        hashIndices.set(hash, index)
+        if (typeof f === 'object')
+            indexCache.set(f, index)
         return index
     }
 

@@ -4,12 +4,17 @@ import path from 'path'
 import { Slot } from '../StoreDefinition'
 import {F, P, R, removeUndefined, S} from './helpers'
 import useMacro from './useMacro'
-import { PrimitiveFormula } from '../types'
+import { PrimitiveFormula, toArgType, TypedPrimitive } from '../types'
 import { TypedFormula, Bundle, Formula, TransformData, NativeType,
          FunctionFormula, SlotStatement, ReferenceFormula, toFormula } from '../types'
 
 const nativeFunctions = new Set([
-    'gt', 'lt', 'lte', 'gte', 'eq', 'neq', 'plus', 'mult', 'div', 'pow', 'mod', 'bwand', 'bwor', 'bwxor', 'shl', 'shr', 'ushr', 'bwnot', 'negate', 'sin', 'cos', 'round', 'trunc', 'parseInt', 'parseFloat', 'formatNumber', 'get', 'now', 'uid', 'source', 'key', 'value', 'pair', 'first', 'last', 'toLowerCase', 'toUpperCase', 'substring', 'startsWith', 'endsWith', 'stringIncludes', 'encode', 'flatMap', 'flatReduce', 'head', 'tail', 'construct', 'table', 'noop', 'put', 'delete', 'merge', 'replace'
+    'gt', 'lt', 'lte', 'gte', 'eq', 'neq', 'plus', 'minus', 'mult', 'div', 'pow', 'mod', 
+    'bwand', 'bwor', 'bwxor', 'shl', 'shr', 'ushr', 'bwnot', 'not', 'size',
+    'negate', 'sin', 'cos', 'round', 'trunc', 'parseInt', 'parseFloat', 'formatNumber', 
+    'get', 'now', 'uid', 'source', 'key', 'value', 'pair', 'first', 'last', 'object', 'array',
+    'toLowerCase', 'toUpperCase', 'substring', 'startsWith', 'endsWith', 'stringIncludes', 'encode',
+    'flatMap', 'flatReduce', 'head', 'tail', 'table', 'noop', 'put', 'delete', 'merge', 'replace', 'concat'
 ])
 const functions: {[name: string]: (...args: any[]) => Formula} = {
     filter: <M, P>(m: M, predicate: P) => F.flatMap(m, P ? [[F.key(), F.value()]] : []),
@@ -21,6 +26,7 @@ const functions: {[name: string]: (...args: any[]) => Formula} = {
     findFirst: <M, P>(m: M, predicate: P) => F.head(F.filter(m, predicate)),
     cond: <P, C, A>(p: P, c: C, a: A) => F.get(F.object(F.pair(true, c as A|C),
         F.pair(false, a as A|C)), F.not(F.not(p))),
+    isnil: (a: toArgType<any>) => F.neq(a, {$primitive: null} as TypedPrimitive<null>),
     or: <A>(...args: A[]) =>
         args.length === 0 ? {$primitive: false} as Formula :
         args.length === 1 ? args[0] :
@@ -36,14 +42,34 @@ const functions: {[name: string]: (...args: any[]) => Formula} = {
             [] as Array<[any, any]>, [F.pair(F.key(), F.value())])),
 
 }
+
+function formulaToString(f: Formula): string {
+    const rf = f as ReferenceFormula
+    const pf = f as PrimitiveFormula
+    const ff = f as FunctionFormula
+    if (rf.$ref)
+        return `ref(${rf.$ref})`
+
+    if (Reflect.has(pf, '$primitive'))
+        return '' + pf.$primitive
+
+    if (ff.op)
+        return `${ff.op}(${(ff.args || []).map(formulaToString).join(',')})`
+
+    return JSON.stringify(ff)
+
+}
 export default function resolveFormulas(bundle: Bundle, im: TransformData): Bundle {
     const refs = {
         ...bundle.filter(s => s.type === 'Slot')
-            .map(s => ({[s.name as string]: (s as SlotStatement).formula})).reduce(assign),
+            .map(s => ({[s.name as string]: (s as SlotStatement).formula})).reduce(assign, {}),
         ...mapValues(im.tables, n => F.table(n)),
     } as {[r: string]: Formula}
 
     const resolveFormula = (f: Formula): Formula => {
+        if (typeof f !== 'object')
+            return {$primitive: f} as Formula
+
         if (Reflect.has(f, '$primitive'))
             return f
 
@@ -52,8 +78,11 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
             if (!Reflect.has(refs, $ref))
                 throw new Error(`Unresolved ref: ${$ref}`)
 
-            return refs[$ref]
+            return resolveFormula(refs[$ref])
         }
+
+        if (Array.isArray(f))
+            return {op: f.length === 2 ? 'pair': 'array', args: (f as any[]).map(resolveFormula)} as Formula
 
         const {op, args} = f as FunctionFormula
 
@@ -67,5 +96,12 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
     }
 
     im.roots = mapValues(im.roots, resolveFormula)
+    im.debugInfo = {
+        roots: mapValues(im.roots, formulaToString),
+        slots: bundle.filter(({type}) => type === 'Slot').map(f => 
+            ({[f.name || '']: formulaToString((f as SlotStatement).formula)})).reduce(assign)
+    }
+
+    console.log(im.debugInfo)
     return bundle
 }

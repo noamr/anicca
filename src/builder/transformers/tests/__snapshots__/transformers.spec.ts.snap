@@ -1,0 +1,910 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[` 1`] = `
+Object {
+  "outputNames": Object {},
+  "roots": Object {
+    "idle": 133,
+    "outbox": 141,
+    "staging": 140,
+  },
+  "slots": Array [
+    Object {
+      "value": true,
+    },
+    Object {
+      "value": 0,
+    },
+    Object {
+      "value": 2,
+    },
+    Object {
+      "args": Array [
+        0,
+        1,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "value": false,
+    },
+    Object {
+      "args": Array [],
+      "op": "noop",
+    },
+    Object {
+      "args": Array [
+        4,
+        5,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        3,
+        6,
+      ],
+      "op": "object",
+    },
+    Object {
+      "args": Array [
+        0,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        8,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        7,
+        9,
+      ],
+      "op": "get",
+    },
+    Object {
+      "args": Array [
+        2,
+        10,
+        2,
+      ],
+      "op": "array",
+    },
+    Object {
+      "args": Array [
+        11,
+      ],
+      "op": "array",
+    },
+    Object {
+      "args": Array [
+        1,
+        12,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "value": 131072,
+    },
+    Object {
+      "args": Array [],
+      "op": "array",
+    },
+    Object {
+      "args": Array [
+        14,
+        15,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "value": 131073,
+    },
+    Object {
+      "args": Array [
+        1,
+      ],
+      "op": "table",
+    },
+    Object {
+      "args": Array [
+        18,
+        1,
+      ],
+      "op": "get",
+    },
+    Object {
+      "value": 1,
+    },
+    Object {
+      "args": Array [
+        19,
+        20,
+      ],
+      "op": "plus",
+    },
+    Object {
+      "args": Array [
+        1,
+        10,
+        21,
+      ],
+      "op": "array",
+    },
+    Object {
+      "args": Array [
+        22,
+        11,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        17,
+        23,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        13,
+        16,
+        24,
+      ],
+      "op": "array",
+    },
+    Object {
+      "args": Array [
+        25,
+      ],
+      "op": "object",
+    },
+    Object {
+      "args": Array [
+        2,
+      ],
+      "op": "table",
+    },
+    Object {
+      "args": Array [
+        27,
+        1,
+      ],
+      "op": "get",
+    },
+    Object {
+      "args": Array [
+        0,
+        28,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        4,
+        1,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        29,
+        30,
+      ],
+      "op": "object",
+    },
+    Object {
+      "args": Array [
+        27,
+      ],
+      "op": "size",
+    },
+    Object {
+      "args": Array [
+        32,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        33,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        31,
+        34,
+      ],
+      "op": "get",
+    },
+    Object {
+      "value": 16,
+    },
+    Object {
+      "args": Array [
+        35,
+        36,
+      ],
+      "op": "shl",
+    },
+    Object {
+      "value": null,
+    },
+    Object {
+      "args": Array [
+        0,
+        38,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        20,
+      ],
+      "op": "table",
+    },
+    Object {
+      "args": Array [],
+      "op": "key",
+    },
+    Object {
+      "args": Array [],
+      "op": "value",
+    },
+    Object {
+      "args": Array [
+        41,
+        42,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        43,
+      ],
+      "op": "array",
+    },
+    Object {
+      "args": Array [
+        40,
+        44,
+      ],
+      "op": "flatMap",
+    },
+    Object {
+      "args": Array [
+        45,
+      ],
+      "op": "head",
+    },
+    Object {
+      "args": Array [
+        40,
+        46,
+      ],
+      "op": "get",
+    },
+    Object {
+      "args": Array [
+        4,
+        47,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        39,
+        48,
+      ],
+      "op": "object",
+    },
+    Object {
+      "value": 3,
+    },
+    Object {
+      "args": Array [
+        50,
+      ],
+      "op": "table",
+    },
+    Object {
+      "args": Array [
+        51,
+        1,
+      ],
+      "op": "get",
+    },
+    Object {
+      "args": Array [
+        0,
+        52,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        53,
+        30,
+      ],
+      "op": "object",
+    },
+    Object {
+      "args": Array [
+        51,
+      ],
+      "op": "size",
+    },
+    Object {
+      "args": Array [
+        55,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        56,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        54,
+        57,
+      ],
+      "op": "get",
+    },
+    Object {
+      "args": Array [
+        58,
+        20,
+      ],
+      "op": "eq",
+    },
+    Object {
+      "args": Array [
+        59,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        60,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        49,
+        61,
+      ],
+      "op": "get",
+    },
+    Object {
+      "args": Array [
+        62,
+      ],
+      "op": "first",
+    },
+    Object {
+      "value": 32767,
+    },
+    Object {
+      "args": Array [
+        63,
+        64,
+      ],
+      "op": "bwand",
+    },
+    Object {
+      "args": Array [
+        4,
+        65,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        3,
+        66,
+      ],
+      "op": "object",
+    },
+    Object {
+      "args": Array [
+        62,
+        38,
+      ],
+      "op": "neq",
+    },
+    Object {
+      "args": Array [
+        68,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        69,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        67,
+        70,
+      ],
+      "op": "get",
+    },
+    Object {
+      "args": Array [
+        37,
+        71,
+      ],
+      "op": "bwor",
+    },
+    Object {
+      "args": Array [
+        4,
+        72,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        3,
+        73,
+      ],
+      "op": "object",
+    },
+    Object {
+      "args": Array [
+        58,
+        1,
+      ],
+      "op": "eq",
+    },
+    Object {
+      "args": Array [
+        75,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        76,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        74,
+        77,
+      ],
+      "op": "get",
+    },
+    Object {
+      "args": Array [
+        26,
+        78,
+      ],
+      "op": "get",
+    },
+    Object {
+      "args": Array [
+        0,
+        20,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        58,
+        20,
+      ],
+      "op": "plus",
+    },
+    Object {
+      "args": Array [
+        4,
+        81,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        80,
+        82,
+      ],
+      "op": "object",
+    },
+    Object {
+      "args": Array [
+        4,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        84,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        14,
+        85,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        17,
+        9,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        86,
+        87,
+      ],
+      "op": "object",
+    },
+    Object {
+      "args": Array [
+        88,
+        78,
+      ],
+      "op": "get",
+    },
+    Object {
+      "args": Array [
+        0,
+        89,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "value": 4,
+    },
+    Object {
+      "args": Array [
+        58,
+        91,
+      ],
+      "op": "eq",
+    },
+    Object {
+      "args": Array [
+        4,
+        92,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        90,
+        93,
+      ],
+      "op": "object",
+    },
+    Object {
+      "args": Array [
+        89,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        95,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        94,
+        96,
+      ],
+      "op": "get",
+    },
+    Object {
+      "args": Array [
+        97,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        98,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        83,
+        99,
+      ],
+      "op": "get",
+    },
+    Object {
+      "args": Array [
+        51,
+        1,
+        100,
+      ],
+      "op": "put",
+    },
+    Object {
+      "args": Array [
+        40,
+        46,
+      ],
+      "op": "delete",
+    },
+    Object {
+      "args": Array [
+        101,
+        102,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        79,
+        103,
+      ],
+      "op": "concat",
+    },
+    Object {
+      "args": Array [
+        104,
+      ],
+      "op": "array",
+    },
+    Object {
+      "args": Array [
+        105,
+        44,
+      ],
+      "op": "flatMap",
+    },
+    Object {
+      "args": Array [
+        106,
+      ],
+      "op": "head",
+    },
+    Object {
+      "args": Array [
+        0,
+        107,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        42,
+      ],
+      "op": "first",
+    },
+    Object {
+      "value": 1073741823,
+    },
+    Object {
+      "args": Array [
+        109,
+        110,
+      ],
+      "op": "bwand",
+    },
+    Object {
+      "value": 15,
+    },
+    Object {
+      "args": Array [
+        111,
+        112,
+      ],
+      "op": "shr",
+    },
+    Object {
+      "args": Array [
+        113,
+        0,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        114,
+      ],
+      "op": "array",
+    },
+    Object {
+      "args": Array [
+        41,
+        115,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        40,
+        116,
+      ],
+      "op": "flatMap",
+    },
+    Object {
+      "args": Array [
+        117,
+      ],
+      "op": "head",
+    },
+    Object {
+      "args": Array [
+        0,
+        118,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "value": -1,
+    },
+    Object {
+      "args": Array [
+        4,
+        120,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        119,
+        121,
+      ],
+      "op": "object",
+    },
+    Object {
+      "args": Array [
+        117,
+      ],
+      "op": "size",
+    },
+    Object {
+      "args": Array [
+        123,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        124,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        122,
+        125,
+      ],
+      "op": "get",
+    },
+    Object {
+      "args": Array [
+        4,
+        126,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        108,
+        127,
+      ],
+      "op": "object",
+    },
+    Object {
+      "args": Array [
+        106,
+      ],
+      "op": "size",
+    },
+    Object {
+      "args": Array [
+        129,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        130,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        128,
+        131,
+      ],
+      "op": "get",
+    },
+    Object {
+      "args": Array [
+        132,
+        120,
+      ],
+      "op": "eq",
+    },
+    Object {
+      "args": Array [
+        0,
+        15,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        105,
+        132,
+      ],
+      "op": "get",
+    },
+    Object {
+      "args": Array [
+        4,
+        135,
+      ],
+      "op": "pair",
+    },
+    Object {
+      "args": Array [
+        134,
+        136,
+      ],
+      "op": "object",
+    },
+    Object {
+      "args": Array [
+        133,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        138,
+      ],
+      "op": "not",
+    },
+    Object {
+      "args": Array [
+        137,
+        139,
+      ],
+      "op": "get",
+    },
+    Object {
+      "args": Array [
+        15,
+        44,
+      ],
+      "op": "flatMap",
+    },
+  ],
+  "tableTypes": Object {
+    "0": "u32",
+    "1": Object {
+      "tuple": Array [
+        "u32",
+        "ByteArray",
+      ],
+    },
+    "2": "u32",
+    "3": "u32",
+    "4": "string",
+  },
+}
+`;

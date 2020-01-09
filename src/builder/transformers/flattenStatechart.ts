@@ -26,7 +26,7 @@ export function flattenState(rootState: State): FlatStatechart {
     const exitOrder = (a: State, b: State) => documentIndex(b) - documentIndex(a)
 
     const isAtomicState = (s: State) => s.type === 'State' && !childStates(s).length
-    const conditionFor = (t: Transition|null): Formula => (t && t.condition) || trueCondition
+    const conditionFor = (t: Transition|null): Formula => (t && Reflect.has(t, 'condition')) ? t.condition as Formula : trueCondition
     const trueCondition = {$primitive: true} as Formula
     const falseCondition = {$primitive: true} as Formula
 
@@ -164,13 +164,13 @@ export function flattenState(rootState: State): FlatStatechart {
             }
 
             const pivot: Transition[][] = computePivot(...atomicTransitionSets)
-            return pivot.map((transitions) => ({
+            return pivot.map((transitions) => transitions.length === 0 ? null : ({
                 condition:
                     transitions.length === 1 ?
                     conditionFor(head(transitions)) :
                     F.and(...transitions.map(conditionFor)),
                 transitions: filterConflicts(transitions),
-            }))
+            })).filter(a => a) as ConditionalTransitionSet[]
 
             function filterConflicts(selected: Transition[]): Transition[] {
                 const filteredTransitions = new Set<Transition>()

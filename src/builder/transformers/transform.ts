@@ -2,7 +2,7 @@ import { Bundle, StoreSpec, TransformData } from '../types'
 import link from './link'
 import resolveControllers from './resolveControllers'
 import resolveFormulas from './resolveFormulas'
-import resolveTables from './resolveFormulas'
+import resolveTables from './resolveTables'
 import resolveOutputs from './resolveOutputs'
 import resolveViews from './resolveViews'
 
@@ -20,9 +20,10 @@ export default function transformBundle(bundle: Bundle): StoreSpec {
             bindings: [],
             events: [],
         },
+        debugInfo: new WeakMap()
     }
 
-    bundle = resolveTables(bundle, transformData)
+    bundle = resolveTables(bundle)
     bundle = resolveControllers(bundle, transformData)
     bundle = resolveViews(bundle, transformData)
     bundle = resolveOutputs(bundle, transformData)
