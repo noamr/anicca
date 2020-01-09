@@ -41,9 +41,9 @@ export default function resolveControllers(bundle: Bundle, im: TransformData): B
     im = im || {}
     const bundleWithControllerTables = [
         ...bundle,
-        S.table(INBOX_TABLE, {type: ['u32', 'ByteArray']}),
-        S.table(MODI_TABLE, {type: 'u32'}),
-        S.table(PHASE_TABLE, {type: 'u32'}),
+        S.table(INBOX_TABLE, {valueType: {tuple: ['u32', 'ByteArray']}}),
+        S.table(MODI_TABLE, {valueType: 'u32'}),
+        S.table(PHASE_TABLE, {valueType: 'u32'}),
     ]
     const flatControllers = mapValues(
         map(filter(bundleWithControllerTables, ({type}) => type === 'Controller'),

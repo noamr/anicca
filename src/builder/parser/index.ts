@@ -27,6 +27,7 @@ function buildParser(filename: string): () => Parser {
 
 const rootParser = buildParser('./root.ne')
 const formulaParser = buildParser('./formula.ne')
+const typeParser = buildParser('./types.ne')
 const controllerParser = buildParser('./controller.ne')
 const controllerActionsParser = buildParser('./controllerActions.ne')
 const viewRulesParser = buildParser('./viewRules.ne')
@@ -162,12 +163,12 @@ const valueParser = {
     Table: (key: any, valueType: any) => ({
         type: 'Table',
         name: key.name,
-        valueType,
+        valueType: parseAtom(typeParser)(valueType),
     } as TableStatement),
     Slot: (key: any, formula: any) => ({
         type: 'Slot',
         name: key.name,
-        formula: parseAtom(formulaParser)(formula),
+        formula: parseFormula(formula),
     } as SlotStatement),
     View: (key: any, value: any) => ({
         type: 'View',

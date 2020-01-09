@@ -30,9 +30,18 @@ export interface LetStatement extends Statement {
     valueType: Primitive
 }
 
+type SingularType = 'u8' | 'u16' | 'u32' | 'u64' | 'u128' | 'i8' | 'i16' | 'i32' | 'i64' | 'i128' | 'f32' | 'f64' | 'string' | 'bool' | 'ByteArray'
+export type NativeType = SingularType | NativeTupleType | NativeDictionaryType
+interface NativeTupleType {
+    tuple: NativeType[]
+}
+interface NativeDictionaryType {
+    dictionary: [NativeType, NativeType]
+}
+
 export interface TableStatement extends Statement {
     type: 'Table'
-    valueType: Primitive
+    valueType: NativeType
 }
 
 export interface ViewDeclaration extends WithToken {
@@ -146,65 +155,16 @@ export interface State {
 }
 
 interface NT<Name> {$T: Name}
-type NumberTypeNames = 'u8' | 'u16' | 'u32' | 'u64' | 'u128' | 'i8' | 'i16' | 'i32' | 'i64' | 'i128' | 'f32' | 'f64'
-type NumberType = NT<NumberTypeNames>
-type StringType = NT<'string'>
-type BoolType = NT<'boolean'>
-type ArrayType = NT<'array'>
-type NullType = NT<'null'>
-type MapType<K, V> = NT<[K, V]>
-type Nullable<T> = NullType | T
-export interface NativeType {$T: any}
-
-type JSType<T extends NativeType> =
-    T extends Pair<infer K, infer V> ? JSPairTypeFor<K, V> :
-    T extends NumberType ? {$: number} :
-    T extends StringType ? {$: string} :
-    T extends MapType<infer K, infer V> ?
-        JSMapTypeFor<K extends NativeType ? K : never, V extends NativeType ?V : never> :
-    T extends NullType ? {$: null} :
-    never
-
-type Pair<K, V> = [K, V]
-type JSToNativeType<T> =
-    T extends number ? {$: NumberType} :
-    T extends Pair<infer K, infer V> ? NativePairTypeFor<K, V> :
-    T extends string ? {$: StringType} :
-    T extends null ? {$: NullType} :
-    T extends boolean ? {$: BoolType} :
-    T extends Map<infer K, infer V> ? NativeMapTypeFor<K, V>:
-    T extends {[key: string]: infer V} ? NativeMapTypeFor<string, T[keyof T]> :
-    T extends any[] ? NativeMapTypeFor<keyof T, T[keyof T]>:
-    never
-
-interface JSMapTypeFor<K extends NativeType, V extends NativeType> {
-        $: Map<JSType<K>, JSType<V>>
-    }
-interface JSPairTypeFor<K, V> {
-    $: [toJSType<K>, toJSType<V>]
-}
-
-interface NativeMapTypeFor<K, V> {
-    $: MapType<JSToNativeType<K>, JSToNativeType<V>>
-}
-
-interface NativePairTypeFor<K, V> {
-    $: [toNativeType<K>, toNativeType<V>]
-}
 
 type ArgumentTypes<F> = F extends (...args: Array<infer A>) => any ? A : never
 type ReturnType<F> = F extends (...args: Array<infer A>) => infer R ? R : never
 
 export interface TypedFormula<T> extends Formula {
-    $T: toJSType<T>
+    $T: T
 }
 
-type toJSType<T> = T extends NativeType ? JSType<T>['$'] : T
-
-type toNativeType<T> = T extends NativeType ? T : JSToNativeType<T>['$']
-
 export interface TypedPrimitive<T> extends TypedFormula<T> {
-    $primitive: toJSType<T>
+    $primitive: T
 }
 
 export interface TypedRef<T> extends TypedFormula<T> {
@@ -322,12 +282,12 @@ export function tuple<A, B>(a: A, b: B) {
 }
 
 type IsTuple<T> = T extends any[] ? number extends T['length'] ? false : true : false
-export type toArgType<T> = T | toJSType<T> | toFormula<T>
+export type toArgType<T> = T | ResolveType<T> | toFormula<T>
 export type toFormula<T> =
     T extends TypedFormula<infer R> ? T :
     T extends Array<TypedFormula<infer R>> ? TypedFormula<R[]> :
     T extends {$T: infer R} ? TypedFormula<R> :
-    TypedFormula<toJSType<T>>
+    TypedFormula<T>
 type ValueTypeOf<T, K = any> =
     T extends Map<any, infer V> ? V :
     T extends {[key: number]: infer V} ? V :
@@ -344,8 +304,9 @@ type KeyTypeOf<T> =
 
 type KeyType<T> = KeyTypeOf<ResolveType<T>>
 type ValueType<T, K = any> = ResolveType<ValueTypeOf<ResolveType<T>, K>>
-type ResolveType<P> = P extends {$T: infer T} ? toJSType<T> : toJSType<P>
-type IsMapType<T> = toJSType<T> extends Map<any, any> ? true : never
+type ResolveType<P> = P extends {$T: infer T} ? T : P
+type IsMapType<T> = ResolveType<T> extends Map<any, any> ? true : never
+type Pair<A, B> = [A, B]
 
 export type AssignmentDirective<K = any, V = any> = [number, ResolveType<K>, ResolveType<V>]
 
@@ -384,7 +345,7 @@ export type FormulaBuilder = {
     cond<Condition, Consequent, Alternate>(c: Condition, t: Consequent, a: Alternate):
         toFormula<Consequent | Alternate>
     put<T, K, V>(table: T, key: K, value: V): toFormula<AssignmentDirective<K, V>>
-    delete<T, K>(table: T, key: K): toFormula<AssignmentDirective<toJSType<K>, any>>
+    delete<T, K>(table: T, key: K): toFormula<AssignmentDirective<ResolveType<K>, any>>
     replace(): toFormula<AssignmentDirective>
     merge(): toFormula<AssignmentDirective>
     filter<T, P>(t: T, p: P): IsMapType<T> extends true ? toFormula<T> : never
@@ -402,13 +363,9 @@ export interface RawFormula {
 }
 
 export interface StoreSpec {
-    roots: {
-        [key in RootType]: number
-    }
-
+    roots: {[key in RootType]: number}
     outputNames: {[name: string]: number}
-
     slots: RawFormula[]
-    tables?: NativeType[]
+    tableTypes: {[x: number]: NativeType}
     debugInfo?: any[]
 }

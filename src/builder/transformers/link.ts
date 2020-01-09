@@ -4,12 +4,18 @@ import path from 'path'
 import { Slot } from '../StoreDefinition'
 import {F, P, R, removeUndefined, S} from './helpers'
 import useMacro from './useMacro'
-import { TransformData, StoreSpec, RawFormula, Formula, FunctionFormula, RootType } from '../types'
+import { NativeType, TransformData, StoreSpec, RawFormula, Formula,
+    FunctionFormula, RootType, Bundle, TableStatement } from '../types'
 
-export default function link(data: TransformData): StoreSpec {
+export default function link(bundle: Bundle, data: TransformData): StoreSpec {
     const indexCache = new WeakMap<Formula, number>()
     const hashIndices = new Map<string, number>()
     const slots: RawFormula[] = []
+
+    const tableTypes: {[x: number]: NativeType} =
+        bundle.filter(({type}) => type === 'Table')
+            .map((s) => ({[data.tables[s.name as string]]: (s as TableStatement).valueType}))
+            .reduce(assign)
 
     const hashFormula = (f: Formula): string => {
         if (Reflect.has(f, '$primitive'))
@@ -42,6 +48,7 @@ export default function link(data: TransformData): StoreSpec {
 
     return {
         outputNames: data.outputNames,
+        tableTypes,
         roots: Object.entries(data.roots).map(([key, value]) =>
             ({[key]: formulaToIndex(value as Formula)})).reduce(assign) as {[key in RootType]: number},
         slots,

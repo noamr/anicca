@@ -27,5 +27,5 @@ export default function transformBundle(bundle: Bundle): StoreSpec {
     bundle = resolveViews(bundle, transformData)
     bundle = resolveOutputs(bundle, transformData)
     bundle = resolveFormulas(bundle, transformData)
-    return link(transformData)
+    return link(bundle, transformData)
 }

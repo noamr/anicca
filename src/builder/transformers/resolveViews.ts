@@ -32,7 +32,7 @@ import {F, P, R, removeUndefined, S} from './helpers'
 import useMacro from './useMacro'
 
 export default function resolveViews(bundle: Bundle, im: TransformData): Bundle {
-    const prevTable = S.Table('@view_prev', {type: ''})
+    const prevTable = S.Table('@view_prev', {valueType: 'string'})
     const viewStatements = bundle.filter(({type}) => type === 'View')
 
     const flatViewDeclarations = viewStatements.flatMap((s, viewIndex) => {
