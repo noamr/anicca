@@ -1,0 +1,77 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`type grammar compound 1`] = `
+Object {
+  "tuple": Array [
+    "u32",
+    Object {
+      "tuple": Array [
+        "f32",
+        Object {
+          "tuple": Array [
+            "string",
+            "bool",
+          ],
+        },
+      ],
+    },
+  ],
+}
+`;
+
+exports[`type grammar compound 2`] = `
+Object {
+  "tuple": Array [
+    "string",
+    Object {
+      "dictionary": Array [
+        "bool",
+        Object {
+          "dictionary": Array [
+            "string",
+            Object {
+              "tuple": Array [
+                "i8",
+                "bool",
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+}
+`;
+
+exports[`type grammar multi 1`] = `
+Object {
+  "tuple": Array [
+    "u32",
+    "string",
+  ],
+}
+`;
+
+exports[`type grammar multi 2`] = `
+Object {
+  "tuple": Array [
+    "string",
+    "bool",
+  ],
+}
+`;
+
+exports[`type grammar multi 3`] = `
+Object {
+  "dictionary": Array [
+    "string",
+    "u32",
+  ],
+}
+`;
+
+exports[`type grammar singular 1`] = `"u32"`;
+
+exports[`type grammar singular 2`] = `"f64"`;
+
+exports[`type grammar singular 3`] = `"string"`;
