@@ -158,7 +158,7 @@ const valueParser = {
     Let: (key: any, valueType: any) => ({
         type: 'Let',
         name: key.name,
-        valueType,
+        valueType: parseAtom(typeParser)(valueType),
     } as LetStatement),
     Table: (key: any, valueType: any) => ({
         type: 'Table',

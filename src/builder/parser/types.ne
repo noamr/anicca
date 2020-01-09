@@ -12,9 +12,9 @@ const lexer = moo.compile({
 @lexer lexer
 
 type ->
-    singular
-    | tuple
-    | dictionary
+    singular {% id %}
+    | tuple {% id %}
+    | dictionary {% id %}
 
 singular ->
     _ %keywords _ {% ([,{value}]) => value %}
