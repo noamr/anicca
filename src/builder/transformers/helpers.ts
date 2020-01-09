@@ -26,10 +26,10 @@ export const F = new Proxy({}, {
 }) as FormulaBuilder
 
 export const S = new Proxy({}, {
-    get: (t, type) => (name: string, stuff: any) => ({
+    get: (t, type) => (name: string, stuff?: any) => ({
         type, name, ...stuff
     })
-}) as {[any: string]: (name: any, stuff: any) => Statement}
+}) as {[any: string]: (name: any, stuff?: any) => Statement}
 
 export const R = ($ref: string) => ({$ref})
 

@@ -1,25 +1,8 @@
-import { Bundle, GotoAction, ControllerStatement, State, Transition, DispatchAction, TransitionAction, Formula, Statechart } from '../types'
+import { Bundle, GotoAction, ControllerStatement, State, Transition, DispatchAction, TransitionAction, Formula, Statechart,
+    FlatStatechart, Configuration, HistoryConfiguration, Modus, Juncture, StepResults
+ } from '../types'
 import {F, S, R, removeUndefined} from './helpers'
 import * as _ from 'lodash-es'
-
-export type Configuration = Set<State>
-export type HistoryConfiguration = Map<State, Configuration>
-
-
-export type Modus = {
-    configuration: Configuration
-    history: HistoryConfiguration
-}
-export type StepResults<M = Modus> = {
-    condition: Formula
-    execution: TransitionAction[]
-    modus: M
-}
-
-export type Juncture<M = Modus> = {
-    event: string | null
-    modus: M
-}
 
 const head = <T>(a: T[]) => a.length ? a[0] : null
 const flatten = <T>(a: Iterable<Iterable<T>>): Iterable<T> => Array.from(a).reduce((a, b) => [...a, ...b], [])
@@ -27,13 +10,6 @@ type Predicate<Ret, Arg> = (a: Arg) => Ret
 const some = <T>(a: Iterable<T>, p: Predicate<boolean, T>) => Array.from(a).some(p)
 const intersectSets = <T>(a: Set<T>, b: Set<T>) => some(a, x => some(b, y => y === x))
 const sort = <T>(a: Iterable<T>, p: (a: T, b: T) => number) => a ? Array.from(a).sort(p) : a
-
-
-export type FlatStatechart = {
-    junctures: Map<Juncture<string>|null, StepResults<string>[]>
-    events: string[]
-    debugInfo?: {}
-}
 
 
 export function flattenState(rootState: State) : FlatStatechart {

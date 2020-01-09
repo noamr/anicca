@@ -78,7 +78,7 @@ export interface DOMEventDeclaration extends ViewDeclaration {
 }
 
 export interface DOMEventAction extends WithToken {
-    type: "RunScript" | "Dispatch"
+    type: "PreventDefault" | "Dispatch"
 }
 
 export interface DispatchAction extends DOMEventAction {
@@ -91,11 +91,6 @@ export interface DispatchAction extends DOMEventAction {
 export interface GotoAction extends TransitionAction {
     type: "Goto"
     target: string
-}
-
-export interface RunScriptAction extends DOMEventAction {
-    type: "RunScript"
-    source: string
 }
 
 export interface ViewRule extends WithToken  {
@@ -276,8 +271,57 @@ interface SimpleFunctions {
     startsWith(s: string, a: string): boolean
     endsWith(s: string, a: string): boolean
     stringIncludes(s: string, a: string): boolean
+    encode(s: string[]): ArrayBuffer
     noop(): null
 }
+
+export type Configuration = Set<State>
+export type HistoryConfiguration = Map<State, Configuration>
+
+
+export type Modus = {
+    configuration: Configuration
+    history: HistoryConfiguration
+}
+
+export type FlatStatechart = {
+    junctures: Map<Juncture<string>|null, StepResults<string>[]>
+    events: string[]
+    debugInfo?: {}
+}
+
+export type StepResults<M = Modus> = {
+    condition: Formula
+    execution: TransitionAction[]
+    modus: M
+}
+
+export type Juncture<M = Modus> = {
+    event: string | null
+    modus: M
+}
+
+export type TransformData = {
+    flatControllers: {[name: string]: [number, FlatStatechart]}
+    tables: {[name: string]: number}
+    outputs: {[name: string]: TypedFormula<ArrayBuffer>}
+    views: {
+        bindings: {
+            view: string
+            selector: string
+            target?: string
+            type: 'attribute' | 'content' | 'data' | 'style'
+        }[]
+        events: {
+            view: string
+            selector: string
+            eventType: string
+            preventDefault: boolean
+            headers: number[] 
+        }[]
+    }
+}
+
 
 export function tuple<A, B>(a: A, b: B) {
     return [a, b] as [A, B]
@@ -286,7 +330,10 @@ export function tuple<A, B>(a: A, b: B) {
 type IsTuple<T> = T extends Array<any> ? number extends T["length"] ? false : true : false
 export type toArgType<T> = T | toJSType<T> | toFormula<T>
 export type toFormula<T> = 
-    T extends TypedFormula<infer R> ? T : T extends {$T: infer R} ? TypedFormula<R> : TypedFormula<toJSType<T>>
+    T extends TypedFormula<infer R> ? T :
+    T extends Array<TypedFormula<infer R>> ? TypedFormula<R[]> :
+    T extends {$T: infer R} ? TypedFormula<R> :
+    TypedFormula<toJSType<T>>
 type ValueTypeOf<T, K = any> = 
     T extends Map<any, infer V> ? V :
     T extends {[key: number]: infer V} ? V :
@@ -315,7 +362,9 @@ export type FormulaBuilder = {
     get<M, K>(s: M, k: K): toFormula<ValueType<M, K>>
     first<P>(s: P): ResolveType<P> extends ResolveType<[infer A, any]> ? toFormula<A> : never
     second<P>(s: P): ResolveType<P> extends ResolveType<[any, infer B]> ? toFormula<B> : never
-    map<M, P>(input: M, predicate: P): toFormula<P> extends toFormula<[infer K2, infer V2]> ? toFormula<Map<K2, V2>> : never
+    map<M, P>(input: M, predicate: P): 
+        IsMapType<M> extends true ? toFormula<P> extends toFormula<[infer K2, infer V2][]> ? toFormula<Map<K2, V2>> 
+        : never : never
     reduce<M, P>(map: M, predicate: P): 
         ResolveType<P> extends [infer R, boolean] ? toFormula<R> : never
     head<M>(a: M): toFormula<KeyType<M>>
@@ -334,10 +383,11 @@ export type FormulaBuilder = {
     cond<Condition, Consequent, Alternate>(c: Condition, t: Consequent, a: Alternate): 
         toFormula<Consequent | Alternate>
     put<T, K, V>(table: T, key: K, value: V): toFormula<AssignmentDirective<K, V>>
-    delete<T, K>(table: T, key: K): toFormula<AssignmentDirective<K, any>>
+    delete<T, K>(table: T, key: K): toFormula<AssignmentDirective<toJSType<K>, any>>
     replace(): toFormula<AssignmentDirective>
     merge(): toFormula<AssignmentDirective>
     filter<T, P>(t: T, p: P): IsMapType<T> extends true ? toFormula<T> : never
+    diff<T>(a: T, b: T): IsMapType<T> extends true ? toFormula<T> : never
 }
 
 export type Bundle = Array<Statement>

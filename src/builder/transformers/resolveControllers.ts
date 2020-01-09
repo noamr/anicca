@@ -1,6 +1,6 @@
 import {F, P, S, R, removeUndefined} from './helpers'
-import { FlatStatechart, Juncture, StepResults, flattenState } from './flattenStatechart'
-import { tuple, Statement, toFormula, TransitionAction, AssignTransitionAction, DispatchAction, Formula, ReferenceFormula, LetStatement, TypedRef, SlotStatement, FunctionFormula, Bundle, ControllerStatement, AssignmentDirective, TypedFormula } from '../types'
+import { flattenState } from './flattenStatechart'
+import { State, FlatStatechart, Juncture, StepResults, tuple, Statement, toFormula, TransitionAction, AssignTransitionAction, DispatchAction, Formula, ReferenceFormula, LetStatement, TypedRef, SlotStatement, FunctionFormula, Bundle, ControllerStatement, AssignmentDirective, TypedFormula, TransformData } from '../types'
 import {keys, forEach, values, flatten, pickBy, map, assign, mapValues, filter} from 'lodash'
 import useMacro from './useMacro'
 import fs from 'fs'
@@ -26,31 +26,46 @@ type ChangeRequest = [number, string]
 const getTargetFromEventHeader = F.shr(F.bwand(F.first(F.value<EventType>()), F.minus(F.shl(1, INTERNAL_BITS), 1)), TARGET_BITS)
 const getInternalFromEventHeader = F.shr(F.first(F.value<EventType>()), INTERNAL_BITS)
 
-const modi = {$ref: '@modi', $T: [] as number[]}
-const phases = {$ref: '@phases', $T: [] as number[]}
-const inbox = {$ref: '@inbox', $T: [] as EventType[]}
+const INBOX_TABLE = '@inbox'
+const MODI_TABLE = '@modi'
+const PHASE_TABLE = '@phases'
 
-export default function resolveControllers(bundle: Bundle): Bundle {
-    const controllers = mapValues(map(filter(bundle, ({type}) => type === 'Controller'), (v: Statement) => ({[v.name || '']: (v as ControllerStatement).rootState})).reduce(assign), flattenState)
-    const tables = map(filter(bundle, ({type}) => type === 'Table'), (v: Statement, i) => ({[v.name || '']: i})).reduce(assign)
+const modi = {$ref: MODI_TABLE, $T: [] as number[]}
+const phases = {$ref: PHASE_TABLE, $T: [] as number[]}
+const inbox = {$ref: INBOX_TABLE, $T: [] as EventType[]}
+
+export default function resolveControllers(bundle: Bundle, im: TransformData): Bundle {
+    im = im || {}
+    const bundleWithControllerTables = [
+        ...bundle,
+        S.table(INBOX_TABLE, {type: ['u32', 'ByteArray']}),
+        S.table(MODI_TABLE, {type: 'u32'}),
+        S.table(PHASE_TABLE, {type: 'u32'}),
+    ]
+    im.flatControllers = mapValues(
+        map(filter(bundleWithControllerTables, ({type}) => type === 'Controller'), 
+            (v: Statement, i) => ({[v.name || '']: [i, (v as ControllerStatement).rootState] as [number, State]})).reduce(assign), 
+        (([i, s]: [number, State]) => [i, flattenState(s)] as [number, FlatStatechart]))
+
+    const tables = map(filter(bundleWithControllerTables, ({type}) => type === 'Table'), (v: Statement, i) => ({[v.name || '']: i})).reduce(assign)
 
     const context: Context = {tables}
-    const stagingByController = Object.entries(controllers).map(([name, rootState], index, controllers) => convertControllerToFormulas([name, rootState], index, controllers, context))
+    const stagingByController = Object.entries(im.flatControllers).map(([name, [index, rootState]], i, controllers) => convertControllerToFormulas([name, rootState], index, im.flatControllers, context))
 
     const activeControllers = F.filter(stagingByController, F.neq(F.get(phases, F.key()), IDLE_PHASE))
-    const controllersWithMessages = F.map(inbox, tuple(getTargetFromEventHeader, true))
+    const controllersWithMessages = F.map(inbox, [F.pair(getTargetFromEventHeader, true)])
     const currentControllerIndex = F.cond(F.size(activeControllers), F.head(activeControllers), F.cond(F.size(controllersWithMessages), F.head(controllersWithMessages), -1))
     const idle = F.eq(currentControllerIndex, -1)
     const staging = F.cond(idle, [] as AssignmentDirective[], F.get(stagingByController, currentControllerIndex))
 
     return [
-        ...bundle.filter(({type}) => type !== 'Controller'),
+        ...bundleWithControllerTables.filter(({type}) => type !== 'Controller'),
         S.Slot('@staging', {formula: staging}),
         S.Slot('@idle', {formula: idle})
     ]
 }
 
-function convertControllerToFormulas(current: [string, FlatStatechart], index: number, allControllers: [string, FlatStatechart][], {tables}: Context): toFormula<AssignmentDirective[]> {
+function convertControllerToFormulas(current: [string, FlatStatechart], index: number, allControllers: [string, [number, FlatStatechart]][], {tables}: Context): toFormula<AssignmentDirective[]> {
     const hashToIndex: {[hash: string]: number} = {}
 
     const [, fsc] = current
@@ -98,7 +113,7 @@ function convertControllerToFormulas(current: [string, FlatStatechart], index: n
                 if (targetIndex < 0)
                     throw new Error(`Target not found: ${target}`)
 
-                const eventIndex = getEventIndex(allControllers[targetIndex][1], event)
+                const eventIndex = getEventIndex(allControllers[targetIndex][1][1], event)
                 const internal = !target
 
                 const header = 
@@ -107,7 +122,7 @@ function convertControllerToFormulas(current: [string, FlatStatechart], index: n
                     | (internal ? 1 : 0) << INTERNAL_BITS
 
                 
-                return resolveAssignment({type: 'Assign', source: F.array(P(header), payload), target: F.get({$ref: '@inbox'} as Formula, F.uid())} as AssignTransitionAction)
+                return resolveAssignment({type: 'Assign', source: F.array(P(header), payload), target: F.get(inbox, F.uid())} as AssignTransitionAction)
             }
             case 'Goto':
                 throw new Error(`Goto statements should already be resolved`)
@@ -164,7 +179,7 @@ function convertControllerToFormulas(current: [string, FlatStatechart], index: n
     const effective = F.get(effectiveMap, juncture)
     const nextPhase = F.cond(F.or(effective, F.eq(currentPhase, IDLE_PHASE)), AUTO_PHASE, F.plus(currentPhase, 1))
     const advance = F.put(phases, index, nextPhase)
-    const deleteCurrentEvent = F.delete(inbox, currentEventKey)
+    const deleteCurrentEvent = F.delete(inbox, currentEventKey) as TypedFormula<AssignmentDirective>
     const assignments = F.concat(F.get(assignmentMap, juncture), [advance, deleteCurrentEvent])
 
     // TODO:
