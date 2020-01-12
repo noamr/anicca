@@ -25,8 +25,8 @@ const INTERNAL_BITS = 30
 type EventType = [number, ArrayBuffer]
 type ChangeRequest = [number, string]
 
-const getTargetFromEventHeader = F.shr(F.bwand(F.first(F.value<EventType>()), (1 << INTERNAL_BITS) - 1), TARGET_BITS)
-const getInternalFromEventHeader = F.shr(F.first(F.value<EventType>()), INTERNAL_BITS)
+const getTargetFromEventHeader = F.shr(F.bwand(F.head(F.value<EventType>()), (1 << INTERNAL_BITS) - 1), TARGET_BITS)
+const getInternalFromEventHeader = F.shr(F.head(F.value<EventType>()), INTERNAL_BITS)
 
 const INBOX_TABLE = '@inbox'
 const MODI_TABLE = '@modi'
@@ -203,8 +203,9 @@ function convertControllerToFormulas(
     ))
 
     const currentEvent = F.cond(F.eq(currentPhase, AUTO_PHASE), null, F.get(inbox, currentEventKey))
-    const currentEventType = F.cond(F.isnil(currentEvent), 0, F.bwand(F.first(currentEvent), (1 << TARGET_BITS) - 1))
-    const currentEventPayload = F.cond(F.isnil(currentEvent), null, F.last(currentEvent) as toFormula<ArrayBuffer>)
+    const currentEventType = F.cond(F.isNil(currentEvent), 0, F.bwand(F.head(currentEvent), (1 << TARGET_BITS) - 1))
+    const currentEventPayload = F.cond(F.isNil(currentEvent), null,
+        F.tail(currentEvent as toFormula<[number, ArrayBuffer]>))
     const juncture = F.cond(F.eq(currentPhase, INIT_PHASE), 0, F.bwor(F.shl(modus, MODUS_BITS), currentEventType))
     const effective = F.get(effectiveMap, juncture)
     const nextPhase = F.cond(F.or(effective, F.eq(currentPhase, IDLE_PHASE)), AUTO_PHASE, F.plus(currentPhase, 1))

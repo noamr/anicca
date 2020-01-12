@@ -24,7 +24,7 @@ Object {
 
 exports[`controllerActions actions 4`] = `
 Object {
-  "src": Object {
+  "source": Object {
     "args": Array [
       Object {
         "$ref": "abc",
@@ -33,7 +33,7 @@ Object {
         "$ref": "bla",
       },
     ],
-    "op": "add",
+    "op": "plus",
   },
   "target": Object {
     "$ref": "abc",
@@ -44,7 +44,7 @@ Object {
 
 exports[`controllerActions actions 5`] = `
 Object {
-  "src": Object {
+  "source": Object {
     "args": Array [
       Object {
         "$ref": "tag",
@@ -64,7 +64,7 @@ Object {
 
 exports[`controllerActions actions 6`] = `
 Object {
-  "src": Object {
+  "source": Object {
     "args": Array [
       Object {
         "$ref": "hello",

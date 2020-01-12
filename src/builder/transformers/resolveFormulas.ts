@@ -10,7 +10,7 @@ import { PrimitiveFormula, toArgType, TypedPrimitive,
 
 const nativeFunctions = new Set([
     'gt', 'lt', 'lte', 'gte', 'eq', 'neq', 'plus', 'minus', 'mult', 'div', 'pow', 'mod', 
-    'bwand', 'bwor', 'bwxor', 'shl', 'shr', 'ushr', 'bwnot', 'not', 'size',
+    'bwand', 'bwor', 'bwxor', 'shl', 'shr', 'ushr', 'bwnot', 'not', 'size', 'cond',
     'negate', 'sin', 'cos', 'round', 'trunc', 'parseInt', 'parseFloat', 'formatNumber', 
     'get', 'now', 'uid', 'source', 'key', 'value', 'pair', 'first', 'last', 'object', 'array',
     'toLowerCase', 'toUpperCase', 'substring', 'startsWith', 'endsWith', 'stringIncludes', 'encode',
@@ -24,9 +24,7 @@ const functions: {[name: string]: (...args: any[]) => Formula} = {
     some: <M, P>(m: M, predicate: P) =>
         F.flatReduce(F.map(m, F.not(F.not(predicate))), [F.or(F.value(), F.aggregate()), F.value()], false),
     findFirst: <M, P>(m: M, predicate: P) => F.head(F.filter(m, predicate)),
-    cond: <P, C, A>(p: P, c: C, a: A) => F.get(F.object(F.pair(true, c as A|C),
-        F.pair(false, a as A|C)), F.not(F.not(p))),
-    isnil: (a: toArgType<any>) => F.neq(a, {$primitive: null} as TypedPrimitive<null>),
+    isNil: (a: toArgType<any>) => F.neq(a, {$primitive: null} as TypedPrimitive<null>),
     or: <A>(...args: A[]) =>
         args.length === 0 ? {$primitive: false} as Formula :
         args.length === 1 ? args[0] :

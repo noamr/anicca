@@ -48,8 +48,9 @@ export interface ViewDeclaration extends WithToken {
     type: 'Bind' | 'DOMEvent'
 }
 
+export type BindTargetType = 'content' | 'attribute' | 'style' | 'data'
 export interface BindTarget extends WithToken  {
-    type: 'html' | 'attribute' | 'style'
+    type: BindTargetType
 }
 
 export type Formula = WithToken
@@ -251,21 +252,12 @@ export interface Juncture<M = Modus> {
     modus: M
 }
 
-export type RootType = 'inbox' | 'outbox' | 'idle' | 'staging'
-export interface TransformData {
-    tables: {[name: string]: number}
-    roots: {[name in RootType]?: Formula}
-    refs: {[name: string]: Formula}
-    outputNames: {[name: string]: number}
-    outputs: {[name: string]: TypedFormula<ArrayBuffer>}
-    getEventHeader: (event: string, target: string) => number
-    debugInfo: any
-    views: {
+export type ViewConfig = {
         bindings: Array<{
             view: string
             selector: string
             target?: string
-            type: 'attribute' | 'content' | 'data' | 'style',
+            type: BindTargetType,
         }>
         events: Array<{
             view: string
@@ -275,7 +267,18 @@ export interface TransformData {
             stopPropagation: boolean
             headers: number[],
         }>,
-    }
+}
+
+export type RootType = 'inbox' | 'outbox' | 'idle' | 'staging'
+export interface TransformData {
+    tables: {[name: string]: number}
+    roots: {[name in RootType]?: Formula}
+    refs: {[name: string]: Formula}
+    outputNames: {[name: string]: number}
+    outputs: {[name: string]: TypedFormula<ArrayBuffer>}
+    getEventHeader: (event: string, target: string) => number
+    debugInfo: any
+    views: ViewConfig
 }
 
 export function tuple<A, B>(a: A, b: B) {
@@ -316,8 +319,6 @@ export type FormulaBuilder = {
         toFormula<ReturnType<SimpleFunctions[k]>>
 } & {
     get<M, K>(s: M, k: K): toFormula<ValueType<M, K>>
-    first<P>(s: P): ResolveType<P> extends ResolveType<[infer A, any]> ? toFormula<A> : never
-    last<P>(s: P): ResolveType<P> extends ResolveType<[any, infer B]> ? toFormula<B> : never
     flatMap<M, P>(input: M, predicate: P):
         IsMapType<M> extends true ? toFormula<P> extends toFormula<Array<[infer K2, infer V2]>> ? toFormula<Map<K2, V2>>
         : never : never
@@ -328,8 +329,8 @@ export type FormulaBuilder = {
         IsMapType<M> extends true ?
             ResolveType<P> extends [boolean, ResolveType<V>] ? toFormula<V>
             : never : never
-    head<M>(a: M): toFormula<KeyType<M>>
-    tail<M>(a: M): toFormula<KeyType<M>>
+    head<M>(a: M): ResolveType<M> extends ResolveType<[infer A, any]> ? toFormula<A> : toFormula<KeyType<M>>
+    tail<M>(a: M): ResolveType<M> extends ResolveType<Pair<infer A, infer B>> ? toFormula<B> : toFormula<KeyType<M>>
     findFirst<T, P>(t: T, p: P): IsMapType<T> extends true ? toFormula<KeyType<T>> : never
     concat<A, B>(a: A, b: B): toFormula<Array<ValueType<A> | ValueType<B>>>
     object<P>(...entries: P[]): P extends toArgType<Pair<infer K, infer V>> ? toFormula<Map<K, V>> : never
@@ -342,7 +343,7 @@ export type FormulaBuilder = {
     value<T = any>(): toFormula<T>
     aggregate<T = any>(): toFormula<T>
     size<T>(m: T): toFormula<number>
-    isnil<A>(a: A): toFormula<A extends null ? true : boolean>
+    isNil<A>(a: A): toFormula<A extends null ? true : boolean>
     cond<Condition, Consequent, Alternate>(c: Condition, t: Consequent, a: Alternate):
         toFormula<Consequent | Alternate>
     put<T, K, V>(table: T, key: K, value: V): toFormula<AssignmentDirective<K, V>>

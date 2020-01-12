@@ -6,16 +6,16 @@ interface ShellParams {
         outputNames: {[name: string]: number}
     }
     store: Store
-    outgoingPorts: {[key: string]: MessagePort}
+    outgoingPorts: MessagePort[]
     incomingPorts: MessagePort[]
 }
 
 export default function createShell({spec, store, outgoingPorts, incomingPorts}: ShellParams) {
     let running = false
-    const outPorts = Object.keys(spec.outputNames).map(name => ({[spec.outputNames[name]]: outgoingPorts[name]}))
     const run = async () => {
         if (running)
             return
+
         running = true
         while (!(await store.awaitIdle())) {
             store.commit()

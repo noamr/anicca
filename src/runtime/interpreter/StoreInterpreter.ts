@@ -49,7 +49,6 @@ export default function createStoreInterpreter(spec: StoreSpec) {
         mult: (a, b) => c => a(c) * b(c),
         div: (a, b) => c => a(c) / b(c),
         mod: (a, b) => c => a(c) % b(c),
-        isnil: a => ctx => a(ctx) === null,
         not: a => ctx => !(a(ctx)),
         bwnot: a => ctx => ~(a(ctx)),
         negate: a => ctx => -(a(ctx)),

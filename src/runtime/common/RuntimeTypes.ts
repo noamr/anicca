@@ -10,3 +10,5 @@ export interface Store {
     awaitIdle: () => Promise<boolean>
     commit: () => Promise<void>
 }
+
+export default {}

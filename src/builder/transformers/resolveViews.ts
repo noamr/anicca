@@ -71,6 +71,10 @@ export default function resolveViews(bundle: Bundle, im: TransformData): Bundle 
     const viewDiff = F.diff(F.array(...viewBindings), {$ref: '@view_prev', $T: [] as string[]} as
         TypedFormula<string[]>)
 
+    im.outputs = {
+        '@view_out': F.encode(viewDiff)
+    }
+
     return bundle.flatMap((statement) => {
         if (statement.type === 'View')
             return []
