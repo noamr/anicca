@@ -19,8 +19,8 @@ function fixArg(a: any): any {
     if (a.op)
         return {op: a.op, args: (a.args || []).map(fixArg)}
 
+    console.log(a)
     return {op: 'object', args: Object.entries(a).map(([key, value]) => F.pair(key, value))}
-
 }
 
 export const F = new Proxy({}, {

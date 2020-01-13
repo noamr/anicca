@@ -29,7 +29,7 @@ function ancestors(e: HTMLElement, a: HTMLElement|null): HTMLElement[] {
         [e, ...ancestors(e.parentElement, a)]
 }
 
-function createView(root: HTMLElement, eventHandlers: {string: EventHandler[]}, bindings: Binding[],
+function createView(root: HTMLElement, eventHandlers: {[type: string]: EventHandler[]}, bindings: Binding[],
                     ports: {in: MessagePort, out: MessagePort}) {
     const matches = (e: HTMLElement, {selector}: {selector: string}): boolean => 
         Array.from(root.querySelectorAll(selector)).includes(e)
@@ -62,8 +62,8 @@ function createView(root: HTMLElement, eventHandlers: {string: EventHandler[]}, 
                 event.preventDefault()
 
             if (headers.size) {
-                const payload = encodeMessage(event)
-                ports.out.postMessage({payload, headers}, [payload])
+                const payload = encodeEvent(event)
+                ports.out.postMessage({payload, headers: [...headers]}, [payload])
             }
 
         }, {capture: true})
@@ -103,13 +103,31 @@ const appliers: {[key in BindTargetType]: (e: HTMLElement, target: string, value
     }
 }
 
-type Setter = {
+interface Setter {
     binding: number
     key: number|null
     value: any
 }
 
 const decoder = new TextDecoder()
+function encodeEvent(e: Event): ArrayBuffer|SharedArrayBuffer {
+    const typeString = e.type
+    const target = e.target
+    let valueString = ''
+    if (target && Reflect.has(target, 'value'))
+        valueString = Reflect.get(target, 'value')
+
+    const typeBuffer = new TextEncoder().encode(e.type)
+    const valueBuffer = new TextEncoder().encode(valueString)
+    const buffer = new ArrayBuffer(typeBuffer.byteLength + valueBuffer.byteLength + 8)
+    const dv = new DataView(buffer)
+    dv.setUint32(0, typeBuffer.length)
+    dv.setUint32(4 + typeBuffer.length, valueBuffer.length)
+    const ba = new Uint8Array(buffer)
+    ba.set(typeBuffer, 4)
+    ba.set(valueBuffer, 8 + typeBuffer.length)
+    return ba.buffer
+}
 function decodeMessage(buffer: ArrayBuffer): Setter[] {
     const view = new DataView(buffer, 0)
     const location = 0
@@ -129,14 +147,15 @@ function decodeMessage(buffer: ArrayBuffer): Setter[] {
     return setters
 }
 
-export default function createViews({config, rootElements, ports}: ViewParams): Enqueue {
+export default function createViews({config, rootElements, ports}: ViewParams) {
     Object.entries(rootElements).forEach(([viewName, rootElement]) => {
         const events = config.events.map((event, index) =>
             [index, event] as [number, typeof event]).filter(([, {view}]) => view === viewName)
+            .reduce((a, [index, v]) =>
+                Object.assign(a, {[v.eventType]: (a[v.eventType] || []).concat([v])}),
+                {} as {[key: string]: EventHandler[]})
 
-        const bindings = new Map(config.bindings.map((binding, index) =>
-            [index, binding] as [number, typeof binding]).filter(([, {view}]) => view === viewName))
-
+        createView(rootElement, events, config.bindings, ports)
     })
 
 
@@ -149,4 +168,6 @@ export default function createViews({config, rootElements, ports}: ViewParams): 
             elements.forEach(e =>appliers[type](e, target || '', value))
         })
     }))
+
+    ports.in.start()
 }

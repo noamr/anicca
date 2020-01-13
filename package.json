@@ -45,10 +45,13 @@
     "rollup": "^1.27.13",
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-emit-ejs": "^2.0.4",
+    "rollup-plugin-json": "^4.0.0",
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-rust": "^1.2.0",
     "rollup-plugin-serve": "^1.0.1",
     "rollup-plugin-terser": "^5.1.3",
+    "rollup-plugin-typescript": "^1.0.1",
+    "rollup-plugin-web-worker-loader": "^0.8.1",
     "ts-jest": "^24.2.0",
     "ts-loader": "^6.2.1",
     "ts-node": "^8.5.4",
@@ -60,6 +63,7 @@
     "yargs": "^15.0.2"
   },
   "dependencies": {
-    "@babel/core": "^7.7.7"
+    "@babel/core": "^7.7.7",
+    "rollup-plugin-sourcemaps": "^0.5.0"
   }
 }

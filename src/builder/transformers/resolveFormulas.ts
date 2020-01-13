@@ -17,14 +17,16 @@ const nativeFunctions = new Set([
     'flatMap', 'flatReduce', 'head', 'tail', 'table', 'noop', 'put', 'delete', 'merge', 'replace', 'concat'
 ])
 const functions: {[name: string]: (...args: any[]) => Formula} = {
-    filter: <M, P>(m: M, predicate: P) => F.flatMap(m, P ? [[F.key(), F.value()]] : []),
-    map: <M, P>(m: M, predicate: P) => F.flatMap(m, [F.key(), predicate]),
+    filter: <M, P>(m: M, predicate: P) => F.flatMap(m, F.cond(predicate, [F.pair(F.key(), F.value())], [])),
+    map: <M, P>(m: M, predicate: P) => F.flatMap(m, [F.pair(F.key(), predicate)]),
     every: <M, P>(m: M, predicate: P) =>
-        F.flatReduce(F.map(m, F.not(F.not(predicate))), [F.and(F.value(), F.aggregate<boolean>()), !F.value()], true),
+        F.flatReduce(F.map(m, F.not(F.not(predicate))),
+            [F.and(F.value(), F.aggregate<boolean>()), F.not(F.value())], true),
     some: <M, P>(m: M, predicate: P) =>
         F.flatReduce(F.map(m, F.not(F.not(predicate))), [F.or(F.value(), F.aggregate()), F.value()], false),
     findFirst: <M, P>(m: M, predicate: P) => F.head(F.filter(m, predicate)),
     isNil: (a: toArgType<any>) => F.neq(a, {$primitive: null} as TypedPrimitive<null>),
+    put: (...args: any[]) => F.array(...args),
     or: <A>(...args: A[]) =>
         args.length === 0 ? {$primitive: false} as Formula :
         args.length === 1 ? args[0] :
@@ -36,8 +38,7 @@ const functions: {[name: string]: (...args: any[]) => Formula} = {
         args.length === 2 ? F.cond(args[0], args[1], args[0]) :
         F.cond(F.every(args, F.value()), F.tail(args), F.findFirst(args, F.not(F.value()))),
     diff: <T extends TypedFormula<Map<any, any>>>(a: T, b: T) =>
-        F.flatMap(a, F.cond(F.eq(F.value(), F.get(b as toFormula<Map<any, any>>, F.key())),
-            [] as Array<[any, any]>, [F.pair(F.key(), F.value())])),
+        F.filter(a, F.neq(F.get(a, F.key()), F.get(b, F.key()))),
 
 }
 
@@ -55,7 +56,7 @@ function formulaToString(f: Formula): string {
 
     if (ff.op) {
         const args = ff.args || []
-        const T = (tsa: TemplateStringsArray, ...A: number[]) => 
+        const T = (tsa: TemplateStringsArray, ...A: number[]) =>
             tsa.map((str, i) => `${str}${formulaToString(args[A[i]])}`).join('')
 
         switch (ff.op) {
@@ -98,8 +99,23 @@ function formulaToString(f: Formula): string {
             case 'array':
             case 'pair':
                 return `[${args.map(formulaToString).join(', ')}]`
+            case 'head':
+            case 'tail':
+            case 'size':
+                return `${formulaToString(args[0])}.${ff.op}()`
+            case 'object':
+                return `{${args.map(
+                    a => ((a as FunctionFormula).args || []).map(formulaToString).join(':')
+                ).join(',')}}`
             case 'cond':
                 return T`(${0} ? ${1} : ${2})`
+            case 'flatMap':
+                return `flatMap(${formulaToString(args[0])}, (value, key) => (${formulaToString(args[1])}))`
+            case 'value':
+            case 'aggregate':
+            case 'index':
+            case 'key':
+                return ff.op
         }
         return `${ff.op}(${(args || []).map(formulaToString).join(',')})`
     }
@@ -108,47 +124,59 @@ function formulaToString(f: Formula): string {
 
 }
 
-const unknownSymbol = Symbol('unknown')        
+const unknownSymbol = Symbol('unknown')
+
 export default function resolveFormulas(bundle: Bundle, im: TransformData): Bundle {
-    const isTruthy = (f: Formula): boolean|Symbol => {
+    const isTruthy = (f: Formula): boolean|symbol => {
         if (Reflect.has(f, '$primitive'))
             return !!Reflect.get(f, '$primitive')
         const {op, args} = f as FunctionFormula
-        const newArgs = (args || []).map(a => tryRewrite(a, a) || a)        
         if (new Set(['array', 'object', 'pair']).has(op))
             return true
 
         if (op === 'not') {
-            const v = isTruthy((newArgs || [])[0])
+            const v = isTruthy((args || [])[0])
             if (v !== unknownSymbol)
                 return !v
         }
 
         return unknownSymbol
     }
-    
-    const tryRewrite = (f: Formula, d?: Formula|undefined): Formula|undefined => {
-        if (!Reflect.has(f, 'op'))
-            return d
-        const {op, args} = f as FunctionFormula
-        const a = args || []
-        if (op === 'cond') {
-            const truthy = isTruthy(a[0])
-            if (truthy === unknownSymbol)
-                return d
 
-            return truthy ? resolveFormula(a[1]) : resolveFormula(a[2])
+    const rewrite = (f: Formula): Formula => {
+        const op = Reflect.get(f, 'op')
+        if (!op)
+            return f
+
+        const args = ((f as FunctionFormula).args || []).map(resolveFormula).map(f => rewrite(f))
+        switch (op) {
+            case 'cond': {
+                const truthy = isTruthy(args[0])
+                if (truthy !== unknownSymbol)
+                    return truthy ? args[1] : args[2]
+
+                break
+            }
+
+            case 'not': {
+                const truthy = isTruthy(args[0])
+                if (truthy !== unknownSymbol)
+                    return {$primitive: !truthy} as Formula
+                break
+            }
+            case 'object': {
+                args.forEach(a => {
+                    const args = (a as FunctionFormula).args
+                    if (!args || args.length !== 2)
+                        throw new Error(`Bad args for object: ${args && args.map(formulaToString)}`)
+                })
+            }
         }
 
-        if (op === 'not') {
-            const truthy = isTruthy(a[0])
-            if (truthy === unknownSymbol)
-                return d
+        if (args.every((v: any, i: number) => ((f as FunctionFormula).args || [])[i] === v))
+            return f
 
-            return {$primitive: !truthy} as Formula
-        }
-
-        return d
+        return {op, args} as Formula
     }
 
     const refs = {
@@ -173,14 +201,10 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
         }
 
         if (Array.isArray(f))
-            return {op: f.length === 2 ? 'pair': 'array', args: (f as any[]).map(resolveFormula)} as Formula
+            return resolveFormula(
+                {op: f.length === 2 ? 'pair' : 'array', args: (f as any[]).map((a => resolveFormula(a)))} as Formula)
 
         const {op, args} = f as FunctionFormula
-        const rewritten = tryRewrite(f)
-        if (rewritten) {
-            console.log({rewritten})
-            return rewritten
-        }
 
         if (functions[op])
             return resolveFormula(functions[op](...(args || [])) as FunctionFormula)
@@ -191,11 +215,12 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
         return {op, args: args && args.map(resolveFormula)} as Formula
     }
 
-    im.roots = mapValues(im.roots, resolveFormula)
+    im.roots = mapValues(im.roots, (f: Formula) => rewrite(resolveFormula(f)))
     im.debugInfo = {
         roots: mapValues(im.roots, formulaToString)
     }
 
     console.log(im.debugInfo)
+
     return bundle
 }

@@ -72,7 +72,7 @@ export default function resolveViews(bundle: Bundle, im: TransformData): Bundle 
         TypedFormula<string[]>)
 
     im.outputs = {
-        '@view_out': F.encode(viewDiff)
+        '@view_bus': F.cond(F.size(viewDiff), F.encode(viewDiff), null)
     }
 
     return bundle.flatMap((statement) => {

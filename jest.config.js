@@ -8,5 +8,6 @@ module.exports = {
     "^.+\\.(ts|tsx)$": "ts-jest",
     "^.+\\.ne$": "./src/test-support/nearley-transform-jest"
   },
+  moduleFileExtensions: ['js', 'ts'],
   testEnvironment: 'node'
 };

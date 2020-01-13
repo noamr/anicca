@@ -11,4 +11,9 @@ export interface Store {
     commit: () => Promise<void>
 }
 
+export interface StartMessage {
+    incomingPorts: MessagePort[]
+    outgoingPorts: MessagePort[]
+}
+
 export default {}

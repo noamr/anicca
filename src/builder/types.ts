@@ -222,7 +222,7 @@ interface SimpleFunctions {
     startsWith(s: string, a: string): boolean
     endsWith(s: string, a: string): boolean
     stringIncludes(s: string, a: string): boolean
-    encode(s: string[]): ArrayBuffer
+    encode(s: string[]): ArrayBuffer|null
     noop(): null
     table(n: number): any
 }
@@ -274,8 +274,8 @@ export interface TransformData {
     tables: {[name: string]: number}
     roots: {[name in RootType]?: Formula}
     refs: {[name: string]: Formula}
-    outputNames: {[name: string]: number}
-    outputs: {[name: string]: TypedFormula<ArrayBuffer>}
+    buses: {[name: string]: number}
+    outputs: {[name: string]: TypedFormula<ArrayBuffer|null>}
     getEventHeader: (event: string, target: string) => number
     debugInfo: any
     views: ViewConfig
@@ -366,7 +366,7 @@ export interface RawFormula {
 
 export interface StoreSpec {
     roots: {[key in RootType]: number}
-    outputNames: {[name: string]: number}
+    buses: {[name: string]: number}
     slots: RawFormula[]
     tableTypes: {[x: number]: NativeType}
     debugInfo?: any[]

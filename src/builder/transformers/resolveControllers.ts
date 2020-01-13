@@ -143,7 +143,6 @@ function convertControllerToFormulas(
         switch (a.type) {
             case 'Assign':
                 const {source, target} = a as AssignTransitionAction
-                console.log(JSON.stringify(a))
                 return parseAssignment(target, source)
             case 'Dispatch': {
                 const {event, payload, target} = a as DispatchAction
@@ -190,9 +189,10 @@ function convertControllerToFormulas(
 
     const effectiveMap = F.object(...[...modusMap].map(([j, [e]]) => F.pair(j, e)))
 
-    const assignmentMap = F.object([
-        [0 ,(junctures.get(null) as JValue).assignments],
-        ...[...modusMap].map(([j, [, a]]) => ([+j, a]))])
+
+    const assignmentMap = F.object(
+        F.pair(0, (junctures.get(null) as JValue).assignments),
+        ...[...modusMap].map(([j, [, a]]) => (F.pair(+j, a))))
 
     const modus = F.cond(F.size(modi), F.get(modi, index), 0)
     const currentPhase = F.cond(F.size(phases), F.get(phases, index), INIT_PHASE)
@@ -205,13 +205,15 @@ function convertControllerToFormulas(
     const currentEvent = F.cond(F.eq(currentPhase, AUTO_PHASE), null, F.get(inbox, currentEventKey))
     const currentEventType = F.cond(F.isNil(currentEvent), 0, F.bwand(F.head(currentEvent), (1 << TARGET_BITS) - 1))
     const currentEventPayload = F.cond(F.isNil(currentEvent), null,
-        F.tail(currentEvent as toFormula<[number, ArrayBuffer]>))
+        F.get(currentEvent as toFormula<[number, ArrayBuffer]>, 1))
     const juncture = F.cond(F.eq(currentPhase, INIT_PHASE), 0, F.bwor(F.shl(modus, MODUS_BITS), currentEventType))
     const effective = F.get(effectiveMap, juncture)
     const nextPhase = F.cond(F.or(effective, F.eq(currentPhase, IDLE_PHASE)), AUTO_PHASE, F.plus(currentPhase, 1))
     const advance = F.put(phases, index, nextPhase)
     const deleteCurrentEvent = F.delete(inbox, currentEventKey) as TypedFormula<AssignmentDirective>
-    const assignments = F.concat(F.get(assignmentMap, juncture), [advance, deleteCurrentEvent])
+    const assignments = F.flatMap([0, 1],
+        F.cond(F.key(), F.get(assignmentMap, juncture),
+            F.cond(currentEventKey, [advance, deleteCurrentEvent], [advance])))
 
     // TODO:
     // PAYLOAD, finish history

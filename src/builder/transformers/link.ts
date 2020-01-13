@@ -11,7 +11,6 @@ export default function link(bundle: Bundle, data: TransformData): StoreSpec {
     const indexCache = new WeakMap<Formula, number>()
     const hashIndices = new Map<string, number>()
     const slots: RawFormula[] = []
-    console.log( bundle.filter(({type}) => type === 'Table'))
 
     const tableTypes: {[x: number]: NativeType} =
         bundle.filter(({type}) => type === 'Table')
@@ -58,7 +57,7 @@ export default function link(bundle: Bundle, data: TransformData): StoreSpec {
     }
 
     return {
-        outputNames: data.outputNames,
+        buses: data.buses,
         tableTypes,
         roots: Object.entries(data.roots).map(([key, value]) =>
             ({[key]: formulaToIndex(value as Formula)})).reduce(assign) as {[key in RootType]: number},
