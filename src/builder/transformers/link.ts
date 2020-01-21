@@ -57,7 +57,7 @@ export default function link(bundle: Bundle, data: TransformData): StoreSpec {
     }
 
     return {
-        buses: data.buses,
+        channels: data.channels,
         tableTypes,
         roots: Object.entries(data.roots).map(([key, value]) =>
             ({[key]: formulaToIndex(value as Formula)})).reduce(assign) as {[key in RootType]: number},

@@ -3,11 +3,10 @@ import { StoreSpec } from '../../builder/types'
 
 interface ShellParams {
     store: Store
-    outgoingPorts: MessagePort[]
-    incomingPorts: MessagePort[]
+    ports: MessagePort[]
 }
 
-export default function createShell({store, outgoingPorts, incomingPorts}: ShellParams) {
+export default function createShell({store, ports}: ShellParams) {
     let running = false
     const run = async () => {
         if (running)
@@ -18,13 +17,13 @@ export default function createShell({store, outgoingPorts, incomingPorts}: Shell
             store.commit()
             const outbox = await store.dequeue()
             outbox.forEach(([target, payload]) => {
-                outgoingPorts[target].postMessage({payload}, [payload])
+                ports[target].postMessage({payload}, [payload])
             })
         } while (!(await store.awaitIdle()))
         running = false
     }
 
-    incomingPorts.forEach((port, i) => {
+    ports.forEach((port, i) => {
         port.addEventListener('message', ({data}) => {
             const {payload, headers} = data
             for (const header of headers)

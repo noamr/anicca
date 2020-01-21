@@ -4,28 +4,30 @@ import path from 'path'
 import { Slot } from '../StoreDefinition'
 import {F, P, R, removeUndefined, S} from './helpers'
 import useMacro from './useMacro'
-import { PrimitiveFormula, toArgType, TypedPrimitive, 
+import { PrimitiveFormula, toArgType, TypedPrimitive, ResolveType, 
         TypedFormula, Bundle, Formula, TransformData, NativeType,
          FunctionFormula, SlotStatement, ReferenceFormula, toFormula } from '../types'
 
 const nativeFunctions = new Set([
-    'gt', 'lt', 'lte', 'gte', 'eq', 'neq', 'plus', 'minus', 'mult', 'div', 'pow', 'mod', 
-    'bwand', 'bwor', 'bwxor', 'shl', 'shr', 'ushr', 'bwnot', 'not', 'size', 'cond',
-    'negate', 'sin', 'cos', 'round', 'trunc', 'parseInt', 'parseFloat', 'formatNumber', 
+    'gt', 'lt', 'lte', 'gte', 'eq', 'neq', 'plus', 'minus', 'mult', 'div', 'pow', 'mod',
+    'bwand', 'bwor', 'bwxor', 'shl', 'shr', 'ushr', 'bwnot', 'not', 'size', 'cond', 'isNil',
+    'negate', 'sin', 'cos', 'round', 'trunc', 'parseInt', 'parseFloat', 'formatInt', 'formatFloat',
     'get', 'now', 'uid', 'source', 'key', 'value', 'pair', 'first', 'last', 'object', 'array',
     'toLowerCase', 'toUpperCase', 'substring', 'startsWith', 'endsWith', 'stringIncludes', 'encode',
-    'flatMap', 'flatReduce', 'head', 'tail', 'table', 'noop', 'put', 'delete', 'merge', 'replace', 'concat'
+    'flatMap', 'flatReduce', 'head', 'tail', 'first', 'second', 'table', 'noop', 'put', 'delete', 'merge', 'replace', 'concat'
 ])
 const functions: {[name: string]: (...args: any[]) => Formula} = {
-    filter: <M, P>(m: M, predicate: P) => F.flatMap(m, F.cond(predicate, [F.pair(F.key(), F.value())], [])),
-    map: <M, P>(m: M, predicate: P) => F.flatMap(m, [F.pair(F.key(), predicate)]),
+    filter: <M, P>(m: M, predicate: P) =>
+        F.flatMap(m, F.cond(predicate,
+            F.object(F.pair(F.key() as any, F.value() as any)),
+            F.object<M>())),
+    map: <M, P>(m: M, predicate: P) => F.flatMap(m, F.array(F.pair(F.key(), predicate))),
     every: <M, P>(m: M, predicate: P) =>
         F.flatReduce(F.map(m, F.not(F.not(predicate))),
             [F.and(F.value(), F.aggregate<boolean>()), F.not(F.value())], true),
     some: <M, P>(m: M, predicate: P) =>
         F.flatReduce(F.map(m, F.not(F.not(predicate))), [F.or(F.value(), F.aggregate()), F.value()], false),
     findFirst: <M, P>(m: M, predicate: P) => F.head(F.filter(m, predicate)),
-    isNil: (a: toArgType<any>) => F.neq(a, {$primitive: null} as TypedPrimitive<null>),
     put: (...args: any[]) => F.array(...args),
     or: <A>(...args: A[]) =>
         args.length === 0 ? {$primitive: false} as Formula :
@@ -37,8 +39,8 @@ const functions: {[name: string]: (...args: any[]) => Formula} = {
         args.length === 1 ? args[0] :
         args.length === 2 ? F.cond(args[0], args[1], args[0]) :
         F.cond(F.every(args, F.value()), F.tail(args), F.findFirst(args, F.not(F.value()))),
-    diff: <T extends TypedFormula<Map<any, any>>>(a: T, b: T) =>
-        F.filter(a, F.neq(F.get(a, F.key()), F.get(b, F.key()))),
+    diff: <K, V, T = Map<K, V>>(a: toArgType<T>, b: toArgType<T>) =>
+        F.filter(a, F.neq(F.value(), F.get(b, F.key())))
 
 }
 
@@ -121,12 +123,12 @@ function formulaToString(f: Formula): string {
     }
 
     return JSON.stringify(ff)
-
 }
 
 const unknownSymbol = Symbol('unknown')
 
 export default function resolveFormulas(bundle: Bundle, im: TransformData): Bundle {
+    debugger
     const isTruthy = (f: Formula): boolean|symbol => {
         if (Reflect.has(f, '$primitive'))
             return !!Reflect.get(f, '$primitive')
@@ -176,7 +178,7 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
         if (args.every((v: any, i: number) => ((f as FunctionFormula).args || [])[i] === v))
             return f
 
-        return {op, args} as Formula
+        return {op, args, $token: Reflect.get(f, '$token')} as Formula
     }
 
     const refs = {
@@ -212,7 +214,7 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
         if (!nativeFunctions.has(op))
             throw new Error(`Unknown function: ${op}`)
 
-        return {op, args: args && args.map(resolveFormula)} as Formula
+        return {op, args: args && args.map(resolveFormula), $token: Reflect.get(f, '$token')} as Formula
     }
 
     im.roots = mapValues(im.roots, (f: Formula) => rewrite(resolveFormula(f)))
@@ -220,7 +222,7 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
         roots: mapValues(im.roots, formulaToString)
     }
 
-    console.log(im.debugInfo)
+//    console.log(im.debugInfo)
 
     return bundle
 }

@@ -12,8 +12,7 @@ export interface Store {
 }
 
 export interface StartMessage {
-    incomingPorts: MessagePort[]
-    outgoingPorts: MessagePort[]
+    ports: MessagePort[]
 }
 
 export default {}

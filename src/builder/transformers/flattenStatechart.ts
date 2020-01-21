@@ -287,6 +287,7 @@ export function flattenState(rootState: State): FlatStatechart {
                 for (const state of [...statesToEnter].sort(entryOrder)) {
                     configuration.add(state)
                     const onEntry = (state.onEntry || []) as TransitionAction[]
+                    console.log(state)
                     const defaultActions = (state.defaultActions || []) as TransitionAction[]
                     execution = [...execution, ...onEntry, ...(statesForDefaultEntry.has(state) ? defaultActions : [])]
                 }

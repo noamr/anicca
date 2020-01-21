@@ -25,16 +25,16 @@ const INTERNAL_BITS = 30
 type EventType = [number, ArrayBuffer]
 type ChangeRequest = [number, string]
 
-const getTargetFromEventHeader = F.shr(F.bwand(F.head(F.value<EventType>()), (1 << INTERNAL_BITS) - 1), TARGET_BITS)
-const getInternalFromEventHeader = F.shr(F.head(F.value<EventType>()), INTERNAL_BITS)
+const getTargetFromEventHeader = F.shr(F.bwand(F.first(F.value<EventType>()), (1 << INTERNAL_BITS) - 1), TARGET_BITS)
+const getInternalFromEventHeader = F.shr(F.first(F.value<EventType>()), INTERNAL_BITS)
 
 const INBOX_TABLE = '@inbox'
 const MODI_TABLE = '@modi'
 const PHASE_TABLE = '@phases'
 
-const modi = {$ref: MODI_TABLE, $T: [] as number[]}
-const phases = {$ref: PHASE_TABLE, $T: [] as number[]}
-const inbox = {$ref: INBOX_TABLE, $T: [] as EventType[]}
+const modi = {$ref: MODI_TABLE, $T: new Map<number, number>()}
+const phases = {$ref: PHASE_TABLE, $T: new Map<number, number>()}
+const inbox = {$ref: INBOX_TABLE, $T: new Map<number, EventType>()}
 
 export default function resolveControllers(bundle: Bundle, im: TransformData): Bundle {
     im = im || {}
@@ -75,8 +75,9 @@ export default function resolveControllers(bundle: Bundle, im: TransformData): B
     const idle = F.eq(currentControllerIndex, -1)
     const staging = F.cond(idle, [] as AssignmentDirective[], F.get(stagingByController, currentControllerIndex))
 
+    console.log({tables})
     im.roots = assign({}, im.roots, {
-        idle: {$ref: '@idle'}, staging: {$ref: '@staging'},
+        idle: {$ref: '@idle'}, staging: {$ref: '@staging'}, inbox: tables['@inbox']
     })
 
     return [
@@ -91,7 +92,7 @@ function convertControllerToFormulas(
     index: number,
     bundle: Bundle,
     {tables, getEventHeader}: TransformData):
-        toFormula<AssignmentDirective[]> {
+        toFormula<Map<number, AssignmentDirective>> {
     const hashToIndex: {[hash: string]: number} = {}
 
     const [, fsc] = current
@@ -105,13 +106,13 @@ function convertControllerToFormulas(
         return index
     }
 
-    const parseAssignment = (target: Formula, source: Formula): AssignmentDirective => {
-        const parseTable = ({$ref}: ReferenceFormula): number => {
-            if (Reflect.has(tables, $ref))
-                return tables[$ref]
+    const parseTable = ({$ref}: ReferenceFormula): number => {
+        if (Reflect.has(tables, $ref))
+            return tables[$ref]
 
-            throw new Error(`Can only assign to tables. ${$ref} is not a table`)
-        }
+        throw new Error(`Can only assign to tables. ${$ref} is not a table`)
+    }
+    const parseAssignment = (target: Formula, source: Formula): AssignmentDirective => {
 
         const asRef = target as ReferenceFormula
         const asFunction = target as FunctionFormula
@@ -184,36 +185,36 @@ function convertControllerToFormulas(
                         StepResults<number>))),
             } as JValue)))
 
-    const modusMap = ([...junctures].filter(([j]) => j) as Array<[Juncture<number>, JValue]>)
-        .map(([j, v]) => tuple(j.modus << MODUS_BITS | getEventIndex(fsc, j.event), tuple(v.condition, v.assignments)))
-
-    const effectiveMap = F.object(...[...modusMap].map(([j, [e]]) => F.pair(j, e)))
-
-
-    const assignmentMap = F.object(
-        F.pair(0, (junctures.get(null) as JValue).assignments),
-        ...[...modusMap].map(([j, [, a]]) => (F.pair(+j, a))))
+    const modusMap = F.object(...[...junctures.keys()]
+        .map(j => {
+            const header = j ? (j.modus << MODUS_BITS | getEventIndex(fsc, j.event)) : 0
+            const {condition, assignments} = junctures.get(j) as JValue
+            return F.pair(header, F.pair(condition, F.array(...assignments.map(a => F.array(...a)))))
+        }))
 
     const modus = F.cond(F.size(modi), F.get(modi, index), 0)
     const currentPhase = F.cond(F.size(phases), F.get(phases, index), INIT_PHASE)
 
-    const currentEventKey = F.findFirst(inbox, F.and(
-        F.eq(getTargetFromEventHeader, index),
-        F.eq(getInternalFromEventHeader, F.cond(F.eq(currentPhase, INTERNAL_PHASE), 1, 0)),
-    ))
+    const currentEventKey = F.cond(F.or(F.eq(currentPhase, INTERNAL_PHASE),
+                                        F.eq(currentPhase, EXTERNAL_PHASE)),
+                                  F.findFirst(inbox, F.and(
+                                    F.eq(getTargetFromEventHeader, index),
+                                    F.eq(getInternalFromEventHeader, F.cond(F.eq(currentPhase, INTERNAL_PHASE), 1, 0)),
+                                 )), null)
 
     const currentEvent = F.cond(F.eq(currentPhase, AUTO_PHASE), null, F.get(inbox, currentEventKey))
-    const currentEventType = F.cond(F.isNil(currentEvent), 0, F.bwand(F.head(currentEvent), (1 << TARGET_BITS) - 1))
-    const currentEventPayload = F.cond(F.isNil(currentEvent), null,
-        F.get(currentEvent as toFormula<[number, ArrayBuffer]>, 1))
+    const currentEventType = F.cond(F.isNil(currentEvent), 0,
+        F.bwand(F.plus(F.first(currentEvent), 1), (1 << TARGET_BITS) - 1))
+    const currentEventPayload = F.cond(F.isNil(currentEvent), null, F.get(currentEvent, 1))
     const juncture = F.cond(F.eq(currentPhase, INIT_PHASE), 0, F.bwor(F.shl(modus, MODUS_BITS), currentEventType))
-    const effective = F.get(effectiveMap, juncture)
+    const currentJuncture = F.get(modusMap, juncture)
+    const effective = F.first(currentJuncture)
     const nextPhase = F.cond(F.or(effective, F.eq(currentPhase, IDLE_PHASE)), AUTO_PHASE, F.plus(currentPhase, 1))
-    const advance = F.put(phases, index, nextPhase)
-    const deleteCurrentEvent = F.delete(inbox, currentEventKey) as TypedFormula<AssignmentDirective>
+    const advance = F.put(parseTable(phases), index, nextPhase)
+    const deleteCurrentEvent = F.delete(parseTable(inbox), currentEventKey) as TypedFormula<AssignmentDirective>
     const assignments = F.flatMap([0, 1],
-        F.cond(F.key(), F.get(assignmentMap, juncture),
-            F.cond(currentEventKey, [advance, deleteCurrentEvent], [advance])))
+        F.cond(F.key(), F.second(currentJuncture), F.cond(currentEventKey,
+            F.object(F.pair(10000, advance), F.pair(10001, deleteCurrentEvent)), F.object(F.pair(10000, advance)))))
 
     // TODO:
     // PAYLOAD, finish history

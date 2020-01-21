@@ -49,16 +49,32 @@ const parseDefaults = (actions: TransitionAction[]) => ({
     defaultTargets: actions.filter(a => a.type === 'Goto').map(a => (a as GotoAction).target),
 })
 
-const withDefaults = (children: any[]) => {
+const withDefaults = (state: any) => {
+    const {children} = state
     if (!children || !children.length)
-        return {}
+        return state
 
-    const initial = children.find(s => s.type === 'Initial')
+    const initial = children.find((s: any) => s.type === 'Initial')
     if (!initial)
-        return {children, default: children[0].name}
-    return {children: children.filter(c => c !== initial),
+        return {...state, children, default: children[0].name}
+    return {...state, children: children.filter((c: any) => c !== initial),
         ...parseDefaults(initial.default)}
+}
 
+const withActions = (children: any[]) => {
+    const onEntryChildren = children.filter(({type}) => type === 'OnEntry')
+    const onExitChildren = children.filter(({type}) => type === 'OnExit')
+    const without = children.filter(({type}) => type !== 'OnEntry' && type !== 'OnExit')
+
+    const onEntry = onEntryChildren.flatMap(({actions}) => actions)
+    const onExit = onExitChildren.flatMap(({actions}) => actions)
+    return {children: without, onEntry, onExit}
+}
+
+const resolveChildren = (children: any[]) => {
+    const s = withDefaults(withActions(children))
+    console.log(s)
+    return s
 }
 const parseStateChildren = (s: any): any =>
     s && Object.keys(s).map(key => {
@@ -69,7 +85,7 @@ const parseStateChildren = (s: any): any =>
             case 'Parallel':
             case 'Final':
             case 'History':
-                return {...atom, ...withDefaults(parseStateChildren(value))}
+                return {...atom, ...resolveChildren(parseStateChildren(value))}
             case 'Initial':
                 return {...atom, default: parseStateActions(value)}
             case 'OnEntry':

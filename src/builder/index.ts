@@ -24,29 +24,29 @@ export function parse(yamlString: string, opt: ParseOptions = {internal: false})
 
 export async function build(config: BuildOptions): Promise<void> {
     const bundle = parse(config.src || fs.readFileSync(config.inputPath || '', 'utf8'))
-    const {store, views, buses} = transformBundle(bundle)
+    const {store, views, channels} = transformBundle(bundle)
     const toOutputPath = (p: string) => path.resolve(config.outputDir, p)
     const resolveLib = (p: string) => path.relative(config.outputDir, path.resolve(__dirname, p))
 
     const storeOutputPath = toOutputPath('store.json')
     const viewsOutputPath = toOutputPath('views.json')
-    const busOutputPath = toOutputPath('buses.json')
+    const busOutputPath = toOutputPath('channels.json')
     const mainOutputPath = toOutputPath('main.js')
     const workerOutputPath = toOutputPath('worker.js')
     const mainWrapperOutputPath = toOutputPath('main-wrapper.js')
     const workerWrapperOutputPath = toOutputPath('worker-wrapper.js')
 
-    fs.writeFileSync(busOutputPath, JSON.stringify(buses, null, 4))
+    fs.writeFileSync(busOutputPath, JSON.stringify(channels, null, 4))
     fs.writeFileSync(storeOutputPath, JSON.stringify(store, null, 4))
     fs.writeFileSync(viewsOutputPath, JSON.stringify(views, null, 4))
 
     const mainWrapper = `
         import main from '${resolveLib('../runtime/common/main')}'
         import views from './views.json'
-        import buses from './buses.json'
+        import channels from './channels.json'
 
         export default function init({rootElements}) {
-            return main({rootElements, views, buses, storeWorkerPath: 'worker.js'})
+            return main({rootElements, views, channels, storeWorkerPath: 'worker.js'})
         }
     `
 

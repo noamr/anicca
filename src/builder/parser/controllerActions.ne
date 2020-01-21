@@ -36,8 +36,8 @@ divAction ->
     %varname _ "/=" _ formula {% relAction('div') %}
 
 assignAction ->
-    %varname _ "=" _ formula {% ([target,,,, src]) => 
-        ({type: "Assign", target: {$ref: target.value}, src}) %}
+    %varname _ "=" _ formula {% ([target,,,, source]) => 
+        ({type: "Assign", target: {$ref: target.value}, source}) %}
 
 assign ->
     incrementAction {% id %}

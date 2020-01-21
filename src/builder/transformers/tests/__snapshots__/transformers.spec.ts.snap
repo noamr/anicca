@@ -2,15 +2,15 @@
 
 exports[` 1`] = `
 Object {
-  "buses": Object {
-    "@view_bus": 0,
+  "channels": Object {
+    "@view_channel": 0,
   },
   "store": Object {
-    "buses": Object {
-      "@view_bus": 0,
+    "channels": Object {
+      "@view_channel": 0,
     },
     "roots": Object {
-      "@view_bus": 15,
+      "@view_channel": 15,
       "idle": 93,
       "outbox": 98,
       "staging": 95,

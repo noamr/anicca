@@ -111,4 +111,6 @@ dist
 *.kal.rs
 *.kal.json
 *.kal.wasm
-*.ne.cjs
+*.ne.cjs.tmp
+
+.tmp

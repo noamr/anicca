@@ -1,9 +1,8 @@
-import { Bundle, Formula, FormulaBuilder, PrimitiveFormula, Statement } from '../types'
+import { Bundle, Formula, FormulaBuilder, PrimitiveFormula, Statement, WithToken, Token } from '../types'
 export const P = ($primitive: any) => ({$primitive}) as PrimitiveFormula
 
 function fixArg(a: any): any {
     if (typeof a === 'undefined') {
-        debugger
         throw new Error('Unexpected undefined')
     }
 
@@ -13,19 +12,24 @@ function fixArg(a: any): any {
     if (a.$ref || Reflect.has(a, '$primitive'))
         return a
 
-    if (Array.isArray(a))
-        return {op: a.length === 2 ? 'pair' : 'array', args: a.map(fixArg)}
+    if (Array.isArray(a)) {
+        return {op: 'array', args: a.map(fixArg)}
+    }
 
     if (a.op)
         return {op: a.op, args: (a.args || []).map(fixArg)}
 
-    console.log(a)
-    return {op: 'object', args: Object.entries(a).map(([key, value]) => F.pair(key, value))}
+    return {op: 'object', args: Object.entries(a).map(([key, value]) => F.pair(key, value)), $token: a.$token}
+}
+
+function createToken(error: Error): Partial<Token> | null{
+    return (((error.stack || '').split('\n')[2] || '')
+    .match(/\((?<file>[^:]+):(?<line>\d+):(?<col>\d+)\)/i) || {groups: null}).groups || null
 }
 
 export const F = new Proxy({}, {
     get: (t, op: string) => (...args: any[]) => ({
-        op, args: args.map(fixArg),
+        op, args: args.map(fixArg), $token: createToken(new Error())
     }),
 }) as FormulaBuilder
 

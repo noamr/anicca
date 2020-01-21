@@ -46,6 +46,7 @@ export default function resolveViews(bundle: Bundle, im: TransformData): Bundle 
         Array<[string, string, DOMEventDeclaration]>
     const viewBindingDeclarations = flatViewDeclarations.filter(([, , dec]) => dec.type === 'Bind') as
         Array<[string, string, BindDeclaration]>
+
     im.views = {
         events: viewEventDeclarations.map(([view, selector, declaration]) => ({
             view,
@@ -66,13 +67,14 @@ export default function resolveViews(bundle: Bundle, im: TransformData): Bundle 
         })),
     }
 
-    const viewBindings = viewBindingDeclarations.map(([, , d]) => d.src) as
-        Array<TypedFormula<string>>
-    const viewDiff = F.diff(F.array(...viewBindings), {$ref: '@view_prev', $T: [] as string[]} as
-        TypedFormula<string[]>)
+    const viewBindings = F.array(...viewBindingDeclarations.map(([, , d]) => d.src as TypedFormula<string>))
+    const viewDiff = F.diff(viewBindings, {$ref: '@view_prev', $T: new Map<number, string>()} as
+        TypedFormula<Map<number, string>>)
+
+    im.roots.commitViewDiff = F.put(im.tables['@view_prev'], F.replace(), viewBindings)
 
     im.outputs = {
-        '@view_bus': F.cond(F.size(viewDiff), F.encode(viewDiff), null)
+        '@view_channel': F.cond(F.size(viewDiff), F.encode(viewDiff), null)
     }
 
     return bundle.flatMap((statement) => {

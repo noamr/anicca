@@ -11,7 +11,7 @@ export default function transformBundle(bundle: Bundle) {
         tables: {},
         roots: {},
         refs: {},
-        buses: {},
+        channels: {},
         outputs: {},
         getEventHeader: () => {
             throw new Error('Can only call this after controllers have been resolved')
@@ -31,6 +31,6 @@ export default function transformBundle(bundle: Bundle) {
     return {
         store: link(bundle, transformData),
         views: transformData.views,
-        buses: transformData.buses
+        channels: transformData.channels
     }
 }

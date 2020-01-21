@@ -5,10 +5,7 @@ import { forEach } from 'lodash'
 interface ViewParams {
     config: ViewConfig
     rootElements: {[name: string]: HTMLElement}
-    ports: {
-        in: MessagePort
-        out: MessagePort
-    }
+    port: MessagePort
 }
 
 interface EventHandler {
@@ -30,7 +27,7 @@ function ancestors(e: HTMLElement, a: HTMLElement|null): HTMLElement[] {
 }
 
 function createView(root: HTMLElement, eventHandlers: {[type: string]: EventHandler[]}, bindings: Binding[],
-                    ports: {in: MessagePort, out: MessagePort}) {
+                    port: MessagePort) {
     const matches = (e: HTMLElement, {selector}: {selector: string}): boolean => 
         Array.from(root.querySelectorAll(selector)).includes(e)
     const $ = ({selector}: {selector: string}) => Array.from(root.querySelectorAll(selector))
@@ -63,7 +60,7 @@ function createView(root: HTMLElement, eventHandlers: {[type: string]: EventHand
 
             if (headers.size) {
                 const payload = encodeEvent(event)
-                ports.out.postMessage({payload, headers: [...headers]}, [payload])
+                port.postMessage({payload, headers: [...headers]}, [payload])
             }
 
         }, {capture: true})
@@ -147,7 +144,7 @@ function decodeMessage(buffer: ArrayBuffer): Setter[] {
     return setters
 }
 
-export default function createViews({config, rootElements, ports}: ViewParams) {
+export default function createViews({config, rootElements, port}: ViewParams) {
     Object.entries(rootElements).forEach(([viewName, rootElement]) => {
         const events = config.events.map((event, index) =>
             [index, event] as [number, typeof event]).filter(([, {view}]) => view === viewName)
@@ -155,11 +152,11 @@ export default function createViews({config, rootElements, ports}: ViewParams) {
                 Object.assign(a, {[v.eventType]: (a[v.eventType] || []).concat([v])}),
                 {} as {[key: string]: EventHandler[]})
 
-        createView(rootElement, events, config.bindings, ports)
+        createView(rootElement, events, config.bindings, port)
     })
 
 
-    ports.in.addEventListener('message', (({data}) => {
+    port.addEventListener('message', (({data}) => {
         const {payload}: {payload: ArrayBuffer} = data
         const setters = decodeMessage(payload)
         setters.forEach(({binding, key, value}) => {
@@ -169,5 +166,5 @@ export default function createViews({config, rootElements, ports}: ViewParams) {
         })
     }))
 
-    ports.in.start()
+    port.start()
 }

@@ -7,8 +7,8 @@ export default function initInterpreterWorker(spec: StoreSpec) {
     const store = createStoreInterpreter(spec)
     self.onmessage = ev => {
         if (ev.data.type === 'start') {
-            const {incomingPorts, outgoingPorts} = ev.data.payload as StartMessage
-            createShell({incomingPorts, outgoingPorts, store})
+            const {ports} = ev.data.payload as StartMessage
+            createShell({ports, store})
         }
     }
 }

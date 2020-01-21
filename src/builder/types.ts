@@ -2,12 +2,14 @@ export type Primitive = string | number | boolean | null
 
 export type StatementType = 'Const' | 'View' | 'Main' | 'Let' | 'Controller' | 'Slot' | 'Bus' | 'Table'
 
-export interface WithToken {
-    $token?: {
-        line: number
-        col: number,
-    }
+export interface Token{
+    file?: string
+    line: number
+    col: number,
+}
 
+export interface WithToken {
+    $token?: Token
 }
 export interface Statement extends WithToken {
     name?: string
@@ -222,7 +224,7 @@ interface SimpleFunctions {
     startsWith(s: string, a: string): boolean
     endsWith(s: string, a: string): boolean
     stringIncludes(s: string, a: string): boolean
-    encode(s: string[]): ArrayBuffer|null
+    encode(s: Map<number, string>): ArrayBuffer|null
     noop(): null
     table(n: number): any
 }
@@ -269,12 +271,12 @@ export type ViewConfig = {
         }>,
 }
 
-export type RootType = 'inbox' | 'outbox' | 'idle' | 'staging'
+export type RootType = 'inbox' | 'outbox' | 'idle' | 'staging' | 'commitViewDiff'
 export interface TransformData {
     tables: {[name: string]: number}
     roots: {[name in RootType]?: Formula}
     refs: {[name: string]: Formula}
-    buses: {[name: string]: number}
+    channels: {[name: string]: number}
     outputs: {[name: string]: TypedFormula<ArrayBuffer|null>}
     getEventHeader: (event: string, target: string) => number
     debugInfo: any
@@ -308,7 +310,7 @@ type KeyTypeOf<T> =
 
 type KeyType<T> = KeyTypeOf<ResolveType<T>>
 type ValueType<T, K = any> = ResolveType<ValueTypeOf<ResolveType<T>, K>>
-type ResolveType<P> = P extends {$T: infer T} ? T : P
+export type ResolveType<P> = P extends {$T: infer T} ? T : P
 type IsMapType<T> = ResolveType<T> extends Map<any, any> ? true : never
 type Pair<A, B> = [A, B]
 
@@ -318,9 +320,9 @@ export type FormulaBuilder = {
     [k in keyof SimpleFunctions]: (...args: Array<toArgType<ArgumentTypes<SimpleFunctions[k]>>>) =>
         toFormula<ReturnType<SimpleFunctions[k]>>
 } & {
-    get<M, K>(s: M, k: K): toFormula<ValueType<M, K>>
+    get<M, K>(s: M, k: K): ResolveType<M> extends Map<KeyType<M>, infer V> ? toFormula<ValueType<V>> : never
     flatMap<M, P>(input: M, predicate: P):
-        IsMapType<M> extends true ? toFormula<P> extends toFormula<Array<[infer K2, infer V2]>> ? toFormula<Map<K2, V2>>
+        IsMapType<M> extends true ? toFormula<P> extends toFormula<Map<infer K2, infer V2>> ? toFormula<Map<K2, V2>>
         : never : never
     map<M, P>(input: M, predicate: P):
         IsMapType<M> extends true ? toFormula<P> extends toFormula<infer V2> ? toFormula<Map<KeyType<M>, V2>>
@@ -333,13 +335,17 @@ export type FormulaBuilder = {
     tail<M>(a: M): ResolveType<M> extends ResolveType<Pair<infer A, infer B>> ? toFormula<B> : toFormula<KeyType<M>>
     findFirst<T, P>(t: T, p: P): IsMapType<T> extends true ? toFormula<KeyType<T>> : never
     concat<A, B>(a: A, b: B): toFormula<Array<ValueType<A> | ValueType<B>>>
-    object<P>(...entries: P[]): P extends toArgType<Pair<infer K, infer V>> ? toFormula<Map<K, V>> : never
-    array<V>(...entries: V[]): toFormula<V[]>
+    object<P>(...entries: P[]): P extends TypedFormula<[infer K, infer V]> ?
+         toFormula<Map<K, V>>
+         : P extends toArgType<Pair<infer K, infer V>> ? toFormula<Map<K, V>> : never
+    array<V>(...entries: V[]): toFormula<Map<number, ResolveType<V>>>
     pair<A, B>(a: A, b: B): toFormula<[ResolveType<A>, ResolveType<B>]>
+    first<P>(pair: P): ResolveType<P> extends [infer A, any] ? toFormula<A> : never
+    second<P>(pair: P): ResolveType<P> extends [any, infer B] ? toFormula<B> : never
     not<T>(o: any): toFormula<boolean>
     and<A>(...args: A[]): toFormula<A>
     or<A>(...args: A[]): toFormula<A>
-    key<T = string|number>(): toFormula<T>
+    key<T = any>(): toFormula<T>
     value<T = any>(): toFormula<T>
     aggregate<T = any>(): toFormula<T>
     size<T>(m: T): toFormula<number>
@@ -366,7 +372,7 @@ export interface RawFormula {
 
 export interface StoreSpec {
     roots: {[key in RootType]: number}
-    buses: {[name: string]: number}
+    channels: {[name: string]: number}
     slots: RawFormula[]
     tableTypes: {[x: number]: NativeType}
     debugInfo?: any[]
