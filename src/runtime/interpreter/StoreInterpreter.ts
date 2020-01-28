@@ -28,17 +28,27 @@ export default function createStoreInterpreter(spec: StoreSpec) {
         tables[+tableIndex] = new Map()
     })
 
-    const evaluators = spec.slots.map(s => (c: Context|null = null) => evaluateFormula(s, c))
-    function evaluateFormula(f: RawFormula, c: Context|null): any {
-        if (Reflect.has(f, 'value'))
-            return (f as {value: any}).value
+    const evaluators = new Map<number, Evaluator>()
+
+    function resolveFormula(f: RawFormula): Evaluator {
+        if (Reflect.has(f, 'value')) {
+            const value = Reflect.get(f, 'value')
+            return () => value
+        }
 
         const {op, args} = f as {op: string, args: number[]}
-        return ops[op](...args.map(n => (ctx: Context|null) => evaluate(n, ctx)))(c)
+        const ev = ops[op]
+        const argResolvers = args.map(n => {
+            if (!evaluators.has(n))
+                evaluators.set(n, resolveFormula(spec.slots[n]))
+            return evaluators.get(n) as Evaluator
+        })
+
+        return ev(...argResolvers)
     }
 
     function evaluate<T = any>(index: number, ctx: Context|null = null): T {
-        return evaluators[index](ctx)
+        return (evaluators.get(index) as Evaluator)(ctx)
     }
 
     function update(table: number, key: any, value: any) {
@@ -79,8 +89,8 @@ export default function createStoreInterpreter(spec: StoreSpec) {
         },
         dequeue: async (): Promise<Array<[number, ArrayBuffer]>> => {
             const outbox = evaluate<Map<number, ArrayBuffer>>(spec.roots.outbox)
-            const commitDiff = await evaluate<Map<number, number>>(spec.roots.commitViewDiff)
-            commitEntry(commitDiff)
+            const commitView = await evaluate<Map<number, number>>(spec.roots.commitView)
+            commitEntry(commitView)
             return [...outbox.entries()]
         }
     } as Store

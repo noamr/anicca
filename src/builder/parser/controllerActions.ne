@@ -12,32 +12,54 @@ goto ->
     "goto" __ V {% ([,,target]) => ({type: 'Goto', target: target.value}) %}    
 
 dispatchExternal ->
-    "dispatch" __ V __ "to" __ V {% ([,,event,,,,target]) => ({type: 'Dispatch', event: event.value, target: target.value}) %}
+    "dispatch" __ V payload __ "to" __ V {% ([,, event, payload,,,, target]) => 
+        ({type: 'Dispatch', event: event.value, target: target.value, payload}) %}
+
+maybeComma -> 
+    "," {% NOOP %}
+    | null {% NOOP %}
+
+payloadArg ->
+    _ formula _ maybeComma _ {% ([,arg]) => arg %}
+
+args -> 
+    payloadArg:* {% id %}
+
+payload ->
+    _ "(" _ args _ ")" {% ([,,,args]) => args %}
+    | null {% () => null %}
 
 dispatch ->
     dispatchExternal {% id %}
-    | "dispatch" __ V {% ([,,event]) => ({type: 'Dispatch', event: event.value}) %}
+    | "dispatch" __ V payload {% ([,,event,payload]) => ({type: 'Dispatch', event: event.value, payload}) %}
 
 @{%
     const relAction = op => ([target,,,,src]) => 
-        ({type: "Assign", target: {$ref: target.value}, source: {op, args: [{$ref: target.value}, src]}})
+        ({type: "Assign", target, source: {op, args: [target, src]}})
 %}
 
+target ->
+    %varname {% ([{value}]) => ({$ref: value}) %}
+    | formula {% id %}
+
 incrementAction ->
-    %varname _ "+=" _ formula {% relAction('plus') %}
+    target _ "+=" _ formula {% relAction('plus') %}
+
+deleteAction ->
+    "delete" __ target __ "from" __ target {% ([,,key,,,,target]) => ({type: 'Assign', target: {op: 'get', args: [target, key]}, source: {op: 'delete'}}) %}
 
 decrementAction ->
-    %varname _ "-=" _ formula {% relAction('minus') %}
+    target _ "-=" _ formula {% relAction('minus') %}
 
 multAction ->
-    %varname _ "*=" _ formula {% relAction('mult') %}
+    target _ "*=" _ formula {% relAction('mult') %}
 
 divAction ->
-    %varname _ "/=" _ formula {% relAction('div') %}
+    target _ "/=" _ formula {% relAction('div') %}
 
 assignAction ->
-    %varname _ "=" _ formula {% ([target,,,, source]) => 
-        ({type: "Assign", target: {$ref: target.value}, source}) %}
+    target _ "=" _ formula {% ([target,,,, source]) => 
+        ({type: "Assign", target, source}) %}
 
 assign ->
     incrementAction {% id %}
@@ -45,3 +67,4 @@ assign ->
     | decrementAction {% id %}
     | multAction {% id %}
     | divAction {% id %}
+    | deleteAction {% id %}

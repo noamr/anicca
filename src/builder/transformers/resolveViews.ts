@@ -30,6 +30,7 @@ import {
 
 import {F, P, R, removeUndefined, S} from './helpers'
 import useMacro from './useMacro'
+import { NativeDictionaryType } from '../types'
 
 export default function resolveViews(bundle: Bundle, im: TransformData): Bundle {
     const prevTable = S.Table('@view_prev', {valueType: 'string'})
@@ -71,10 +72,10 @@ export default function resolveViews(bundle: Bundle, im: TransformData): Bundle 
     const viewDiff = F.diff(viewBindings, {$ref: '@view_prev', $T: new Map<number, string>()} as
         TypedFormula<Map<number, string>>)
 
-    im.roots.commitViewDiff = F.put(im.tables['@view_prev'], F.replace(), viewBindings)
+    im.roots.commitView = F.put(im.tables['@view_prev'], F.replace(), viewBindings)
 
     im.outputs = {
-        '@view_channel': F.cond(F.size(viewDiff), F.encode(viewDiff), null)
+        '@view_channel': F.cond(F.size(viewDiff), F.encode(viewDiff, {$type: {dictionary: ['u32', 'string'] as ['u32', 'string']}}), null)
     }
 
     return bundle.flatMap((statement) => {

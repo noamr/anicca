@@ -155,16 +155,13 @@ export default function createViews({config, rootElements, port}: ViewParams) {
         createView(rootElement, events, config.bindings, port)
     })
 
-
     port.addEventListener('message', (({data}) => {
         const {payload}: {payload: ArrayBuffer} = data
         const setters = decodeMessage(payload)
         setters.forEach(({binding, key, value}) => {
             const {view, selector, target, type} = config.bindings[binding]
             const elements = select(rootElements[view], selector, key)
-            elements.forEach(e =>appliers[type](e, target || '', value))
+            elements.forEach(e => appliers[type](e, target || '', value))
         })
     }))
-
-    port.start()
 }

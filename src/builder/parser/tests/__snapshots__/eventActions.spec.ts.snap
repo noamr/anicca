@@ -3,6 +3,7 @@
 exports[`controllerActions actions 1`] = `
 Object {
   "event": "someEvent",
+  "payload": null,
   "target": "someController",
   "type": "Dispatch",
 }

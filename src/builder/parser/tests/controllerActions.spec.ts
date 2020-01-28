@@ -12,5 +12,6 @@ describe('controllerActions', () => {
         expect(parse('abc += bla')).toMatchSnapshot()
         expect(parse('tag *= 1.3')).toMatchSnapshot()
         expect(parse('hello /= (1 + ABC)')).toMatchSnapshot()
+        expect(parse('delete id from someTable')).toMatchSnapshot()
     })
 })

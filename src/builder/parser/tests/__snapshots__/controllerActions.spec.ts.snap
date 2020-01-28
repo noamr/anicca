@@ -10,6 +10,7 @@ Object {
 exports[`controllerActions actions 2`] = `
 Object {
   "event": "someEvent",
+  "payload": null,
   "type": "Dispatch",
 }
 `;
@@ -17,6 +18,7 @@ Object {
 exports[`controllerActions actions 3`] = `
 Object {
   "event": "someEvent",
+  "payload": null,
   "target": "someController",
   "type": "Dispatch",
 }
@@ -85,6 +87,26 @@ Object {
   },
   "target": Object {
     "$ref": "hello",
+  },
+  "type": "Assign",
+}
+`;
+
+exports[`controllerActions actions 7`] = `
+Object {
+  "source": Object {
+    "op": "delete",
+  },
+  "target": Object {
+    "args": Array [
+      Object {
+        "$ref": "someTable",
+      },
+      Object {
+        "$ref": "id",
+      },
+    ],
+    "op": "get",
   },
   "type": "Assign",
 }

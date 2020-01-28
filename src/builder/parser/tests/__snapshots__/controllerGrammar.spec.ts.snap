@@ -1,5 +1,67 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`controller grammar payload 1`] = `
+Object {
+  "event": "completed",
+  "payload": Object {
+    "payload": Array [
+      0,
+      "u32",
+    ],
+  },
+  "type": "Transition",
+}
+`;
+
+exports[`controller grammar payload 2`] = `
+Object {
+  "event": "completed",
+  "payload": Object {
+    "a": Array [
+      0,
+      "string",
+    ],
+    "b": Array [
+      1,
+      "bool",
+    ],
+  },
+  "type": "Transition",
+}
+`;
+
+exports[`controller grammar payload 3`] = `
+Object {
+  "event": "done",
+  "payload": Object {},
+  "type": "Transition",
+}
+`;
+
+exports[`controller grammar payload 4`] = `
+Object {
+  "condition": Object {
+    "args": Array [
+      Object {
+        "$ref": "a",
+      },
+      Object {
+        "$primitive": 1,
+      },
+    ],
+    "op": "eq",
+  },
+  "event": "start",
+  "payload": Object {
+    "payload": Array [
+      0,
+      "SomeType",
+    ],
+  },
+  "type": "Transition",
+}
+`;
+
 exports[`controller grammar state 1`] = `
 Object {
   "name": "myState",
@@ -114,6 +176,51 @@ exports[`controller grammar transition 4`] = `
 Object {
   "condition": Object {
     "$primitive": true,
+  },
+  "type": "Transition",
+}
+`;
+
+exports[`controller grammar transition 5`] = `
+Object {
+  "condition": Object {
+    "args": Array [
+      Object {
+        "$ref": "a",
+      },
+      Object {
+        "$primitive": 1,
+      },
+    ],
+    "op": "eq",
+  },
+  "timeout": Object {
+    "args": Array [
+      Object {
+        "$primitive": 10,
+      },
+      Object {
+        "$primitive": 1000,
+      },
+    ],
+    "op": "mult",
+  },
+  "type": "Transition",
+}
+`;
+
+exports[`controller grammar transition 6`] = `
+Object {
+  "timeout": Object {
+    "args": Array [
+      Object {
+        "$primitive": 30,
+      },
+      Object {
+        "$primitive": 60000,
+      },
+    ],
+    "op": "mult",
   },
   "type": "Transition",
 }

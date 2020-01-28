@@ -24,29 +24,33 @@ export function parse(yamlString: string, opt: ParseOptions = {internal: false})
 
 export async function build(config: BuildOptions): Promise<void> {
     const bundle = parse(config.src || fs.readFileSync(config.inputPath || '', 'utf8'))
-    const {store, views, channels} = transformBundle(bundle)
+    const {store, views, channels, routes, headers} = transformBundle(bundle)
     const toOutputPath = (p: string) => path.resolve(config.outputDir, p)
     const resolveLib = (p: string) => path.relative(config.outputDir, path.resolve(__dirname, p))
 
     const storeOutputPath = toOutputPath('store.json')
     const viewsOutputPath = toOutputPath('views.json')
+    const routesOutputPath = toOutputPath('routes.json')
     const busOutputPath = toOutputPath('channels.json')
     const mainOutputPath = toOutputPath('main.js')
     const workerOutputPath = toOutputPath('worker.js')
     const mainWrapperOutputPath = toOutputPath('main-wrapper.js')
     const workerWrapperOutputPath = toOutputPath('worker-wrapper.js')
+    const headersOutputPath = toOutputPath('headers.json')
 
     fs.writeFileSync(busOutputPath, JSON.stringify(channels, null, 4))
     fs.writeFileSync(storeOutputPath, JSON.stringify(store, null, 4))
     fs.writeFileSync(viewsOutputPath, JSON.stringify(views, null, 4))
+    fs.writeFileSync(routesOutputPath, JSON.stringify(routes, null, 4))
+    fs.writeFileSync(headersOutputPath, JSON.stringify(headers, null, 4))
 
     const mainWrapper = `
         import main from '${resolveLib('../runtime/common/main')}'
         import views from './views.json'
         import channels from './channels.json'
 
-        export default function init({rootElements}) {
-            return main({rootElements, views, channels, storeWorkerPath: 'worker.js'})
+        export default function init({rootElements, routes}) {
+            return main({rootElements, routes, views, channels, storeWorkerPath: 'worker.js'})
         }
     `
 
@@ -70,7 +74,6 @@ export async function build(config: BuildOptions): Promise<void> {
             file: `${toOutputPath(name)}.js`,
             format: 'esm'
         },
-
     })
 
     fs.writeFileSync(workerWrapperOutputPath, interpreterWorkerWrapper)

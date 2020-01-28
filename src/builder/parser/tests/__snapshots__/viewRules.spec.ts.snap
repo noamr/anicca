@@ -2,6 +2,7 @@
 
 exports[`ViewRules rules 1`] = `
 Object {
+  "condition": null,
   "eventType": "click",
   "type": "DomEvent",
 }
@@ -9,34 +10,90 @@ Object {
 
 exports[`ViewRules rules 2`] = `
 Object {
-  "attribute": "src",
-  "type": "BindAttribute",
+  "condition": Object {
+    "args": Array [
+      Object {
+        "args": Array [
+          Object {
+            "$ref": "event",
+          },
+          Object {
+            "$primitive": "code",
+          },
+        ],
+        "op": "get",
+      },
+      Object {
+        "$primitive": 12,
+      },
+    ],
+    "op": "eq",
+  },
+  "eventType": "keydown",
+  "type": "DomEvent",
 }
 `;
 
 exports[`ViewRules rules 3`] = `
 Object {
-  "type": "BindContent",
+  "attribute": "src",
+  "type": "BindAttribute",
 }
 `;
 
 exports[`ViewRules rules 4`] = `
+Object {
+  "type": "BindContent",
+}
+`;
+
+exports[`ViewRules rules 5`] = `
 Object {
   "attribute": "custom",
   "type": "BindData",
 }
 `;
 
-exports[`ViewRules rules 5`] = `
+exports[`ViewRules rules 6`] = `
 Object {
   "style": "border-width",
   "type": "BindStyle",
 }
 `;
 
-exports[`ViewRules rules 6`] = `
+exports[`ViewRules rules 7`] = `
 Object {
   "style": "--yoyo",
   "type": "BindStyle",
+}
+`;
+
+exports[`ViewRules rules 8`] = `
+Object {
+  "iterator": Array [
+    "id",
+    "value",
+  ],
+  "mapSource": Object {
+    "args": Array [
+      Object {
+        "$ref": "children",
+      },
+      Object {
+        "args": Array [
+          Object {
+            "args": Array [],
+            "op": "value",
+          },
+          Object {
+            "$primitive": 1,
+          },
+        ],
+        "op": "gt",
+      },
+    ],
+    "op": "filter",
+  },
+  "type": "Clone",
 }
 `;

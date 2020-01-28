@@ -1,5 +1,5 @@
-import {parse} from 'yaml'
-const {parseKal} = require('../index')
+import {parse, parseDocument} from 'yaml'
+const {parseKal, parseKalDocument} = require('../index')
 
 const kalYaml = `
 view myView:
@@ -26,6 +26,9 @@ describe('kal yaml parsing', () => {
     })
     it('should be parsed to json', () => {
         expect(parseKal(parse(kalYaml))).toMatchSnapshot()
+    })
+    it.only('should be valid yaml with CST', () => {
+        expect(parseKalDocument(kalYaml, 'file.yaml', {keepCstNodes: true})).toMatchSnapshot()
     })
     it('should fail on internals', () => {
         expect(() => parseKal(parse(`

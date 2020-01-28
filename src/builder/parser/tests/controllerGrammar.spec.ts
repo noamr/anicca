@@ -20,6 +20,14 @@ describe('controller grammar', () => {
         expect(parse('when someCondition + (a - 1) * grumpy()')).toMatchSnapshot()
         expect(parse('on someEvent when a == 1')).toMatchSnapshot()
         expect(parse('when true')).toMatchSnapshot()
+        expect(parse('after 10 s when a == 1')).toMatchSnapshot()
+        expect(parse('after 30 minutes')).toMatchSnapshot()
+    })
+    it('payload', () => {
+        expect(parse('on completed(payload as u32)')).toMatchSnapshot()
+        expect(parse('on completed(a as string, b as bool)')).toMatchSnapshot()
+        expect(parse('on done()')).toMatchSnapshot()
+        expect(parse('on start(payload as SomeType) when a == 1')).toMatchSnapshot()
     })
     it('upon', () => {
         expect(parse('entering')).toMatchSnapshot()

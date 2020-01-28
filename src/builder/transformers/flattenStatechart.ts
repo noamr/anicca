@@ -1,8 +1,10 @@
 import * as _ from 'lodash-es'
-import { Bundle, Configuration, ControllerStatement, DispatchAction, FlatStatechart, Formula,
+import { Bundle, Configuration, ControllerStatement, DispatchAction, FlatStatechart, Formula, 
     GotoAction, HistoryConfiguration, Juncture, Modus, State, Statechart, StepResults, Transition, TransitionAction,
  } from '../types'
 import {F, R, removeUndefined, S} from './helpers'
+import { NativeType, NativeTupleType, TypedFormula, NativeTypeFormula } from '../types'
+import { mapValues } from 'lodash'
 
 const head = <T>(a: T[]) => a.length ? a[0] : null
 const flatten = <T>(a: Iterable<Iterable<T>>): Iterable<T> => Array.from(a).reduce((a, b) => [...a, ...b], [])
@@ -26,7 +28,8 @@ export function flattenState(rootState: State): FlatStatechart {
     const exitOrder = (a: State, b: State) => documentIndex(b) - documentIndex(a)
 
     const isAtomicState = (s: State) => s.type === 'State' && !childStates(s).length
-    const conditionFor = (t: Transition|null): Formula => (t && Reflect.has(t, 'condition')) ? t.condition as Formula : trueCondition
+    const conditionFor = (t: Transition|null): Formula =>
+        (t && Reflect.has(t, 'condition')) ? t.condition as Formula : trueCondition
     const trueCondition = {$primitive: true} as Formula
     const falseCondition = {$primitive: true} as Formula
 
@@ -86,10 +89,40 @@ export function flattenState(rootState: State): FlatStatechart {
             }))] as [Juncture<string>|null, Array<StepResults<string>>]))),
     }
 
+    function decodePayload(payload: {[key: string]: [number, NativeType]}): Formula {
+        return F.decode({$ref: '@payload', $T: new ArrayBuffer(0)} as TypedFormula<ArrayBuffer>,
+            {$type: {tuple: Object.values(payload).reduce((a, o) => {
+                a[o[0]] = o[1]
+                return a
+            }, [] as NativeType[])}} as NativeTypeFormula)
+    }
+
+    function resolveArgs(obj: any, payload?: {[key: string]: [number, NativeType]} | null): any {
+        if (!payload || !obj || typeof obj !== 'object')
+            return obj
+
+        if (Array.isArray(obj))
+            return obj.map(e => resolveArgs(e, payload))
+
+        if (Reflect.has(obj as any, '$ref')) {
+            const ref = Reflect.get(obj as any, '$ref') as string
+            if (payload[ref])
+                return F.at(decodePayload(payload), payload[ref][0])
+        }
+
+        return mapValues(obj, e => resolveArgs(e, payload))
+    }
+
     function resolveTransition(t: Transition, s: State) {
         transitionSourceMap.set(t, s)
-        if (t.event)
-            allEvents.add(t.event)
+        if (!t.event)
+            return
+        allEvents.add(t.event)
+        if (!t.payload)
+            return
+
+        t.condition = t.condition ? resolveArgs(t.condition, t.payload) : null
+        t.actions = t.actions ? t.actions.map(a => resolveArgs(a, t.payload)) : []
     }
 
     function resolveState(s: State, parent: State|null) {
@@ -287,7 +320,6 @@ export function flattenState(rootState: State): FlatStatechart {
                 for (const state of [...statesToEnter].sort(entryOrder)) {
                     configuration.add(state)
                     const onEntry = (state.onEntry || []) as TransitionAction[]
-                    console.log(state)
                     const defaultActions = (state.defaultActions || []) as TransitionAction[]
                     execution = [...execution, ...onEntry, ...(statesForDefaultEntry.has(state) ? defaultActions : [])]
                 }

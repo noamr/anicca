@@ -241,6 +241,25 @@ describe('formulas', () => {
         })
     })
 
+    describe('string template', () => {
+        it('with parameteres', () => {
+            expect(parse('`some-id-${key()}`')).toMatchSnapshot()
+        })
+        it('without parameteres', () => {
+            expect(parse('`normal string`')).toMatchSnapshot()
+        })
+        it('only parameteres', () => {
+            expect(parse('`${param}`')).toMatchSnapshot()
+        })
+        it('several parameteres', () => {
+            expect(parse('`normal string and ${arg + 1} argument and another ${30 * 4} argument`'))
+                .toMatchSnapshot()
+        })
+        it('with stuff', () => {
+            expect(parse('condition + `def`')).toMatchSnapshot()
+        })
+    })
+
     describe('order of operations', () => {
         it('plus mult', () => {
             expect(parseRaw('a + b * c')).toEqual(parseRaw('a+(b * c)'))

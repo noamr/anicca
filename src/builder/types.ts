@@ -1,11 +1,13 @@
 export type Primitive = string | number | boolean | null
 
-export type StatementType = 'Const' | 'View' | 'Main' | 'Let' | 'Controller' | 'Slot' | 'Bus' | 'Table'
+export type StatementType = 'Const' | 'View' | 'Main' | 'Let' | 'Controller' | 'Slot' | 'Bus' | 'Table' | 'Database' | 'Router' | 'Enum'
 
 export interface Token{
     file?: string
-    line: number
-    col: number,
+    line?: number
+    col?: number
+    range?: [number, number] | null
+    info?: string
 }
 
 export interface WithToken {
@@ -27,19 +29,49 @@ export interface SlotStatement extends Statement {
     type: 'Slot'
     formula: Formula
 }
+
+export interface PersistDeclaration {
+    table: string
+    mode: 'optimistic'
+}
+export interface DatabaseStatement extends Statement {
+    type: 'Database'
+    persist: PersistDeclaration[]
+}
+
+export interface RouterStatement extends Statement {
+    type: 'Router'
+    routes: {[key: string]: Formula}
+    onChange: DispatchAction[]
+}
+
 export interface LetStatement extends Statement {
     type: 'Let'
     valueType: Primitive
 }
 
-type SingularType = 'u8' | 'u16' | 'u32' | 'u64' | 'u128' | 'i8' | 'i16' | 'i32' | 'i64' | 'i128' | 'f32' | 'f64' | 'string' | 'bool' | 'ByteArray'
-export type NativeType = SingularType | NativeTupleType | NativeDictionaryType
-interface NativeTupleType {
-    tuple: NativeType[]
+type SingularType = 'null' | 'u8' | 'u16' | 'u32' | 'u64' | 'u128' | 'i8' | 'i16' | 'i32' | 'i64' | 'i128' | 'f32' | 'f64' | 'number' |
+                    'string' | 'bool' | 'ByteArray'
+export type NativeType = SingularType | NativeTupleType<any> | NativeDictionaryType<any, any>
+export interface NativeTupleType<V extends NativeType = NativeType> {
+    tuple: V[]
+    getters?: string[]
 }
-interface NativeDictionaryType {
-    dictionary: [NativeType, NativeType]
+
+export interface NativeDictionaryType<K extends NativeType = NativeType, V extends NativeType = NativeType> {
+    dictionary: [K, V]
 }
+
+export type nativeToJS<T> =
+    T extends  'u8' | 'u16' | 'u32' | 'u64' | 'u128' | 'i8' | 'i16' | 'i32' | 'i64' | 'i128' | 'f32' | 'f64' ? number :
+    T extends 'string' ? string :
+    T extends 'ByteArray' ? ArrayBuffer :
+    T extends 'bool' ? boolean :
+    T extends NativeDictionaryType<infer K, infer V> ? Map<K, V> :
+    T extends NativeTupleType<infer V> ? V[] :
+    never
+
+
 
 export interface TableStatement extends Statement {
     type: 'Table'
@@ -47,7 +79,7 @@ export interface TableStatement extends Statement {
 }
 
 export interface ViewDeclaration extends WithToken {
-    type: 'Bind' | 'DOMEvent'
+    type: 'Bind' | 'DOMEvent' | 'Clone'
 }
 
 export type BindTargetType = 'content' | 'attribute' | 'style' | 'data'
@@ -55,9 +87,15 @@ export interface BindTarget extends WithToken  {
     type: BindTargetType
 }
 
-export type Formula = WithToken
+export interface Formula extends WithToken {
+    type?: NativeType
+}
 export interface ReferenceFormula extends Formula {
     $ref: string
+}
+
+export interface NativeTypeFormula<T extends NativeType = NativeType> extends Formula {
+    $type: T
 }
 export interface PrimitiveFormula extends Formula {
     $primitive: Primitive
@@ -73,6 +111,17 @@ export interface BindDeclaration extends ViewDeclaration {
     src: Formula
     target?: string
     targetType: 'content' | 'attribute' | 'data' | 'style'
+}
+export interface CloneDeclaration extends ViewDeclaration {
+    type: 'Clone'
+    mapSource: Formula
+    iterator: [string, string]
+    childRules: ViewRule[]
+}
+
+export interface EnumStatement extends Statement {
+    type: 'Enum'
+    values: {[key: string]: number}
 }
 
 export interface DOMEventDeclaration extends ViewDeclaration {
@@ -132,7 +181,9 @@ export interface ViewStatement extends Statement {
 export interface Transition extends WithToken {
     type: 'Transition'
     event?: string
+    payload?: {[name: string]: [number, NativeType]} | null
     condition?: Formula
+    timeout?: Formula
     actions?: TransitionAction[]
 }
 
@@ -142,7 +193,6 @@ export interface TransitionAction {
 export interface AssignTransitionAction {
     type: 'Assign'
     source: Formula
-    method?: 'post' | 'put' | 'delete'
     target: Formula
 }
 
@@ -213,6 +263,8 @@ interface SimpleFunctions {
     ceil(a: number): number
     round(a: number): number
     trunc(a: number): number
+    max(a: number, b: number): number
+    min(a: number, b: number): number
     parseInt(a: string, r: number): number
     parseFloat(a: string, r: number): number
     formatNumber(n: number, r: number): string
@@ -224,7 +276,7 @@ interface SimpleFunctions {
     startsWith(s: string, a: string): boolean
     endsWith(s: string, a: string): boolean
     stringIncludes(s: string, a: string): boolean
-    encode(s: Map<number, string>): ArrayBuffer|null
+    join(a: Map<number, any>, separator: string): string
     noop(): null
     table(n: number): any
 }
@@ -254,7 +306,7 @@ export interface Juncture<M = Modus> {
     modus: M
 }
 
-export type ViewConfig = {
+export interface ViewConfig {
         bindings: Array<{
             view: string
             selector: string
@@ -271,14 +323,20 @@ export type ViewConfig = {
         }>,
 }
 
-export type RootType = 'inbox' | 'outbox' | 'idle' | 'staging' | 'commitViewDiff'
+export type RootType = 'inbox' | 'outbox' | 'idle' | 'staging' | 'commitView' | 'viewChannel'
+export type HeaderType = 'route'
+
 export interface TransformData {
     tables: {[name: string]: number}
+    tableTypes: {[name: string]: NativeType}
+    routes: {[name: string]: number}
     roots: {[name in RootType]?: Formula}
+    headers: {[name in HeaderType]?: number}
     refs: {[name: string]: Formula}
     channels: {[name: string]: number}
     outputs: {[name: string]: TypedFormula<ArrayBuffer|null>}
     getEventHeader: (event: string, target: string) => number
+    types: NativeType[]
     debugInfo: any
     views: ViewConfig
 }
@@ -321,6 +379,11 @@ export type FormulaBuilder = {
         toFormula<ReturnType<SimpleFunctions[k]>>
 } & {
     get<M, K>(s: M, k: K): ResolveType<M> extends Map<KeyType<M>, infer V> ? toFormula<ValueType<V>> : never
+    at<M, K>(s: M, k: K):
+        ResolveType<M> extends Array<infer Arg> ?
+        ResolveType<K> extends number ?
+        toFormula<Arg> : never : never
+
     flatMap<M, P>(input: M, predicate: P):
         IsMapType<M> extends true ? toFormula<P> extends toFormula<Map<infer K2, infer V2>> ? toFormula<Map<K2, V2>>
         : never : never
@@ -328,8 +391,7 @@ export type FormulaBuilder = {
         IsMapType<M> extends true ? toFormula<P> extends toFormula<infer V2> ? toFormula<Map<KeyType<M>, V2>>
         : never : never
     flatReduce<M, P, V>(map: M, predicate: P, initialValue: V):
-        IsMapType<M> extends true ?
-            ResolveType<P> extends [boolean, ResolveType<V>] ? toFormula<V>
+        IsMapType<M> extends true ? ResolveType<P> extends [any, any] ? toFormula<V>
             : never : never
     head<M>(a: M): ResolveType<M> extends ResolveType<[infer A, any]> ? toFormula<A> : toFormula<KeyType<M>>
     tail<M>(a: M): ResolveType<M> extends ResolveType<Pair<infer A, infer B>> ? toFormula<B> : toFormula<KeyType<M>>
@@ -340,6 +402,8 @@ export type FormulaBuilder = {
          : P extends toArgType<Pair<infer K, infer V>> ? toFormula<Map<K, V>> : never
     array<V>(...entries: V[]): toFormula<Map<number, ResolveType<V>>>
     pair<A, B>(a: A, b: B): toFormula<[ResolveType<A>, ResolveType<B>]>
+    tuple<A, B>(a: A, b: B): toFormula<[ResolveType<A>, ResolveType<B>]>
+    tuple<A, B, C>(a: A, b: B, c: C): toFormula<[ResolveType<A>, ResolveType<B>, ResolveType<C>]>
     first<P>(pair: P): ResolveType<P> extends [infer A, any] ? toFormula<A> : never
     second<P>(pair: P): ResolveType<P> extends [any, infer B] ? toFormula<B> : never
     not<T>(o: any): toFormula<boolean>
@@ -353,13 +417,18 @@ export type FormulaBuilder = {
     cond<Condition, Consequent, Alternate>(c: Condition, t: Consequent, a: Alternate):
         toFormula<Consequent | Alternate>
     put<T, K, V>(table: T, key: K, value: V): toFormula<AssignmentDirective<K, V>>
-    delete<T, K>(table: T, key: K): toFormula<AssignmentDirective<ResolveType<K>, any>>
+    delete(): toFormula<any>
     replace(): toFormula<AssignmentDirective>
     merge(): toFormula<AssignmentDirective>
     filter<T, P>(t: T, p: P): IsMapType<T> extends true ? toFormula<T> : never
     some<T, P>(t: T, p: P): IsMapType<T> extends true ? toFormula<boolean> : never
     every<T, P>(t: T, p: P): IsMapType<T> extends true ? toFormula<boolean> : never
     diff<T>(a: T, b: T): IsMapType<T> extends true ? toFormula<T> : never,
+    encode<T, NTF>(value: T, type: NTF): 
+        NTF extends NativeTypeFormula<infer NT> ?
+        ResolveType<T> extends nativeToJS<infer NT> ? toFormula<ArrayBuffer> : never : never
+    decode<T, NTF>(buffer: toArgType<ArrayBuffer>, type: NTF):
+        NTF extends NativeTypeFormula<infer NT> ? T : never
 }
 
 export type Bundle = Statement[]
@@ -368,12 +437,15 @@ export interface RawFormula {
     op?: string
     args?: number[]
     value?: any
+    type: number
+    token?: number | null
 }
 
 export interface StoreSpec {
     roots: {[key in RootType]: number}
     channels: {[name: string]: number}
+    types: NativeType[]
     slots: RawFormula[]
-    tableTypes: {[x: number]: NativeType}
-    debugInfo?: any[]
+    tableTypes: {[x: number]: number}
+    debugInfo?: any
 }

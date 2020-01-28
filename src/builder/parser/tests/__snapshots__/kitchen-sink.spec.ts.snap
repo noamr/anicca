@@ -1,0 +1,226 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`kitchen sink timers 1`] = `
+Array [
+  Object {
+    "name": "someController",
+    "rootState": Object {
+      "children": Array [
+        Object {
+          "children": Array [
+            Object {
+              "actions": Array [
+                Object {
+                  "target": "b",
+                  "type": "Goto",
+                },
+              ],
+              "event": "someEvent",
+              "type": "Transition",
+            },
+          ],
+          "default": undefined,
+          "name": "a",
+          "onEntry": Array [],
+          "onExit": Array [],
+          "type": "State",
+        },
+        Object {
+          "children": Array [
+            Object {
+              "actions": Array [
+                Object {
+                  "target": "a",
+                  "type": "Goto",
+                },
+              ],
+              "timeout": Object {
+                "args": Array [
+                  Object {
+                    "$primitive": 30,
+                  },
+                  Object {
+                    "$primitive": 1,
+                  },
+                ],
+                "op": "mult",
+              },
+              "type": "Transition",
+            },
+          ],
+          "default": undefined,
+          "name": "b",
+          "onEntry": Array [],
+          "onExit": Array [],
+          "type": "State",
+        },
+        Object {
+          "children": Array [
+            Object {
+              "actions": Array [
+                Object {
+                  "target": "a",
+                  "type": "Goto",
+                },
+              ],
+              "condition": Object {
+                "args": Array [
+                  Object {
+                    "$ref": "condition",
+                  },
+                  Object {
+                    "$primitive": 0,
+                  },
+                ],
+                "op": "eq",
+              },
+              "timeout": Object {
+                "args": Array [
+                  Object {
+                    "args": Array [
+                      Object {
+                        "$ref": "a",
+                      },
+                      Object {
+                        "$primitive": 5,
+                      },
+                    ],
+                    "op": "add",
+                  },
+                  Object {
+                    "$primitive": 60000,
+                  },
+                ],
+                "op": "mult",
+              },
+              "type": "Transition",
+            },
+          ],
+          "default": undefined,
+          "name": "c",
+          "onEntry": Array [],
+          "onExit": Array [],
+          "type": "State",
+        },
+      ],
+      "default": "a",
+      "name": "root",
+      "onEntry": Array [],
+      "onExit": Array [],
+      "type": "State",
+    },
+    "type": "Controller",
+  },
+]
+`;
+
+exports[`kitchen sink views with clones 1`] = `
+Array [
+  Object {
+    "name": "someView",
+    "rules": Array [
+      Object {
+        "declarations": Array [
+          Object {
+            "src": Object {
+              "args": Array [
+                Object {
+                  "$ref": "someValue",
+                },
+                Object {
+                  "$ref": "hello",
+                },
+              ],
+              "op": "bwand",
+            },
+            "targetType": "content",
+            "type": "Bind",
+          },
+          Object {
+            "actions": Array [
+              Object {
+                "event": "someEvent",
+                "payload": null,
+                "target": "someController",
+                "type": "Dispatch",
+              },
+              Object {
+                "type": "PreventDefault",
+              },
+              Object {
+                "type": "StopPropagation",
+              },
+            ],
+            "eventType": "mousedown",
+            "type": "DOMEvent",
+          },
+          Object {
+            "actions": Array [
+              Object {
+                "event": "hello",
+                "payload": null,
+                "target": "someOtherController",
+                "type": "Dispatch",
+              },
+            ],
+            "eventType": "click",
+            "type": "DOMEvent",
+          },
+        ],
+        "selector": "#some-id",
+      },
+      Object {
+        "declarations": Array [
+          Object {
+            "childRules": Array [
+              Object {
+                "declarations": Array [
+                  Object {
+                    "src": Object {
+                      "$ref": "value",
+                    },
+                    "targetType": "content",
+                    "type": "Bind",
+                  },
+                  Object {
+                    "src": Object {
+                      "args": Array [
+                        Object {
+                          "args": Array [
+                            Object {
+                              "$ref": "id",
+                            },
+                            Object {
+                              "$primitive": "-class",
+                            },
+                          ],
+                          "op": "array",
+                        },
+                        Object {
+                          "$primitive": "",
+                        },
+                      ],
+                      "op": "join",
+                    },
+                    "target": undefined,
+                    "targetType": "attribute",
+                    "type": "Bind",
+                  },
+                ],
+                "selector": ".something",
+              },
+            ],
+            "iterator": Array [
+              "id",
+              "value",
+            ],
+            "type": "Clone",
+          },
+        ],
+        "selector": "#some-clone",
+      },
+    ],
+    "type": "View",
+  },
+]
+`;

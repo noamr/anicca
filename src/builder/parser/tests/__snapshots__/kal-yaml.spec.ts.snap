@@ -23,6 +23,7 @@ Array [
             "actions": Array [
               Object {
                 "event": "increment",
+                "payload": null,
                 "target": "myController",
                 "type": "Dispatch",
               },
@@ -40,20 +41,6 @@ Array [
     "name": "myController",
     "rootState": Object {
       "children": Array [
-        Object {
-          "actions": Array [
-            Object {
-              "src": Object {
-                "$primitive": 0,
-              },
-              "target": Object {
-                "$ref": "value",
-              },
-              "type": "Assign",
-            },
-          ],
-          "type": "OnEntry",
-        },
         Object {
           "actions": Array [
             Object {
@@ -80,6 +67,18 @@ Array [
       ],
       "default": undefined,
       "name": "root",
+      "onEntry": Array [
+        Object {
+          "source": Object {
+            "$primitive": 0,
+          },
+          "target": Object {
+            "$ref": "value",
+          },
+          "type": "Assign",
+        },
+      ],
+      "onExit": Array [],
       "type": "State",
     },
     "type": "Controller",
@@ -93,6 +92,26 @@ Array [
 `;
 
 exports[`kal yaml parsing should be valid yaml 1`] = `
+Object {
+  "controller myController": Object {
+    "state root": Object {
+      "entering": "value = 0",
+      "on increment": "value += 1",
+    },
+  },
+  "let value": "u32",
+  "view myView": Object {
+    "#increment": Object {
+      "on click": "dispatch increment to myController",
+    },
+    "#output": Object {
+      "content": "value",
+    },
+  },
+}
+`;
+
+exports[`kal yaml parsing should be valid yaml with CST 1`] = `
 Object {
   "controller myController": Object {
     "state root": Object {

@@ -9,7 +9,7 @@ function fixArg(a: any): any {
     if (typeof a !== 'object' || a === null)
         return {$primitive: a}
 
-    if (a.$ref || Reflect.has(a, '$primitive'))
+    if (a.$ref || Reflect.has(a, '$primitive') || Reflect.has(a, '$type'))
         return a
 
     if (Array.isArray(a)) {
@@ -17,9 +17,15 @@ function fixArg(a: any): any {
     }
 
     if (a.op)
-        return {op: a.op, args: (a.args || []).map(fixArg)}
+        return {...a, args: (a.args || []).map(fixArg)}
 
     return {op: 'object', args: Object.entries(a).map(([key, value]) => F.pair(key, value)), $token: a.$token}
+}
+
+export function withInfo<T extends Formula = Formula>(f: T, info: string | null): T {
+    if (!info)
+        return f
+    return {...f, $token: {...f.$token, info}}
 }
 
 function createToken(error: Error): Partial<Token> | null{

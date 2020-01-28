@@ -8,6 +8,11 @@ Object {
         Object {
           "args": Array [
             Object {
+              "$token": Object {
+                "col": "25",
+                "file": "/Users/noam/anicca/src/builder/transformers/tests/useMacro.spec.ts",
+                "line": "24",
+              },
               "args": Array [
                 Object {
                   "$primitive": 3,
@@ -16,7 +21,8 @@ Object {
               "op": "ceil",
             },
             Object {
-              "$primitive": 5.5,
+              "args": Array [],
+              "op": "object",
             },
           ],
           "op": "pow",

@@ -1,3 +1,4 @@
+import { NativeType } from '../../builder/types'
 export interface Context<K = any, V = any, A = any> {
     key: K
     source: Evaluator<V>
@@ -17,10 +18,8 @@ const extractStringFunctions = <T extends keyof ''>(...keys: T[]) =>
         ((''[k]) as any).call(s(ctx), ...args.map(a => a(ctx)))})).reduce((a, o) => Object.assign(a, o), {})
 
 const flatMap = <K, V, K2, V2>(source: Evaluator<Map<K, V>>, predicate: Evaluator<Map<number, Map<number, K2|V2>>>) =>
-    (ctx: Context|null) => {
-        return new Map(Array.from(source(ctx).keys()).flatMap(key =>
-            Array.from(predicate({ source, key }))))
-    }
+    (ctx: Context|null) => new Map(Array.from(source(ctx).keys()).flatMap(key => 
+        Array.from(predicate({ source, key }))))
 
 const flatReduce = (src: Evaluator, predicate: Evaluator, initialValue: Evaluator) => (ctx: Context|null) => {
     const source = src(ctx)
@@ -35,24 +34,6 @@ const flatReduce = (src: Evaluator, predicate: Evaluator, initialValue: Evaluato
     }
 
     return aggregate
-}
-
-const encode = (src: Evaluator) => (ctx: Context|null) => {
-    const value = src(ctx) as Map<number, Uint8Array>
-    for (const k of value.keys())
-        value.set(k, new TextEncoder().encode('' + value.get(k)))
-
-    const buffer = new ArrayBuffer(Array.from(value.values()).map(b => b.length + 8).reduce((s, p) => s + p, 0))
-    const dv = new DataView(buffer)
-    let offset = 0
-    for (const [header, payload] of value.entries()) {
-        const length = payload.length
-        dv.setUint32(offset, header)
-        dv.setUint32(offset + 4, payload.length)
-        new Uint8Array(buffer, offset + 8).set(payload)
-        offset += length + 8
-    }
-    return buffer
 }
 
 export const defaultEvaluators: {[op: string]: (...args: Evaluator[]) => Evaluator} = {
@@ -109,6 +90,7 @@ export const defaultEvaluators: {[op: string]: (...args: Evaluator[]) => Evaluat
     endsWith: (a, b) => ctx => (a(ctx) as string).endsWith(b(ctx)),
     stringIncludes: (a, b) => ctx => (a(ctx) as string).includes(b(ctx)),
     match: (a, b) => ctx => (a(ctx) as string).match(b(ctx)),
+    join: (args, separator) => ctx => args(ctx).join(separator),
 
     // Logical
     isNil: a => ctx => a(ctx) === null,
@@ -139,6 +121,5 @@ export const defaultEvaluators: {[op: string]: (...args: Evaluator[]) => Evaluat
     source: () => ctx => ctx && ctx.source(ctx),
 
     // other
-    now: () => () => Date.now(),
-    encode,
+    now: () => () => Date.now()
 }

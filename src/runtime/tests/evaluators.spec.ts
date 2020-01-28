@@ -68,7 +68,7 @@ describe('evaluators', () => {
     describe('map', () => {
         it('flatMap', () => {
             expect([...defaultEvaluators.flatMap(() => new Map([[0, 'hello']]), () =>
-                new Map([[0, new Map([[1, 'hello'] as [number, string]])]]))(null)
+                new Map([[1, 'hello']]))(null)
                 .entries()]).toEqual([[1, 'hello']])
         })
     })

@@ -1,0 +1,98 @@
+table allTasks:
+  completed: bool
+  title: string
+
+enum FilterType:
+  - Any
+  - Completed
+  - Active
+
+isTaskCompleted:
+  value().completed
+
+filters:
+    FilterType.Any: allTasks
+    FilterType.Active: allTasks |> filter(!isTaskCompleted)
+    FilterType.Completed: allTasks |> filter(isTaskCompleted)
+
+tasksToShow: filters[currentFilter]
+let currentFilter: u8
+
+database tasksDB:
+  persist allTasks:
+    mode: optimistic
+
+router routeFilter:
+  routes:
+    '/': FilterType.Any
+    '/active': FilterType.Active
+    '/completed': FilterType.Completed
+  on change:
+    dispatch routeChanged to todosController
+
+controller todosController:
+  root:
+    on routeChanged:
+      dispatch changeFilter(routeFilter)
+    entering:
+      currentFilter = routeFilter
+    on completed(id as u32, completed as bool): |
+      allTasks[id] = [completed, allTasks[id].title]
+    on delete(id as u32):
+      delete id from allTasks
+    on toggleAll(completed as bool):
+      allTasks = map(allTasks, [completed, value().title])
+    on deleteCompleted:
+      allTasks = filter(allTasks, !isTaskCompleted)
+    on changeFilter(filter as FilterType):
+      currentFilter = filter
+    on create(title as string):
+      allTasks[uid()] = [false, title]
+
+taskCount:
+   allTasks |> size()
+hasTasks:
+  taskCount != 0
+
+hasCompletedTasks:
+  filters[FilterType.Completed] |> size() > 0
+
+todoCountText: |
+  taskCount == 0 ? "No tasks" :
+  taskCount == 1 ? "1 task":
+  `${taskCount} tasks`
+
+view todosView:
+  body:
+      data hasTasks: |
+        hasTasks ? 'yes' : 'no'
+  .new-todo:
+    on keydown when event.code==13:
+      - dispatch create(event.target.value) to todosController
+      - prevent default
+
+  "#toggle-all":
+    on change:
+      - dispatch toggleAll(event.target.checked) to todosController
+  .todo-item:
+    for [id, task] in tasksToShow:
+      "&":
+          class: |
+              task.completed ? 'completed' : 'active'
+      label:
+          content: task.title
+      .toggle:
+          attribute checked:
+              task.completed
+          on change:
+              dispatch completed(key, event.target.checked) to todosController
+      .destroy:
+        on click:
+            dispatch delete(id) to todosController
+  .todo-count:
+    content: todoCountText
+  .clear-completed:
+    style visibility: |
+        hasCompletedTasks ? 'visible' : 'hidden'
+    on click:
+      dispatch deleteCompleted to todosController

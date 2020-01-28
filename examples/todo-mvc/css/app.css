@@ -1,0 +1,16 @@
+/*
+
+app-template.css overrides
+
+remove this comment if used
+remove this file if not
+
+*/
+
+body[data-has-todos="no"] #main {
+    visibility: hidden;
+} 
+
+body[data-has-todos="no"] #footer {
+    visibility: hidden;
+} 

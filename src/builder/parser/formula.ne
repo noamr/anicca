@@ -1,29 +1,40 @@
 @{%
 const moo = require("moo")
-const lexer = moo.compile({
-  keywords: ['null', 'true', 'false'],
-  singleQuoteStringLiteral:  {match: /'(?:\\['\\]|[^\n'\\])*'/}, 
-  doubleQuoteStringLiteral:  {match: /"(?:\\["\\]|[^\n"\\])*"/},
-  assigns: /[=+*/?|%^&\-]?=/,
-  pipeline: /\|\>/,
-  nullishCoalescing: /\?\?/,
-  optionalChain: /\?\./,
-  shift: /(?:\<\<)|(?:\>\>\>?)/,
-  compare: /(?:[<>\!=]\=)|(?:[<>])/,
-  float: /-?(?:[0-9]+\.[0-9]*)|(?:\.[0-9]+)/,
-  and: /\&\&/,
-  oiw: /\*\*/,
-  or: /\|\|/,
-  operator: /[!~+*/?|%\^&\-,.:]/,
-  parentheses: /[(){}[\]]/,
-  varname: /[A-Za-z$_][A-Za-z$_0-9]*/,
-  internalVar: /@[A-Za-z$_@][A-Za-z$_0-9@]*/,
-  ws: /[ \t]+/,
-  int: /-?[0-9]+/,
-  hex: /0x[0-9A-Fa-f]+/,
-  binary: /0b[0-1]+/,
-  selector: /[#*]?[A-Za-z$_][A-Za-z$_0-9]*\[?\]?(?:[~*$^]?\=[^\n])?/,
-  newlines: { match: /[;\n]+/, lineBreaks: true }
+const lexer = moo.states({
+  main: {
+    keywords: ['null', 'true', 'false'],
+    startTemplateLiteral: {match: '`', push: 'lit'},
+    singleQuoteStringLiteral:  {match: /'(?:\\['\\]|[^\n'\\])*'/}, 
+    doubleQuoteStringLiteral:  {match: /"(?:\\["\\]|[^\n"\\])*"/},
+    assigns: /[=+*/?|%^&\-]?=/,
+    pipeline: /\|\>/,
+    nullishCoalescing: /\?\?/,
+    optionalChain: /\?\./,
+    shift: /(?:\<\<)|(?:\>\>\>?)/,
+    compare: /(?:[<>\!=]\=)|(?:[<>])/,
+    float: /-?(?:[0-9]+\.[0-9]*)|(?:\.[0-9]+)/,
+    and: /\&\&/,
+    oiw: /\*\*/,
+    or: /\|\|/,
+    operator: /[!~+*/?|%\^&\-,.:]/,
+    parentheses: /[()[\]]/,
+    lbrace:   {match: '{', push: 'main'},
+    rbrace:   {match: '}', pop: true},
+    varname: /[A-Za-z$_][A-Za-z$_0-9]*/,
+    internalVar: /@[A-Za-z$_@][A-Za-z$_0-9@]*/,
+    ws: /[ \t]+/,
+    int: /-?[0-9]+/,
+    hex: /0x[0-9A-Fa-f]+/,
+    binary: /0b[0-1]+/,
+    selector: /[#*]?[A-Za-z$_][A-Za-z$_0-9]*\[?\]?(?:[~*$^]?\=[^\n])?/,
+    newlines: { match: /[;\n]+/, lineBreaks: true }
+  },
+  lit: {
+    interp:               {match: '${', push: 'main'},
+    escape:               /\\./,
+    endTemplateLiteral:   {match: '`', pop: true},
+    templateConst:        {match: /(?:[^$`]|\$(?!\{))+/, lineBreaks: true},
+  }
 })
 
 const NOOP = () => {}
@@ -31,7 +42,7 @@ const partialSymbol = Symbol("partial")
 const extractToken = t => 
     t instanceof Array ?
         extractToken(t[0]) :
-        t.col ? {col: t.col, line: t.line} : undefined
+        t.col ? {col: t.col, line: t.line, range: [t.offset, t.offset + t.text.length]} : undefined
 
 function fixTokens(f) {
     if (!f)
@@ -55,7 +66,7 @@ const removeTokens = a =>
 @builtin "whitespace.ne"
 
 rawFormula -> 
-    formulaWithoutTokens {% id %}
+    rawFormulaWithTokens {% id %}
 
 formulaWithoutTokens -> rawFormulaWithTokens {% ([formula]) => removeTokens(formula) %}
 rawFormulaWithTokens -> anyExpression                          {% ([id]) => JSON.parse(JSON.stringify(fixTokens(id))) %}
@@ -108,7 +119,8 @@ Unary[Op, R] ->
 # https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
 ATOM ->
     _ primitive _             {% ([,$primitive]) => ({$primitive}) %}
-    | ref {% id %}
+    | _ ref _ {% ([,r]) => r %}
+    | _ templateString _ {% ([,s]) => s %}
 
 P -> _ "(" Next[anyExpression] ")" _ {% ([,,[d]]) => d %}
     | ATOM {% id %}
@@ -195,7 +207,7 @@ COND ->
     | LOR {% id %}
 
 operand -> COND {% id %}
-    
+
 pipeFunctionCall ->
     anyExpression _ %pipeline _ partialFunctionCall 
         {% ([input,, token,, resolvePartial]) => resolvePartial({token, input}) %}
@@ -263,5 +275,14 @@ functionCall ->
     pipeFunctionCall {% id %}
     | standardFunctionCall  {% id %}
 
+templateComponent ->
+    %templateConst {% ([s]) => ({$primitive: s.value}) %}
+    | %interp anyExpression %rbrace {% ([,arg]) => arg %}
+
+templateComponents ->
+    templateComponent:* {% id %}
+
+templateString ->
+    %startTemplateLiteral templateComponents %endTemplateLiteral {% ([,c]) => ({op: 'join', args: [{op: 'array', args: c}, {$primitive: ''}]}) %}
 
 
