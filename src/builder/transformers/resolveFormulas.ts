@@ -2,10 +2,10 @@ import fs from 'fs'
 import {assign, filter, flatten, forEach, keys, map, mapValues, pickBy, values} from 'lodash'
 import path from 'path'
 import { Slot } from '../StoreDefinition'
-import {F, P, R, removeUndefined, S} from './helpers'
-import {isEqual} from 'lodash'
+import {F, P, R, removeUndefined, S, assert} from './helpers'
+import {isEqual, merge} from 'lodash'
 import useMacro from './useMacro'
-import { EnumStatement, NativeDictionaryType, NativeTupleType, TableStatement, tuple } from '../types'
+import { EnumStatement, NativeDictionaryType, NativeTupleType, TableStatement, tuple, Token } from '../types'
 import { PrimitiveFormula, toArgType, TypedPrimitive, ResolveType, 
         TypedFormula, Bundle, Formula, TransformData, NativeType,
          FunctionFormula, SlotStatement, ReferenceFormula, toFormula } from '../types'
@@ -26,7 +26,7 @@ const functions: {[name: string]: (...args: any[]) => Formula} = {
     some: <M, P>(m: M, predicate: P) =>
         F.flatReduce(F.map(m, F.not(F.not(predicate))), [F.or(F.value(), F.aggregate()), F.value()], false),
     findFirst: <M, P>(m: M, predicate: P) => F.head(F.filter(m, predicate)),
-    put: (...args: any[]) => F.array(...args),
+    put: (...args: any[]) => F.tuple(args[0], args[1], args[2]),
     or: <A>(...args: A[]) =>
         args.length === 0 ? {$primitive: false} as Formula :
         args.length === 1 ? args[0] :
@@ -37,8 +37,8 @@ const functions: {[name: string]: (...args: any[]) => Formula} = {
         args.length === 1 ? args[0] :
         args.length === 2 ? F.cond(args[0], args[1], args[0]) :
         F.cond(F.every(args, F.value()), F.tail(args), F.findFirst(args, F.not(F.value()))),
-    diff: <K, V, T = Map<K, V>>(a: toArgType<T>, b: toArgType<T>) =>
-        F.filter(a, F.neq(F.value(), F.get(b, F.key()))),
+    diff: <K, V, T = Map<K, V>>(a: toArgType<T | null>, b: toArgType<T | null>) =>
+        F.cond(a, F.cond(b, F.filter(a, F.neq(F.value<V>(), F.get(b, F.key()))), a), null)
 
 }
 
@@ -127,11 +127,7 @@ const unknownSymbol = Symbol('unknown')
 const numericTypes = new Set<NativeType>(['u8', 'u16', 'u32', 'u64', 'u128', 'i8', 'i16', 'i32', 'i64', 'i128', 'f32', 'f64', 'number'])
 function expect(value: any) {
     return {
-        toEqual: (other: any) => {
-            if (!isEqual(value, other))
-                throw new Error(`Expected ${value} to equal ${other}`)
-        },
-        toMatchType: (other: any) => {
+        toMatchType: (other: any, token?: Token | null) => {
             if (isEqual(value, other))
                 return
 
@@ -141,18 +137,13 @@ function expect(value: any) {
             if (numericTypes.has(other) && numericTypes.has(value))
                 return
 
-            throw new Error(`Expected ${value} to match type ${JSON.stringify(other)}`)
+            throw new Error(`Expected ${value} to match type ${JSON.stringify(other)} at ${token ? JSON.stringify(token) : 'unknown location'}`)
         },
         toBeADictionary: () => {
             if (typeof value !== 'object' || !Reflect.has(value, 'dictionary'))
                 throw new Error(`Expected ${JSON.stringify(value)} to be a dictionary`)
         }
     }
-}
-
-function assert(value: any, message?: string) {
-    if (!value)
-        throw new Error(message || `Expected ${value} to be truthy`)
 }
 
 const bestNumber = (n: NativeType[]) => {
@@ -180,7 +171,7 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
 
     const strictTypeCheck = (def: [NativeType | 'number' | 'ANY', Array<NativeType | 'number' | 'ANY'>]) => {
         return (args: Formula[]) => {
-            expect(args.length).toEqual(def[1].length)
+            assert(args.length === def[1].length)
             const types = args.map(resolveTypes).map((t, i) => {
                 const expectedType = def[1][i]
                 expect(t.type).toMatchType(expectedType)
@@ -252,62 +243,62 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
         formatInt: strictTypeCheck(['string', ['number', 'number']]),
         formatFloat: strictTypeCheck(['string', ['number', 'number']]),
         size: (args: Formula[]) => {
-            expect(args.length).toEqual(1)
+            assert(args.length === 1)
             args.forEach(resolveTypes)
             expect(args[0].type).toBeADictionary()
             return 'u32'
         },
         not: (args: Formula[]) => {
+            assert(args.length === 1)
             args.forEach(resolveTypes)
-            expect(args.length).toEqual(1)
             return 'bool'
         },
         isNil: (args: Formula[]) => {
+            assert(args.length === 1)
             args.forEach(resolveTypes)
-            expect(args.length).toEqual(1)
             return 'bool'
         },
         neq: (args: Formula[]) => {
+            assert(args.length === 2)
             args.forEach(resolveTypes)
-            expect(args.length).toEqual(2)
             return 'bool'
         },
         eq: (args: Formula[]) => {
+            assert(args.length === 2)
             args.forEach(resolveTypes)
-            expect(args.length).toEqual(2)
             return 'bool'
         },
         cond: (args: Formula[]) => {
-            expect(args.length).toEqual(3)
+            assert(args.length === 3)
             resolveTypes(args[0])
             return arbitrate(args.slice(1).map(resolveTypes).map(f => f.type as NativeType))
         },
         get: (args: Formula[]) => {
-            expect(args.length).toEqual(2)
+            assert(args.length === 2)
             const [map, key] = args.map(resolveTypes)
             if (typeof map.type === 'object' && (map.type as NativeTupleType).tuple) {
                 const t = map.type as NativeTupleType
                 assert(Reflect.has(t, 'getters'), `Attempting to get an item from tuple ${JSON.stringify(t)} without getters`)
                 assert(Reflect.has(key, '$primitive'))
                 const getter = Reflect.get(key, '$primitive')
-                expect(typeof getter).toEqual('string')
+                assert(typeof getter === 'string')
                 const index = (t.getters as string[]).indexOf(getter)
                 assert(index >= 0, `Struct does ${t.getters} not have a property ${getter}`)
                 return t.tuple[index]
             } else {
                 expect(map.type).toBeADictionary()
                 const [k, v] = Reflect.get(map.type as object, 'dictionary')
-                expect(k).toMatchType(key.type)
+                expect(k).toMatchType(key.type, key.$token)
                 return v
             }
         },
         at: (args: Formula[]) => {
-            expect(args.length).toEqual(2)
+            assert(args.length === 2)
             const [map, key] = args.map(resolveTypes)
             const mapType = map.type
-            expect(typeof mapType).toEqual('object')
-            expect(Reflect.has(key as object, '$primitive')).toEqual(true)
-            expect(Reflect.has(mapType as object, 'tuple')).toEqual(true)
+            assert(typeof mapType === 'object')
+            assert(Reflect.has(key as object, '$primitive'))
+            assert(Reflect.has(mapType as object, 'tuple'))
             const v = Reflect.get(mapType as object, 'tuple')
             return v[Reflect.get(key as object, '$primitive') as number]
         },
@@ -323,7 +314,7 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
             }
         },
         source: (args: Formula[]) => {
-            expect(args.length).toEqual(0)
+            assert(args.length === 0)
             assert(currentMap)
             if (currentMap)
                 return currentMap.type
@@ -333,7 +324,7 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
                 return {dictionary: ['string', 'null']}
             assert(args.length > 0)
             args.forEach(resolveTypes)
-            expect(args.every(a => (resolveTypes(a).type as NativeTupleType<any>).tuple.length === 2))
+            assert(args.every(a => (resolveTypes(a).type as NativeTupleType<any>).tuple.length === 2))
             const entryTypes = args.map(a => a.type)
             const keyTypes = entryTypes.map(e => (e as NativeTupleType<NativeType>).tuple[0])
             const valueTypes = entryTypes.map(e => (e as NativeTupleType<NativeType>).tuple[1])
@@ -351,7 +342,7 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
             args.slice(1).forEach(a => expect(a).toMatchType(args[0].type))
         },
         flatMap: (args: Formula[]) => {
-            expect(args.length).toEqual(2)
+            assert(args.length === 2)
             const prevMap = currentMap
             currentMap = resolveTypes(args[0])
             expect(args[0].type).toBeADictionary()
@@ -363,7 +354,7 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
             return pred.type
         },
         flatReduce: (args: Formula[]) => {
-            expect(args.length).toEqual(3)
+            assert(args.length === 3)
             const prevMap = currentMap
             const prevAggregate = currentAggregate
             currentMap = resolveTypes(args[0])
@@ -374,55 +365,55 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
             return args[2].type
         },
         encode: (args: Formula[]) => {
-            expect(args.length).toEqual(2)
+            assert(args.length === 2)
             assert(Reflect.has(args[1], '$type'))
             resolveTypes(args[0])
             return 'ByteArray'
         },
         decode: (args: Formula[]) => {
-            expect(args.length).toEqual(2)
+            assert(args.length === 2)
             resolveTypes(args[0])
             return Reflect.get(args[1], '$type')
         },
         join: (args: Formula[]) => {
-            expect(args.length).toEqual(2)
+            assert(args.length === 2)
             args.forEach(resolveTypes)
             return 'string'
         },
         head: (args: Formula[]) => {
-            expect(args.length).toEqual(1)
+            assert(args.length === 1)
             args.forEach(resolveTypes)
             expect(args[0].type).toBeADictionary()
             const [k, v] = Reflect.get(args[0].type as object, 'dictionary')
             return k
         },
         tail: (args: Formula[]) => {
-            expect(args.length).toEqual(1)
+            assert(args.length === 1)
             args.forEach(resolveTypes)
             expect(args[0].type).toBeADictionary()
             const [k, v] = Reflect.get(args[0].type as object, 'dictionary')
             return k
         },
         table: (args: Formula[]) => {
-            expect(args.length).toEqual(1)
+            assert(args.length === 1)
             const tableIndex = Reflect.get(resolveTypes(args[0]), '$primitive') as number
-            expect(Reflect.has(im.tableTypes, tableIndex)).toEqual(true)
+            assert(Reflect.has(im.tableTypes, tableIndex), `Table not found: ${args[0]}`)
             return {dictionary: ['u32', im.tableTypes[tableIndex]]}
         },
         noop: (args: Formula[]) => {
-            expect(args.length).toEqual(0)
+            assert(args.length === 0)
             return 'noop'
         },
         delete: (args: Formula[]) => {
-            expect(args.length).toEqual(0)
+            assert(args.length === 0)
             return 'delete'
         },
         merge: (args: Formula[]) => {
-            expect(args.length).toEqual(0)
+            assert(args.length === 0)
             return 'merge'
         },
         replace: (args: Formula[]) => {
-            expect(args.length).toEqual(0)
+            assert(args.length === 0)
             return 'replace'
         },
     }
@@ -469,8 +460,7 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
             case 'object': {
                 args.forEach(a => {
                     const args = (a as FunctionFormula).args
-                    if (!args || args.length !== 2)
-                        throw new Error(`Bad args for object: ${args && args.map(formulaToString)}`)
+                    assert(args && args.length === 2)
                 })
             }
         }
@@ -551,7 +541,7 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
                 if (!Reflect.has(refs, $ref))
                     throw new Error(`Unresolved ref: ${$ref} (${formulaToString(f)})`)
 
-                return {...f, ...resolveFormula(refs[$ref])}
+                return {...f, ...resolveFormula(refs[$ref]), $token: assign({}, f.$token, {info: $ref})}
             }
 
             if (Array.isArray(f))
@@ -677,7 +667,8 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
         [resolveFormula, rewrite, resolveTypes, resolveTypedGetters, resolveConstants, resolveContext]
             .reduce((a, f) => f(a), formula)
 
-    im.roots = mapValues(im.roots, transformFormula)
+    im.roots = mapValues(im.roots, (value, key) => merge(transformFormula(value as Formula), {token: {info: key}}))
+    im.onCommit = im.onCommit.map(transformFormula)
     im.debugInfo = {
         roots: mapValues(im.roots, formulaToString)
     }

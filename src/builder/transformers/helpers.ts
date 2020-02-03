@@ -22,6 +22,27 @@ function fixArg(a: any): any {
     return {op: 'object', args: Object.entries(a).map(([key, value]) => F.pair(key, value)), $token: a.$token}
 }
 
+
+export function assert<T>(value: T | null | undefined, message?: string): T {
+    if (value)
+        return value
+
+    if (message)
+        throw new Error(message)
+
+    const error = new Error('assertion')
+    if (error.stack) {
+        const lines = error.stack.split('n')
+        if (lines && lines.length > 2) {
+            const relevantLine = lines[2]
+            const match = relevantLine.match(/(?<=at )\w+ \([^$]+\)/)
+            if (match)
+                error.message = `Assertion failed at ${match[0]}`
+        }
+    }
+    throw error
+}
+
 export function withInfo<T extends Formula = Formula>(f: T, info: string | null): T {
     if (!info)
         return f

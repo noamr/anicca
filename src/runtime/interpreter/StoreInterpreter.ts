@@ -1,6 +1,7 @@
-import {RawFormula, StoreSpec} from '../../builder/types'
+import {NativeType, RawFormula, StoreSpec} from '../../builder/types'
 import { Enqueue, Store } from '../shell/RuntimeTypes'
 import {defaultEvaluators, Context, Evaluator} from './evaluators'
+import {decode, encode} from './transport'
 
 const noopSymbol = Symbol('noop')
 const deleteSymbol = Symbol('delete')
@@ -17,11 +18,16 @@ export default function createStoreInterpreter(spec: StoreSpec) {
         ...defaultEvaluators,
         table: (a) => ctx => tables[a(ctx)],
         uid: () => nextID,
-        delete: (t, k) => (c) => new Map([[0, t(c)], [1, k(c)], [2, deleteSymbol]]),
         put: (t, k, v) => (c) => new Map([[0, t(c)], [1, k(c)], [2, v(c)]]),
+        delete: () => () => deleteSymbol,
         replace: () => () => replaceSymbol,
         merge: () => () => mergeSymbol,
-        noop: () => () => noopSymbol
+        noop: () => () => noopSymbol,
+    }
+
+    const typedOps: {[op: string]: (args: Evaluator[], getTypes: NativeType) => Evaluator} = {
+        decode: ([a], type) => ctx => decode(a(ctx), type),
+        encode: ([a], type) => ctx => encode(a(ctx), a.type as NativeType)
     }
 
     Object.keys(spec.tableTypes).forEach((tableIndex: string) => {
@@ -37,19 +43,45 @@ export default function createStoreInterpreter(spec: StoreSpec) {
         }
 
         const {op, args} = f as {op: string, args: number[]}
-        const ev = ops[op]
-        const argResolvers = args.map(n => {
-            if (!evaluators.has(n))
-                evaluators.set(n, resolveFormula(spec.slots[n]))
-            return evaluators.get(n) as Evaluator
-        })
+        if (f.type >= 0) {
+            if (Reflect.has(typedOps, op))
+                return typedOps[op](args.map(resolveFormulaIndex), spec.types[f.type])
+        }
+        if (!Reflect.has(ops, op)) {
+            throw new Error(`Missing op: ${op}`)
+        }
 
-        return ev(...argResolvers)
+        return ops[op](...args.map(resolveFormulaIndex))
     }
 
-    function evaluate<T = any>(index: number, ctx: Context|null = null): T {
+    function resolveFormulaIndex(n: number): Evaluator {
+        if (!evaluators.has(n)) {
+            const slot = spec.slots[n]
+            const evaluator = resolveFormula(slot)
+            evaluator.type = spec.types[slot.type]
+            evaluator.token = spec.debugInfo[slot.token || 0]
+            evaluator.originalFormula = slot
+            evaluators.set(n, evaluator)
+        }
+        return evaluators.get(n) as Evaluator
+    }
+
+    Object.values(spec.roots).forEach(resolveFormulaIndex)
+    spec.onCommit.forEach(resolveFormulaIndex)
+
+    function evaluateProd<T = any>(index: number, ctx: Context|null = null): T {
         return (evaluators.get(index) as Evaluator)(ctx)
     }
+
+    function evaluateDebug<T = any>(index: number, ctx: Context|null = null): T {
+        const slot = spec.slots[index]
+        const result = (evaluators.get(index) as Evaluator)(ctx)
+        console.log(`Evaluating slot ${index}, ${slot.op}. Token:
+            ${slot.token === null ? '' : JSON.stringify(spec.debugInfo[slot.token || 0])}`)
+        return result
+    }
+
+    const evaluate = evaluateDebug
 
     function update(table: number, key: any, value: any) {
         const ensure = () => (tables[table] || (tables[table] = new Map<any, any>())) as Map<any, any>
@@ -73,24 +105,27 @@ export default function createStoreInterpreter(spec: StoreSpec) {
         }
     }
 
-    function commitEntry(entry: Map<number, number>) {
-        const [table, key, value] = [entry.get(0), entry.get(1), entry.get(2)]
+    function commitEntry([table, key, value]: [number, number, any]) {
         update(table as number, key, value)
     }
 
     return {
         enqueue: (header: number, payload: ArrayBuffer|null) =>
             update(evaluate(spec.roots.inbox), nextID(), [header, payload]),
-        awaitIdle: async () => evaluate<boolean>(spec.roots.idle),
+        awaitIdle: async () => {
+            const idle = evaluate<boolean>(spec.roots.idle)
+            return idle && !evaluate<Map<number, ArrayBuffer>>(spec.roots.outbox).size
+        },
         commit: async () => {
-            const stagingData = await evaluate<Map<number, Map<number, number>>>(spec.roots.staging)
-            for (const entry of stagingData.values())
-                commitEntry(entry)
+            const stagingData = await evaluate<Map<number, [number, number, any]>>(spec.roots.staging)
+            if (stagingData)
+                for (const entry of stagingData.values())
+                    commitEntry(entry)
         },
         dequeue: async (): Promise<Array<[number, ArrayBuffer]>> => {
             const outbox = evaluate<Map<number, ArrayBuffer>>(spec.roots.outbox)
-            const commitView = await evaluate<Map<number, number>>(spec.roots.commitView)
-            commitEntry(commitView)
+            for (const commit of spec.onCommit)
+                commitEntry(await evaluate(commit))
             return [...outbox.entries()]
         }
     } as Store

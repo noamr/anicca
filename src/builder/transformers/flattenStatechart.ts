@@ -2,7 +2,7 @@ import * as _ from 'lodash-es'
 import { Bundle, Configuration, ControllerStatement, DispatchAction, FlatStatechart, Formula, 
     GotoAction, HistoryConfiguration, Juncture, Modus, State, Statechart, StepResults, Transition, TransitionAction,
  } from '../types'
-import {F, R, removeUndefined, S} from './helpers'
+import {F, R, removeUndefined, S, assert, withInfo} from './helpers'
 import { NativeType, NativeTupleType, TypedFormula, NativeTypeFormula } from '../types'
 import { mapValues } from 'lodash'
 
@@ -14,6 +14,7 @@ const intersectSets = <T>(a: Set<T>, b: Set<T>) => some(a, x => some(b, y => y =
 const sort = <T>(a: Iterable<T>, p: (a: T, b: T) => number) => a ? Array.from(a).sort(p) : a
 
 export function flattenState(rootState: State): FlatStatechart {
+
     const byName: {[name: string]: State} = {}
     const parentMap = new WeakMap<State, State|null>()
     const transitionSourceMap = new WeakMap<Transition, State>()
@@ -31,7 +32,7 @@ export function flattenState(rootState: State): FlatStatechart {
     const conditionFor = (t: Transition|null): Formula =>
         (t && Reflect.has(t, 'condition')) ? t.condition as Formula : trueCondition
     const trueCondition = {$primitive: true} as Formula
-    const falseCondition = {$primitive: true} as Formula
+    const falseCondition = {$primitive: false} as Formula
 
     const hashState = (s: State) => `${s.name || `#${documentIndex(s)}`}`
     const hashConfig = (c: Configuration) => sort(c, entryOrder).map(hashState).join(',')
@@ -89,28 +90,20 @@ export function flattenState(rootState: State): FlatStatechart {
             }))] as [Juncture<string>|null, Array<StepResults<string>>]))),
     }
 
-    function decodePayload(payload: {[key: string]: [number, NativeType]}): Formula {
-        return F.decode({$ref: '@payload', $T: new ArrayBuffer(0)} as TypedFormula<ArrayBuffer>,
-            {$type: {tuple: Object.values(payload).reduce((a, o) => {
-                a[o[0]] = o[1]
-                return a
-            }, [] as NativeType[])}} as NativeTypeFormula)
-    }
-
-    function resolveArgs(obj: any, payload?: {[key: string]: [number, NativeType]} | null): any {
-        if (!payload || !obj || typeof obj !== 'object')
+    function resolveArgs(obj: any, payloadType: {[key: string]: [number, NativeType]} | null, payload: Formula): any {
+        if (!payloadType || !obj || typeof obj !== 'object')
             return obj
 
         if (Array.isArray(obj))
-            return obj.map(e => resolveArgs(e, payload))
+            return obj.map(e => resolveArgs(e, payloadType, payload))
 
         if (Reflect.has(obj as any, '$ref')) {
             const ref = Reflect.get(obj as any, '$ref') as string
-            if (payload[ref])
-                return F.at(decodePayload(payload), payload[ref][0])
+            if (payloadType[ref])
+                return F.cond(F.isNil(payload), null, F.at(payload, payloadType[ref][0]))
         }
 
-        return mapValues(obj, e => resolveArgs(e, payload))
+        return mapValues(obj, e => resolveArgs(e, payloadType, payload))
     }
 
     function resolveTransition(t: Transition, s: State) {
@@ -121,8 +114,17 @@ export function flattenState(rootState: State): FlatStatechart {
         if (!t.payload)
             return
 
-        t.condition = t.condition ? resolveArgs(t.condition, t.payload) : null
-        t.actions = t.actions ? t.actions.map(a => resolveArgs(a, t.payload)) : []
+        const eventIndex = [...allEvents].indexOf(t.event)
+        const type = {tuple: Object.values(t.payload).reduce((a, o) => {
+            a[o[0]] = o[1]
+            return a
+        }, [] as NativeType[])} as NativeTupleType
+
+        const payloadBuffer = {$ref: `@payload-${t.event}`, $T: new ArrayBuffer(0)} as TypedFormula<ArrayBuffer>
+        const decodedPayload = F.cond(F.isNil(payloadBuffer), null,
+            withInfo(F.decode(payloadBuffer, {$type: type}) as Formula, `Decode payload for ${t.event}`))
+        t.condition = t.condition ? resolveArgs(t.condition, t.payload, decodedPayload) : null
+        t.actions = t.actions ? t.actions.map(a => resolveArgs(a, t.payload || null, decodedPayload)) : []
     }
 
     function resolveState(s: State, parent: State|null) {

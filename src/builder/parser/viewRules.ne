@@ -7,14 +7,20 @@ viewRule ->
     | dataRule {% id %}
     | cssRule {% id %}
     | classRule {% id %}
+    | idRule {% id %}
+    | indexRule {% id %}
     | cloneRule {% id %}
     
 eventCondition ->
     __ "when" __ rawFormula {% ([,,, v]) => v %}
     | null {% () => null %}
 
+eventArg ->
+    _ "(" _ %varname _ ")" _ {% ([,,, e]) => e.value %}
+    | null {% () => null %}
+
 eventRule ->
-    "on" __ %varname eventCondition {% ([,,event,condition]) => ({type: 'DomEvent', eventType: event.value, condition}) %}
+    "on" __ %varname eventArg eventCondition {% ([,, event, argName, condition]) => ({type: 'DomEvent', eventType: event.value, argName, condition}) %}
 
 contentRule ->
     "content" {% () => ({type: 'BindContent'}) %}
@@ -30,6 +36,12 @@ attributeRule ->
 
 classRule ->
     "class" {% () => ({type: 'BindAttribute', attribute: 'class'}) %}
+
+idRule ->
+    "id" {% () => ({type: 'BindAttribute', attribute: 'id'}) %}
+
+indexRule ->
+    "index" {% () => ({type: 'BindIndex'}) %}
 
 dataRule ->
     "data" __ attribute {% ([,,attribute]) => ({type: 'BindData', attribute}) %}

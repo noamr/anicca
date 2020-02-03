@@ -1,13 +1,14 @@
 import fs from 'fs'
-import {assign, filter, flatten, forEach, keys, map, mapValues, pickBy, values} from 'lodash'
+import {assign, filter, flatten, forEach, keys, map, mapValues, pickBy, values, uniq, compact} from 'lodash'
 import path from 'path'
 import { AssignmentDirective, AssignTransitionAction, Bundle, ControllerStatement, DispatchAction, FlatStatechart,
          Formula, FunctionFormula, Juncture, LetStatement, ReferenceFormula, SlotStatement, State, Statement,
          StepResults, toFormula, TransformData, TransitionAction, tuple, Transition, TypedFormula, TypedRef } from '../types'
 import { flattenState } from './flattenStatechart'
-import {F, P, R, removeUndefined, S, withInfo} from './helpers'
+import {F, P, R, removeUndefined, S, withInfo, assert} from './helpers'
 import useMacro from './useMacro'
 import resolveTimers from './resolveTimers'
+import { NativeType, NativeTypeFormula, NativeTupleType } from '../types'
 
 interface Context {
     tables: {[name: string]: number}
@@ -32,6 +33,19 @@ const phases = {$ref: PHASE_TABLE, $T: new Map<number, number>()}
 const inbox = {$ref: INBOX_TABLE, $T: new Map<number, EventType>()}
 const timers = {$ref: TIMER_TABLE, $T: new Map<number, number>()}
 
+function resolveRefs(formula: Formula, refs: {[name: string]: Formula}): Formula {
+    const ref = Reflect.get(formula, '$ref')
+    if (refs[ref])
+        return refs[ref]
+
+    if (!Reflect.has(formula, 'args'))
+        return formula
+
+    const {args} = formula as FunctionFormula
+
+    return {...formula, args: assert(args).map(a => resolveRefs(a, refs))} as FunctionFormula
+}
+
 export default function resolveControllers(bundle: Bundle, im: TransformData): Bundle {
     im = im || {}
     const bundleWithControllerTables = [
@@ -55,8 +69,48 @@ export default function resolveControllers(bundle: Bundle, im: TransformData): B
         Math.max(...Object.values(flatControllers).map(f => f[1].junctures.size))) + 1)
     const INTERNAL_BITS = Math.ceil(Math.log2(Object.keys(flatControllers).length + 1) + TARGET_BITS)
 
-    const getTargetFromEventHeader = F.shr(F.bwand(F.first(F.value<EventType>()), (1 << INTERNAL_BITS) - 1), TARGET_BITS)
-    const getInternalFromEventHeader = F.shr(F.first(F.value<EventType>()), INTERNAL_BITS)
+    const getTargetFromEventHeader =
+        withInfo(F.shr(F.bwand(F.first(F.value<EventType>()), (1 << INTERNAL_BITS) - 1), TARGET_BITS), 'getTargetFromEventHeader')
+    const getInternalFromEventHeader = withInfo(F.shr(F.first(F.value<EventType>()), INTERNAL_BITS), 'getInternalFromEventHeader')
+
+    const payloadHash = new Map<string, NativeType>()
+
+    function getEventPayloadType(event: string, target: string): NativeType {
+        const hash = `{${event}}:{${target}}`
+        if (payloadHash.has(hash))
+            return payloadHash.get(hash) as NativeType
+
+        const controller = bundle.find(s => s.type === 'Controller' && s.name === target) as ControllerStatement
+        if (!controller)
+            throw new Error(`Unknown event target: ${target}`)
+
+        const state = controller.rootState
+        function findTransitions(state: State, p: (t: Transition) => boolean): Transition[] {
+            return (state.children || []).flatMap(
+                c => c.type === 'State' ? findTransitions(c, p) : (p(c as Transition) ? [c as Transition] : []))
+        }
+        const payloads =
+            findTransitions(state, (t: Transition) => t.event === event)
+                .map(t => t.payload)
+                .filter(p => p)
+                .map(p => p && {tuple: Object.values(p).reduce((a, o: [number, NativeType]) => {
+                    a[o[0]] = o[1]
+                    return a
+                }, [] as NativeType[])} as NativeTupleType) as NativeTupleType[]
+
+        const uniquePayloads = uniq(compact(payloads))
+
+        if (!uniquePayloads.length)
+            return {tuple: []}
+
+        if (uniquePayloads.length === 1)
+            return payloads[0]
+
+        throw new Error(`Mismatch in payloads for event ${event} in controller ${target}`)
+    }
+
+    im.getEventPayloadType = getEventPayloadType
+
 
     im.getEventHeader = (event: string, target: string) => {
         const fc = flatControllers[target]
@@ -77,25 +131,23 @@ export default function resolveControllers(bundle: Bundle, im: TransformData): B
 
     const stagingByController = F.object(
         ...Object.entries(mapValues(byController, 'assignments')).map(([k, v]) => F.pair(+k, v)))
-    const payloadByController = F.object(
-        ...Object.entries(mapValues(byController, 'payload')).map(([k, v]) => F.pair(+k, v)))
-    const activeControllers = F.object(...Object.entries(
-        mapValues(byController, (v, k) => F.neq(F.get(phases, +k), IDLE_PHASE))).map(([k, v]) => F.pair(+k, v)))
+    const activeControllers = withInfo(F.filter(F.object(...Object.entries(
+        mapValues(byController, (v, k) => withInfo(
+            F.neq(F.get(phases, +k), IDLE_PHASE), `Is controller ${k} active`)))
+                .map(([k, v]) => F.pair(+k, v))), F.value()), 'active controllers')
 
-    const controllersWithMessages = F.map(inbox, [F.pair(getTargetFromEventHeader, true)])
+    const controllersWithMessages = F.flatMap(inbox, F.object(F.pair(getTargetFromEventHeader, true)))
     const currentControllerIndex = F.cond(F.size(activeControllers),
         F.head(activeControllers),
         F.cond(F.size(controllersWithMessages), F.head(controllersWithMessages), -1))
     const idle = F.eq(currentControllerIndex, -1)
     const staging = F.cond(idle, [] as AssignmentDirective[], F.get(stagingByController, currentControllerIndex))
-    const payload = F.get(payloadByController, currentControllerIndex)
 
     im.roots = assign({}, im.roots, {idle: {$ref: '@idle'}, staging: {$ref: '@staging'}, inbox: tables['@inbox']})
 
     return [
         ...bundleWithControllerTables.filter(({type}) => type !== 'Controller'),
         S.Slot('@idle', {formula: idle}),
-        S.Slot('@payload', {formula: payload}),
         S.Slot('@staging', {formula: staging}),
         S.Slot('@wakeup', {formula: nextWakeupTime})
     ]
@@ -105,9 +157,7 @@ export default function resolveControllers(bundle: Bundle, im: TransformData): B
         index: number,
         bundle: Bundle,
         {tables, getEventHeader}: TransformData):
-            {assignments: toFormula<Map<number, AssignmentDirective>>
-            payload: Formula
-            } {
+            {assignments: toFormula<Map<number, AssignmentDirective>>} {
         const hashToIndex: {[hash: string]: number} = {}
 
         const [, fsc] = current
@@ -136,7 +186,7 @@ export default function resolveControllers(bundle: Bundle, im: TransformData): B
                     throw new Error(`Undefined ref: ${asRef.$ref}`)
                 if(byName.type === 'Slot')
                     return parseAssignment((byName as SlotStatement).formula, source)
-                if(byName.type === 'Table')
+                if (byName.type === 'Table')
                     return [parseTable(asRef), F.replace(), source]
                 throw new Error(`Ref pointing to ${byName.type} is not assignable`)
             }
@@ -164,7 +214,9 @@ export default function resolveControllers(bundle: Bundle, im: TransformData): B
                     const h = getEventHeader(event, target || current[0])
                     const header = h | ((target ? 0 : 1) << INTERNAL_BITS)
                     return resolveAssignment({type: 'Assign',
-                        source: F.array(P(header), payload), target: F.get(inbox, F.uid())} as AssignTransitionAction)
+                        source: F.pair(P(header), F.encode(payload,
+                            {$type: im.getEventPayloadType(event, target || current[0])}) as TypedFormula<ArrayBuffer>),
+                        target: withInfo(F.get(inbox, F.uid()), 'next event from inbox')} as AssignTransitionAction)
                 }
                 default:
                     throw new Error(`${JSON.stringify(a)} statements should already be resolved`)
@@ -178,7 +230,8 @@ export default function resolveControllers(bundle: Bundle, im: TransformData): B
         })
 
         const resolveConditionalAssignment = <T>(a: AssignmentDirective, cond: T) => {
-            return [a[0], F.cond(cond, a[1], F.noop()), a[2]] as AssignmentDirective
+            return [a[0], withInfo(F.cond(cond || {$primitive: true}, a[1], F.noop()), 'condition for assignment'),
+                    a[2]] as AssignmentDirective
         }
 
         const flattenResult = (result: StepResults<number>): Array<AssignmentDirective | null> =>
@@ -195,22 +248,12 @@ export default function resolveControllers(bundle: Bundle, im: TransformData): B
                 modus: hashToIndex[juncture.modus],
             } : null,
                 {
-                    condition: F.not(F.not(F.or(...results.map(({condition}) => condition)))),
+                    condition: withInfo(F.not(F.not(F.or(...results.map(({condition}) => condition)))), 'coalesce conditions'),
                     assignments: flatten(results.map(r => flattenResult((
                         {condition: r.condition, execution: r.execution, modus: hashToIndex[r.modus]}) as
                             StepResults<number>))),
                 } as JValue)))
 
-        const modusMap = F.object(...[...junctures.keys()]
-            .map(j => {
-                const info = j ? j.info : null
-                const header = j ? (j.modus << MODUS_BITS | getEventIndex(fsc, j.event)) : 0
-                const {condition, assignments} = junctures.get(j) as JValue
-                return withInfo(
-                    F.pair(header, F.pair(condition, F.array(...assignments.map(a => F.array(...a))))), info)
-            }))
-
-        const modus = F.cond(F.size(modi), F.get(modi, index), 0)
         const currentPhase = F.cond(F.size(phases), F.get(phases, index), INIT_PHASE)
 
         const currentEventKey = F.cond(F.or(F.eq(currentPhase, INTERNAL_PHASE),
@@ -220,14 +263,29 @@ export default function resolveControllers(bundle: Bundle, im: TransformData): B
                                     F.eq(getInternalFromEventHeader, F.cond(F.eq(currentPhase, INTERNAL_PHASE), 1, 0)),
                                 )), null)
 
-        const currentEvent = F.cond(F.eq(currentPhase, AUTO_PHASE), null, F.get(inbox, currentEventKey))
-        const currentEventType = F.cond(F.isNil(currentEvent), 0,
-            F.bwand(F.plus(F.first(currentEvent), 1), (1 << TARGET_BITS) - 1))
-        const payload = F.cond(F.isNil(currentEvent), null, F.second(currentEvent))
+        const currentEvent = withInfo(F.cond(F.eq(currentPhase, AUTO_PHASE), null, F.get(inbox, currentEventKey)), 'current event')
+        const currentEventType = withInfo(F.cond(F.isNil(currentEvent), 0,
+            F.bwand(F.plus(F.first(currentEvent), 1), (1 << TARGET_BITS) - 1)), 'current event type')
+        const payloads = fsc.events.map((eventName, eventIndex) => ({[`@payload-${eventName}`]:
+            withInfo(F.cond(F.eq(currentEventType, eventIndex + 1), F.second(currentEvent), null), `Payload for controller ${index}, event ${eventName}`)
+        })).reduce(assign)
 
-        const juncture = F.cond(F.eq(currentPhase, INIT_PHASE), 0, F.bwor(F.shl(modus, MODUS_BITS), currentEventType))
+        const modusMap = withInfo(resolveRefs(F.object(...[...junctures.keys()]
+            .map(j => {
+                const info = j ? j.info : null
+                const header = j ? (j.modus << MODUS_BITS | getEventIndex(fsc, j.event)) : 0
+                const {condition, assignments} = junctures.get(j) as JValue
+                return withInfo(
+                        F.pair(header, F.pair(condition,
+                            withInfo(F.array(...assignments.map(a => F.tuple(a[0], a[1], a[2]) as
+                                TypedFormula<[number, number, number]>)), 'assignments'))), `juncture: ${info}`)
+            })), payloads), 'modus map')
+
+        const modus = F.cond(F.size(modi), F.get(modi, index), 0)
+        const juncture = withInfo(
+            F.cond(F.eq(currentPhase, INIT_PHASE), 0, F.bwor(F.shl(modus, MODUS_BITS), currentEventType)), 'juncture key')
         const currentJuncture = withInfo(F.get(modusMap, juncture), 'current juncture')
-        const effective = F.first(currentJuncture)
+        const effective = withInfo(F.first(currentJuncture), 'effective')
         const nextPhase = withInfo(
             F.cond(F.or(effective, F.eq(currentPhase, IDLE_PHASE)), AUTO_PHASE, F.plus(currentPhase, 1)), 'next phase')
         const advance = withInfo(F.put(parseTable(phases), index, nextPhase), 'advance phase')
@@ -238,6 +296,6 @@ export default function resolveControllers(bundle: Bundle, im: TransformData): B
                 withInfo(F.object(F.pair(10000, advance), F.pair(10001, deleteCurrentEvent)), 'delete current event'),
                 withInfo(F.object(F.pair(10000, advance)), 'advance without event')))), 'assignments')
 
-        return {assignments, payload}
+        return {assignments}
     }
 }

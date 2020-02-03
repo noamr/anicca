@@ -1,9 +1,10 @@
 import { Enqueue } from './RuntimeTypes'
-import { ViewConfig, BindTargetType } from '../../builder/types'
+import { ViewSetup, BindTargetType, EventSetup } from '../../builder/types'
 import { forEach } from 'lodash'
-
+import { decodeBindings } from './encodeDecode'
+import {assert} from '../../builder/transformers/helpers'
 interface ViewParams {
-    config: ViewConfig
+    config: ViewSetup
     rootElements: {[name: string]: HTMLElement}
     port: MessagePort
 }
@@ -26,59 +27,120 @@ function ancestors(e: HTMLElement, a: HTMLElement|null): HTMLElement[] {
         [e, ...ancestors(e.parentElement, a)]
 }
 
-function createView(root: HTMLElement, eventHandlers: {[type: string]: EventHandler[]}, bindings: Binding[],
+interface View {
+     select(rootSelector: string | null, selector: string, key: number|null): HTMLElement[]
+     setIndex(e: HTMLElement, index: number): void
+     commit(): void
+}
+
+interface CloneInfo {
+    parent: HTMLElement
+    template: HTMLElement
+    next: Element | null
+    mount: (element: HTMLElement, key: number) => void
+    children: Map<number, HTMLElement>
+}
+
+
+function createView(root: HTMLElement, events: EventSetup[], bindings: Binding[],
                     port: MessagePort) {
-    const matches = (e: HTMLElement, {selector}: {selector: string}): boolean => 
-        Array.from(root.querySelectorAll(selector)).includes(e)
-    const $ = ({selector}: {selector: string}) => Array.from(root.querySelectorAll(selector))
-    Object.keys(eventHandlers).forEach(e => {
-        root.addEventListener(e, event => {
-            const handlers = eventHandlers[e as keyof typeof eventHandlers]
-            let preventDefault = false
-            let stopPropagation = false
-            const ancs = ancestors(event.target as HTMLElement, root)
-            const headers = new Set<number>()
-            for (const target of ancs) {
-                const handler = handlers.find(h => matches(target, h))
-                if (!handler)
-                    continue
 
-                if (handler) {
-                    stopPropagation = stopPropagation || handler.stopPropagation
-                    preventDefault = preventDefault || handler.preventDefault
-                }
+    const matches = (e: HTMLElement, root: string, selector: string, key: number | null): boolean =>
+        Array.from(select(root, selector, key)).includes(e)
 
-                handler.headers.forEach(h => headers.add(h))
-                if (stopPropagation) {
-                    event.stopPropagation()
-                    break
-                }
-            }
+    const emit = (header: number, payload: ArrayBuffer) =>
+        port.postMessage({header, payload}, [payload])
 
-            if (preventDefault)
-                event.preventDefault()
+    const cloneIds = new WeakMap<HTMLElement, number>()
 
-            if (headers.size) {
-                const payload = encodeEvent(event)
-                port.postMessage({payload, headers: [...headers]}, [payload])
-            }
 
-        }, {capture: true})
-    })
+    function doSelect(element: HTMLElement, selector: string): HTMLElement[] {
+        if (selector === '&')
+            return [element]
+        return Array.from(element.querySelectorAll(selector))
+    }
+
+    function listen(rootElement: HTMLElement, {eventType, handler, selector}: EventSetup, key: number = 0) {
+        doSelect(rootElement, selector).forEach(e => e.addEventListener(eventType, e => handler(e, key, emit)))
+    }
+
+    events.filter(s => !s.root).forEach(eventSetup => listen(root, eventSetup))
+
+    const cloneRootMap = new Map<string, CloneInfo>()
+    const cloneInfoMap = new WeakMap<HTMLElement, CloneInfo>()
+
+    function createCloneInfo(selector: string): CloneInfo {
+        const template = root.querySelector(selector) as HTMLElement
+        assert(template)
+
+        const parent = template.parentElement as HTMLElement
+
+        const eventSetups = events.filter(s => s.root === selector)
+
+        const mount = (element: HTMLElement, key: number) =>
+            eventSetups.forEach(s => listen(element, s, key))
+
+        const cloneInfo = {
+            template,
+            children: new Map<number, HTMLElement>(),
+            next: template.nextElementSibling,
+            mount,
+            parent
+        }
+
+        parent.removeChild(template)
+        cloneRootMap.set(selector, cloneInfo)
+        return cloneInfo
+    }
+
+    function clone(cloneInfo: CloneInfo, key: number): HTMLElement {
+        const {template, children, parent, next, mount} = cloneInfo
+        const isDeepClone = true
+        const child = template.cloneNode(isDeepClone) as HTMLElement
+        cloneIds.set(child, key)
+        children.set(key, child)
+        parent.insertBefore(child, next)
+        cloneInfoMap.set(child, cloneInfo)
+        mount(child, key)
+        return child
+    }
+
+    function select(rootSelector: string | null, selector: string, key: number|null): HTMLElement[] {
+        if (!rootSelector)
+            return doSelect(root, selector)
+
+        const cloneInfo = cloneRootMap.get(rootSelector) || createCloneInfo(rootSelector)
+
+        assert(key !== null)
+        const {parent, template, children} = cloneInfo
+        const child = children.get(key as number) || clone(cloneInfo, key as number)
+        return doSelect(child, selector)
+    }
+
+    const clonesWithModifiedIndices = new Set<CloneInfo>()
+    const indices = new Map<HTMLElement, number>()
+
+    function setIndex(e: HTMLElement, index: number): void {
+        clonesWithModifiedIndices.add(assert(cloneInfoMap.get(e)))
+        indices.set(e, index)
+    }
+
+    function commit(): void {
+        for (const cloneToSort of clonesWithModifiedIndices) {
+            const reverseSortedChildren = [...indices.keys()].filter(k => k.parentElement === cloneToSort.parent)
+            reverseSortedChildren.sort((a, b) => (indices.get(b) || 0) - (indices.get(a) || 0))
+            let reference = cloneToSort.next
+            for (const child of reverseSortedChildren)
+                reference = cloneToSort.parent.insertBefore(child, reference)
+        }
+        clonesWithModifiedIndices.clear()
+    }
+
+    return {select, setIndex, commit}
 }
 
-const TARGET_BITS = 16
-const TARGET_MASK = (1 << TARGET_BITS) - 1
-
-function select(e: HTMLElement|null|undefined, selector: string, key: number|null): HTMLElement[] {
-    if (!e)
-        return []
-
-    selector = (key === null) ? selector : selector.replace('@key@', '' + key)
-    return Array.from(e.querySelectorAll(selector))
-}
-
-const appliers: {[key in BindTargetType]: (e: HTMLElement, target: string, value: string|null) => void} = {
+const indices = new WeakMap<HTMLElement, number>()
+const appliers: {[key in BindTargetType]: (e: HTMLElement, target: string, value: string|null, view?: View) => void} = {
     content: (e, target, value) => e.innerHTML = value || '',
     style: (e, target, value) => {
         if (value === null)
@@ -89,7 +151,7 @@ const appliers: {[key in BindTargetType]: (e: HTMLElement, target: string, value
     data: (e, target, value) => {
         if (value === null)
             delete e.dataset[target]
-        else
+    else
             e.dataset[target] = value
     },
     attribute: (e, target, value) => {
@@ -97,71 +159,34 @@ const appliers: {[key in BindTargetType]: (e: HTMLElement, target: string, value
             e.removeAttribute(target)
         else
             e.setAttribute(target, value)
-    }
-}
+    },
+    index: (e, t, value, view) =>
+        assert(view).setIndex(e, +(value || 0)),
+    remove: (e, t, value) =>
+        assert(e.parentElement).removeChild(e)
 
-interface Setter {
-    binding: number
-    key: number|null
-    value: any
-}
-
-const decoder = new TextDecoder()
-function encodeEvent(e: Event): ArrayBuffer|SharedArrayBuffer {
-    const typeString = e.type
-    const target = e.target
-    let valueString = ''
-    if (target && Reflect.has(target, 'value'))
-        valueString = Reflect.get(target, 'value')
-
-    const typeBuffer = new TextEncoder().encode(e.type)
-    const valueBuffer = new TextEncoder().encode(valueString)
-    const buffer = new ArrayBuffer(typeBuffer.byteLength + valueBuffer.byteLength + 8)
-    const dv = new DataView(buffer)
-    dv.setUint32(0, typeBuffer.length)
-    dv.setUint32(4 + typeBuffer.length, valueBuffer.length)
-    const ba = new Uint8Array(buffer)
-    ba.set(typeBuffer, 4)
-    ba.set(valueBuffer, 8 + typeBuffer.length)
-    return ba.buffer
-}
-function decodeMessage(buffer: ArrayBuffer): Setter[] {
-    const view = new DataView(buffer, 0)
-    const location = 0
-    const setters = [] as Setter[]
-    for (let offset = 0; offset < buffer.byteLength;) {
-        const header = view.getUint32(offset)
-        offset += 4
-        const binding = header & 0xFFFF
-        const key = header >> 16
-        const length = view.getUint32(offset)
-        offset += 4
-        const value = decoder.decode(new DataView(buffer, offset, length))
-        setters.push({key: key === 0xFFFF ? null : key, binding, value})
-        offset += length
-    }
-
-    return setters
 }
 
 export default function createViews({config, rootElements, port}: ViewParams) {
+    const views = {} as {[name: string]: View}
     Object.entries(rootElements).forEach(([viewName, rootElement]) => {
-        const events = config.events.map((event, index) =>
-            [index, event] as [number, typeof event]).filter(([, {view}]) => view === viewName)
-            .reduce((a, [index, v]) =>
-                Object.assign(a, {[v.eventType]: (a[v.eventType] || []).concat([v])}),
-                {} as {[key: string]: EventHandler[]})
-
-        createView(rootElement, events, config.bindings, port)
+        views[viewName] = createView(rootElement, config.events, config.bindings, port)
     })
 
     port.addEventListener('message', (({data}) => {
         const {payload}: {payload: ArrayBuffer} = data
-        const setters = decodeMessage(payload)
-        setters.forEach(({binding, key, value}) => {
-            const {view, selector, target, type} = config.bindings[binding]
-            const elements = select(rootElements[view], selector, key)
-            elements.forEach(e => appliers[type](e, target || '', value))
+        const modifiedViews = new Set<View>()
+        decodeBindings(payload, (binding, key, value) => {
+            const {view, selector, target, type, root} = config.bindings[binding]
+            const viewObject = views[view]
+            modifiedViews.add(viewObject)
+            const elements = views[view].select(root, selector, key)
+            elements.forEach(e => {
+                appliers[type](e, target || '', value, viewObject)
+            })
         })
+
+        for (const view of modifiedViews)
+            view.commit()
     }))
 }

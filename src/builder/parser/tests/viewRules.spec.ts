@@ -13,6 +13,8 @@ describe('ViewRules', () => {
         expect(parse('data custom')).toMatchSnapshot()
         expect(parse('style border-width')).toMatchSnapshot()
         expect(parse('style --yoyo')).toMatchSnapshot()
+        expect(parse('id')).toMatchSnapshot()
+        expect(parse('class')).toMatchSnapshot()
         expect(parse('for [id, value] in filter(children, value() > 1)')).toMatchSnapshot()
     })
 })

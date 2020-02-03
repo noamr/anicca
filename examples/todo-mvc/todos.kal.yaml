@@ -38,7 +38,7 @@ controller todosController:
       currentFilter = routeFilter
     on completed(id as u32, completed as bool): |
       allTasks[id] = [completed, allTasks[id].title]
-    on delete(id as u32):
+    on delete(id as u32): |
       delete id from allTasks
     on toggleAll(completed as bool):
       allTasks = map(allTasks, [completed, value().title])
@@ -51,6 +51,7 @@ controller todosController:
 
 taskCount:
    allTasks |> size()
+
 hasTasks:
   taskCount != 0
 
@@ -63,29 +64,33 @@ todoCountText: |
   `${taskCount} tasks`
 
 view todosView:
-  body:
+  '&':
       data hasTasks: |
         hasTasks ? 'yes' : 'no'
+      data initialized: |
+        'yes'
   .new-todo:
-    on keydown when event.code==13:
+    on keydown(event) when event.keyCode==13:
       - dispatch create(event.target.value) to todosController
       - prevent default
 
   "#toggle-all":
-    on change:
+    on change(event):
       - dispatch toggleAll(event.target.checked) to todosController
   .todo-item:
-    for [id, task] in tasksToShow:
+    for [id, task] in allTasks:
       "&":
-          class: |
-              task.completed ? 'completed' : 'active'
+        class: |
+            task.completed ? 'completed' : 'active'
+        id: |
+          `task-${id}`
       label:
           content: task.title
       .toggle:
-          attribute checked:
-              task.completed
-          on change:
-              dispatch completed(key, event.target.checked) to todosController
+          attribute checked: |
+              task.completed ? 'checked' : null
+          on change(event):
+              dispatch completed(id, event.target.checked) to todosController
       .destroy:
         on click:
             dispatch delete(id) to todosController

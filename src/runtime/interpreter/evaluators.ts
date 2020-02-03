@@ -1,11 +1,16 @@
 import { NativeType } from '../../builder/types'
+
 export interface Context<K = any, V = any, A = any> {
     key: K
     source: Evaluator<V>
     aggregate?: A
 }
 
-export type Evaluator<T = any> = (context: Context | null) => T
+export type Evaluator<T = any> = ((context: Context | null) => T) & {
+    type?: NativeType
+    token?: any
+    originalFormula?: Formula
+}
 
 const u2n = (a: any) => typeof a === 'undefined' ? null : a
 
@@ -90,7 +95,7 @@ export const defaultEvaluators: {[op: string]: (...args: Evaluator[]) => Evaluat
     endsWith: (a, b) => ctx => (a(ctx) as string).endsWith(b(ctx)),
     stringIncludes: (a, b) => ctx => (a(ctx) as string).includes(b(ctx)),
     match: (a, b) => ctx => (a(ctx) as string).match(b(ctx)),
-    join: (args, separator) => ctx => args(ctx).join(separator),
+    join: (args, separator) => ctx => [...args(ctx).values()].join(separator(ctx)),
 
     // Logical
     isNil: a => ctx => a(ctx) === null,
@@ -98,14 +103,15 @@ export const defaultEvaluators: {[op: string]: (...args: Evaluator[]) => Evaluat
     not: a => ctx => !(a(ctx)),
 
     // Constructing
-    pair: <A, B>(a: Evaluator<A>, b: Evaluator<B>): Evaluator<[A, B]> => ctx => [a(ctx), b(ctx)],
+    tuple: <A, B>(...args: Array<Evaluator<A>>): Evaluator<A[]> => ctx => args.map(a => a(ctx)),
     array: <A>(...entries: Array<Evaluator<A>>): Evaluator<Map<number, A>> => ctx =>
         new Map(entries.map((a, i) => [i, a(ctx)] as [number, A])),
     object: <K, V>(...entries: Array<Evaluator<[K, V]>>): Evaluator<Map<K, V>> => ctx =>
         new Map(entries.map(e => e(ctx))),
 
     // Maps
-    get: (a, b) => ctx => u2n(a(ctx).get(b(ctx))),
+    get: (a, b) => ctx => u2n((obj => obj && obj.get(b(ctx)))(a(ctx))),
+    at: (a, b) => ctx => u2n((obj => obj && obj[b(ctx)])(a(ctx))),
     size: a => ctx => a(ctx).size,
     head: a => ctx => u2n([...(a(ctx) as Map<any, any>).keys()][0]),
     tail: a => ctx => u2n([...(a(ctx) as Map<any, any>).keys()].slice(-1)[0]),

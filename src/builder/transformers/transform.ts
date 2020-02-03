@@ -21,8 +21,13 @@ export default function transformBundle(bundle: Bundle) {
         getEventHeader: () => {
             throw new Error('Can only call this after controllers have been resolved')
         },
+        getEventPayloadType: () => {
+            throw new Error('Can only call this after controllers have been resolved')
+        },
         views: {
+            types: [],
             bindings: [],
+            formulas: [],
             events: [],
         },
         debugInfo: new WeakMap()

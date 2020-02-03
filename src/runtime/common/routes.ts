@@ -1,5 +1,5 @@
 import { Enqueue } from './RuntimeTypes'
-import { ViewConfig, BindTargetType } from '../../builder/types'
+import { BindTargetType } from '../../builder/types'
 import { forEach } from 'lodash'
 
 interface RouteParams {
@@ -31,7 +31,8 @@ export default function createRoutes({routes, port, header}: RouteParams) {
 
                 const url = hash.substr(prefix.length)
                 const router = routes[routerIndex]
-                port.postMessage({headers: [header], payload: encode_RouteChange(router, url)}, [payload])
+                const payload = encode_RouteChange(router, url)
+                port.postMessage({header, payload}, [payload])
 
             }
         })

@@ -26,7 +26,7 @@ args ->
     payloadArg:* {% id %}
 
 payload ->
-    _ "(" _ args _ ")" {% ([,,,args]) => args %}
+    _ "(" _ args _ ")" {% ([,,,args]) => ({op: 'tuple', args}) %}
     | null {% () => null %}
 
 dispatch ->

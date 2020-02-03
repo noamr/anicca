@@ -7,6 +7,8 @@ function encodeNumber(value: number, f: keyof DataView, size: number): ArrayBuff
 }
 function encodeSingle(value: any, type: NativeType): ArrayBuffer[] {
     switch (type) {
+        case 'null':
+            return []
         case 'u32':
             return encodeNumber(value, 'setUint32', 4)
         case 'i32':
@@ -71,7 +73,8 @@ function decodeSingle(view: DataView, type: NativeType): [any, DataView] {
         }
         case 'ByteArray': {
             const size = view.getUint32(0)
-            return [view.buffer.slice(view.byteOffset + 4, view.byteOffset + 4 + size), new DataView(view.buffer, view.byteOffset + 4 + size)]
+            return [view.buffer.slice(view.byteOffset + 4, view.byteOffset + 4 + size),
+                new DataView(view.buffer, view.byteOffset + 4 + size)]
         }
         default:
             throw new Error(`Unknown native type: ${type}`)
@@ -79,6 +82,8 @@ function decodeSingle(view: DataView, type: NativeType): [any, DataView] {
 }
 
 function decodeAny(buffer: DataView, type: NativeType): [any, DataView] {
+    if (type === 'null')
+        return [null, new DataView(new ArrayBuffer(0))]
     if (typeof type === 'string')
         return decodeSingle(buffer, type)
 
@@ -98,7 +103,6 @@ function decodeAny(buffer: DataView, type: NativeType): [any, DataView] {
 function decodeDictionary(view: DataView, keyType: NativeType, valueType: NativeType): [Map<any, any>, DataView] {
     const size = view.getUint32(0)
     view = new DataView(view.buffer, view.byteOffset + 4)
-    let offset = view.byteOffset + 4
     const entries = Array(size).fill(null).map((n, i) => {
         const keyResult = decodeAny(view, keyType)
         view = keyResult[1]
@@ -150,7 +154,7 @@ function encodeAny(value: any, type: NativeType): ArrayBuffer[] {
         if (!Array.isArray(value))
             throw new Error(`Expecting array when encoing ${value}`)
         const a = value as any[]
-        if (a.length != tt.tuple.length)
+        if (a.length !== tt.tuple.length)
             throw new Error(`Tuple length of ${value} is ${value.length}, expected ${tt.tuple.length}`)
 
         return a.flatMap((v, i) => encodeAny(v, tt.tuple[i]))
@@ -173,5 +177,5 @@ export function encode(value: any, type: NativeType): ArrayBuffer {
 }
 
 export function decode(buffer: ArrayBuffer, type: NativeType): any {
-    return decodeAny(new DataView(buffer), type)[0]
+    return buffer ? decodeAny(new DataView(buffer), type)[0] : null
 }

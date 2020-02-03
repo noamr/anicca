@@ -37,7 +37,7 @@ let value: u32
 
     it('todos', async () => {
         await build(
-            {src: fs.readFileSync(PATH.resolve(__dirname, '../../../../examples/todo-mvc/todos.kal.yaml'), 'utf8'),
+            {inputPath: PATH.resolve(__dirname, '../../../../examples/todo-mvc/todos.kal.yaml'),
                 outputDir: PATH.resolve(__dirname, '../../../../examples/todo-mvc/.kal')})
     })
 })

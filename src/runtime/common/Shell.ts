@@ -17,6 +17,7 @@ export default function createShell({store, ports}: ShellParams) {
             store.commit()
             const outbox = await store.dequeue()
             outbox.forEach(([target, payload]) => {
+                debugger
                 ports[target].postMessage({payload}, [payload])
             })
         } while (!(await store.awaitIdle()))
@@ -25,9 +26,9 @@ export default function createShell({store, ports}: ShellParams) {
 
     ports.forEach((port, i) => {
         port.addEventListener('message', ({data}) => {
-            const {payload, headers} = data
-            for (const header of headers)
-                store.enqueue(header, payload)
+            const {payload, header} = data
+            debugger
+            store.enqueue(header, payload)
             run()
         })
         port.start()

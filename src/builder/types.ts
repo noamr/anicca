@@ -82,7 +82,7 @@ export interface ViewDeclaration extends WithToken {
     type: 'Bind' | 'DOMEvent' | 'Clone'
 }
 
-export type BindTargetType = 'content' | 'attribute' | 'style' | 'data'
+export type BindTargetType = 'content' | 'attribute' | 'style' | 'data' | 'index' | 'remove'
 export interface BindTarget extends WithToken  {
     type: BindTargetType
 }
@@ -110,7 +110,7 @@ export interface BindDeclaration extends ViewDeclaration {
     type: 'Bind'
     src: Formula
     target?: string
-    targetType: 'content' | 'attribute' | 'data' | 'style'
+    targetType: BindTargetType
 }
 export interface CloneDeclaration extends ViewDeclaration {
     type: 'Clone'
@@ -127,6 +127,8 @@ export interface EnumStatement extends Statement {
 export interface DOMEventDeclaration extends ViewDeclaration {
     type: 'DOMEvent'
     eventType: string
+    argName?: string
+    condition?: Formula | null
     actions: DOMEventAction[]
 }
 
@@ -138,7 +140,7 @@ export interface DispatchAction extends DOMEventAction {
     type: 'Dispatch'
     target: string
     event: string
-    payload?: any
+    payload?: Formula | null
 
 }
 export interface GotoAction extends TransitionAction {
@@ -234,7 +236,7 @@ interface SimpleFunctions {
     lt(a: number, b: number): boolean
     lte(a: number, b: number): boolean
     eq(a: number|string|null|boolean, b: number|string|null|boolean): boolean
-    neq(a: number|string|null|boolean, b: number|string|null|boolean): boolean
+    neq(a: any, b: any): boolean
     plus(a: number, b: number): number
     minus(a: number, b: number): number
     mult(a: number, b: number): number
@@ -305,25 +307,49 @@ export interface Juncture<M = Modus> {
     event: string | null
     modus: M
 }
-
-export interface ViewConfig {
-        bindings: Array<{
-            view: string
-            selector: string
-            target?: string
-            type: BindTargetType,
-        }>
-        events: Array<{
-            view: string
-            selector: string
-            eventType: string
-            preventDefault: boolean
-            stopPropagation: boolean
-            headers: number[],
-        }>,
+export interface EventHandlerConfig {
+    header: number
+    payloadType: number | null
+    payloadFormula: Formula | null
 }
 
-export type RootType = 'inbox' | 'outbox' | 'idle' | 'staging' | 'commitView' | 'viewChannel'
+interface BindingConfig {
+    view: string
+    root: string | null,
+    selector: string
+    target?: string
+    type: BindTargetType,
+}
+export interface ViewConfig {
+    types: NativeType[]
+    formulas: RawFormula[]
+    bindings: BindingConfig[]
+    events: Array<{
+        view: string
+        root: string | null
+        selector: string
+        eventType: string
+        preventDefault: boolean
+        stopPropagation: boolean
+        condition?: number | null,
+        handlers: EventHandlerConfig[],
+    }>
+}
+
+type EventHandler = (e: Event, key: number, send: (header: number, payload: ArrayBuffer) => void) => void
+export interface EventSetup {
+    view: string
+    root: string | null
+    selector: string
+    eventType: string
+    handler: EventHandler,
+}
+
+export interface ViewSetup {
+    bindings: BindingConfig[]
+    events: EventSetup[]
+}
+export type RootType = 'inbox' | 'outbox' | 'idle' | 'staging' | 'commitView' | 'commitClones' | 'viewChannel'
 export type HeaderType = 'route'
 
 export interface TransformData {
@@ -334,8 +360,10 @@ export interface TransformData {
     headers: {[name in HeaderType]?: number}
     refs: {[name: string]: Formula}
     channels: {[name: string]: number}
+    onCommit: Formula[]
     outputs: {[name: string]: TypedFormula<ArrayBuffer|null>}
     getEventHeader: (event: string, target: string) => number
+    getEventPayloadType: (event: string, target: string) => NativeType
     types: NativeType[]
     debugInfo: any
     views: ViewConfig
@@ -378,7 +406,8 @@ export type FormulaBuilder = {
     [k in keyof SimpleFunctions]: (...args: Array<toArgType<ArgumentTypes<SimpleFunctions[k]>>>) =>
         toFormula<ReturnType<SimpleFunctions[k]>>
 } & {
-    get<M, K>(s: M, k: K): ResolveType<M> extends Map<KeyType<M>, infer V> ? toFormula<ValueType<V>> : never
+    get<M, K>(s: M, k: K): ResolveType<M> extends Map<KeyType<M>, infer V> ? toFormula<ResolveType<V>> : never
+    has<M, K>(s: M, k: K): ResolveType<M> extends Map<KeyType<M>, infer V> ? toFormula<boolean> : never
     at<M, K>(s: M, k: K):
         ResolveType<M> extends Array<infer Arg> ?
         ResolveType<K> extends number ?
@@ -388,7 +417,8 @@ export type FormulaBuilder = {
         IsMapType<M> extends true ? toFormula<P> extends toFormula<Map<infer K2, infer V2>> ? toFormula<Map<K2, V2>>
         : never : never
     map<M, P>(input: M, predicate: P):
-        IsMapType<M> extends true ? toFormula<P> extends toFormula<infer V2> ? toFormula<Map<KeyType<M>, V2>>
+        IsMapType<M> extends true ? toFormula<P> extends toFormula<infer V2> ?
+        toFormula<Map<KeyType<M>, ResolveType<V2>>>
         : never : never
     flatReduce<M, P, V>(map: M, predicate: P, initialValue: V):
         IsMapType<M> extends true ? ResolveType<P> extends [any, any] ? toFormula<V>
@@ -427,7 +457,7 @@ export type FormulaBuilder = {
     encode<T, NTF>(value: T, type: NTF): 
         NTF extends NativeTypeFormula<infer NT> ?
         ResolveType<T> extends nativeToJS<infer NT> ? toFormula<ArrayBuffer> : never : never
-    decode<T, NTF>(buffer: toArgType<ArrayBuffer>, type: NTF):
+    decode<T, NTF>(buffer: toArgType<ArrayBuffer|null>, type: NTF):
         NTF extends NativeTypeFormula<infer NT> ? T : never
 }
 
@@ -442,6 +472,7 @@ export interface RawFormula {
 }
 
 export interface StoreSpec {
+    onCommit: number[]
     roots: {[key in RootType]: number}
     channels: {[name: string]: number}
     types: NativeType[]

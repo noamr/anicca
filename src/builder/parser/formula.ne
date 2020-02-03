@@ -157,8 +157,8 @@ MD -> Binary[MD, "*", E]    {% ExtractOp('mult') %}
     | E                     {% id %}
 
 # Addition and subtraction
-AS -> Binary[AS, "+", MD] {% ExtractOp('add') %}
-    | Binary[AS, "-", MD] {% ExtractOp('sub') %}
+AS -> Binary[AS, "+", MD] {% ExtractOp('plus') %}
+    | Binary[AS, "-", MD] {% ExtractOp('minus') %}
     | MD            {% id %}
 
 BWS -> Binary[BWS, "<<", AS] {% ExtractOp('shl') %}

@@ -2,8 +2,9 @@ import chalk from 'chalk'
 import {execSync} from 'child_process'
 import { Grammar, Parser} from 'nearley'
 import {resolve} from 'path'
+import {assert} from '../transformers/helpers'
 import {ast, cst, parseDocument} from 'yaml'
-import { NativeType, DatabaseStatement, NativeTupleType, Statement } from '../types'
+import { NativeType, DatabaseStatement, NativeTupleType, Statement, ViewRule } from '../types'
 import {
   BindDeclaration,
   Bundle,
@@ -19,7 +20,9 @@ import {
   LetStatement,
   RouterStatement,
   SlotStatement,
+  State,
   TableStatement,
+  Token,
   Transition,
   TransitionAction,
   ViewDeclaration,
@@ -51,12 +54,12 @@ const controllerParser = buildParser('./controller.ne')
 const controllerActionsParser = buildParser('./controllerActions.ne')
 const viewRulesParser = buildParser('./viewRules.ne')
 const domEventActionParser = buildParser('./eventActions.ne')
-const toArray = (a: any) => Array.isArray(a) ? a : [a]
+const toArray = (a: ast.AstNode|null) => a ? a.type === 'SEQ' ? a.items : [a] : []
 const parseAtom = (b: () => Parser) => (s: string) => {
     const p = b()
     try {
         p.feed(s)
-        p.finish()        
+        p.finish()
     } catch (e) {
         if (e.token)
             throw new Error(`Parse error: ${colorize(s, e.token)}`)
@@ -67,8 +70,22 @@ const parseAtom = (b: () => Parser) => (s: string) => {
     return r
 }
 
-const parseStateActions = (s: any): TransitionAction[] =>
-    toArray(s).map((action: any) => parseAtom(controllerActionsParser)(action))
+function parseFormula(str: string | {[key: string]: string}): Formula {
+    if (typeof str === 'string')
+        return parseAtom(formulaParser)(`(${str})`) as Formula
+    return {op: 'object', args: Object.entries(str).map(([k, v]) =>
+        ({ op: 'tuple',
+        args: [parseFormula(k), parseFormula(v)]}))} as FunctionFormula
+}
+
+const toStringNode = (s: ast.AstNode | null): {value: string, range: [number, number] | null} => {
+    s = assert(s)
+    return {range: s.range, value: s.toJSON()}
+}
+
+const parseStateActions = (s: ast.AstNode | null): TransitionAction[] =>
+    toArray(s).map((action: ast.AstNode | null) =>
+        parseAtom(controllerActionsParser)(toStringNode(action).value as string))
 
 const parseDefaults = (actions: TransitionAction[]) => ({
     defaultActions: actions.filter(a => a.type !== 'Goto'),
@@ -87,6 +104,18 @@ const withDefaults = (state: any) => {
         ...parseDefaults(initial.default)}
 }
 
+interface NodeTypes {
+    MAP: ast.MapNode
+    PAIR: ast.Pair
+    PLAIN: ast.PlainValue
+    SEQ: ast.SeqNode
+}
+
+function castAst<T extends keyof NodeTypes>(node: ast.AstNode|null, type: T): NodeTypes[T] {
+    assert(node && node.type === type)
+    return node as NodeTypes[T]
+}
+
 const withActions = (children: any[]) => {
     const onEntryChildren = children.filter(({type}) => type === 'OnEntry')
     const onExitChildren = children.filter(({type}) => type === 'OnExit')
@@ -99,231 +128,284 @@ const withActions = (children: any[]) => {
 }
 
 const resolveChildren = (children: any[]) => withDefaults(withActions(children))
-
-const parseStateChildren = (s: any): any =>
-    s && Object.keys(s).map(key => {
-        const value = s[key]
-        const atom = parseAtom(controllerParser)(key)
-        switch (atom.type) {
-            case 'State':
-            case 'Parallel':
-            case 'Final':
-            case 'History':
-                return {...atom, ...resolveChildren(parseStateChildren(value))}
-            case 'Initial':
-                return {...atom, default: parseStateActions(value)}
-            case 'OnEntry':
-            case 'OnExit':
-                return {...atom, actions: parseStateActions(value)}
-            case 'Transition':
-                return {...atom, actions: value && parseStateActions(value)}
-            default:
-                throw new Error(`Unknown controller key: ${key}, ${JSON.stringify(atom)}`)
-        }
-    })
-
-const parseDOMEventAction = (action: any, value: any): DOMEventAction => {
-    if (action === 'prevent default') {
-        return {
-            type: 'PreventDefault'
-        } as DOMEventAction
-    }
-
-    if (action === 'stop propagation') {
-        return {
-            type: 'StopPropagation'
-        } as DOMEventAction
-    }
-
-    const a = parseAtom(domEventActionParser)(action)
-    switch (a.type) {
-        case 'Dispatch':
-            return a as DispatchAction
-        default:
-            throw new Error(`Unknown action ${a.type}`)
-    }
-}
-
-export function parseFormula(str: string| {[key: string]: string}): Formula {
-    if (typeof str === 'string')
-        return parseAtom(formulaParser)(`(${str})`) as Formula
-    return {op: 'object', args: Object.entries(str).map(([k, v]) =>
-        ({ op: 'tuple',
-          args: [parseFormula(k), parseFormula(v)]}))} as FunctionFormula
-}
-
-const parseViewDeclarations = (value: {[key: string]: string}): ViewDeclaration[] =>
-    Object.keys(value).map(dkey => mapViewDeclaration(dkey, value[dkey]))
-
-const mapViewDeclaration = (key: any, value: any): ViewDeclaration => {
-    try {
-        const action = parseAtom(viewRulesParser)(key)
-        switch (action.type) {
-            case 'DomEvent':
-                return {
-                    actions: toArray(value).map(parseDOMEventAction),
-                    eventType: action.eventType,
-                    type: 'DOMEvent'
-                } as DOMEventDeclaration
-            case 'BindAttribute':
-                return {
-                    src: parseFormula(value),
-                    target: key.attribute,
-                    targetType: 'attribute',
-                    type: 'Bind'
-                } as BindDeclaration
-            case 'BindData':
-                return {
-                    src: parseFormula(value),
-                    target: key.attribute,
-                    targetType: 'data',
-                    type: 'Bind',
-                } as BindDeclaration
-            case 'BindStyle':
-                return {
-                    src: parseFormula(value),
-                    target: key.style,
-                    targetType: 'style',
-                    type: 'Bind',
-                } as BindDeclaration
-            case 'BindContent':
-                return {
-                    src: parseFormula(value),
-                    targetType: 'content',
-                    type: 'Bind',
-                } as BindDeclaration
-            case 'Clone':
-                return {
-                    iterator: action.iterator,
-                    childRules: mapViewRules(value),
-                    type: 'Clone',
-                } as CloneDeclaration
-            default:
-                throw new Error(`Unknow view type ${action.type}`)
-        }
-    } catch (e) {
-        throw new Error(`Error mapping view declaration ${e}`)
-    }
-}
-
-const parseType = (type: string | {[key: string]: string}): NativeType => {
-    if (typeof type === 'string')
-        return parseAtom(typeParser)(type) as NativeType
-
-    return {
-        tuple: Object.values(type).map(parseType),
-        getters: Object.keys(type)
-    } as NativeTupleType
-}
-
-const mapViewRules = (value: {[key: string]: any}) => Object.keys(value).map(selector => ({
-            selector,
-            declarations: parseViewDeclarations(value[selector])
-        }))
-
-const mapEnum = (value: {[key: string]: any}) => Object.entries(value).map(([k, v]) => {
-    if (typeof v !== 'number' || typeof k !== 'string')
-        throw new Error(`Invalid enum value: ${k}: ${v}`)
-    return {[k]: v}
-}).reduce((a, o) => Object.assign(a, o), {})
-
-
-const valueParser = {
-    Controller: (key: any, value: any) => ({
-        type: 'Controller',
-        name: key.name,
-        rootState: parseStateChildren(value)[0],
-    } as ControllerStatement),
-    Let: (key: any, valueType: any) => ({
-        type: 'Let',
-        name: key.name,
-        valueType: parseAtom(typeParser)(valueType),
-    } as LetStatement),
-    Table: (key: any, valueType: any) => ({
-        type: 'Table',
-        name: key.name,
-        valueType: parseType(valueType),
-    } as TableStatement),
-    Slot: (key: any, formula: any) => ({
-        type: 'Slot',
-        name: key.name,
-        formula: parseFormula(formula),
-    } as SlotStatement),
-    Database: (key: any, declarations: any) => ({
-        type: 'Database',
-        name: key.name,
-        persist: Object.keys(declarations).map((d: string) => {
-            if (!d.startsWith('persist ')) {
-                throw new Error('expected: persist')
-            }
-            return {
-                table: d.substr(8),
-                mode: 'optimistic'
-            }
-        }),
-    } as DatabaseStatement),
-    Router: (key: any, declarations: any) => ({
-        type: 'Router',
-        name: key.name,
-        routes: Object.entries(declarations.routes).map(([k, v]) =>
-            ({[k]: parseFormula(v as string)})).reduce((a, o) => Object.assign(a, o), {}),
-        onChange: toArray(declarations['on change']).map(parseDOMEventAction)
-    } as RouterStatement),
-    View: (key: any, value: any) => ({
-        type: 'View',
-        name: key.name,
-        rules: mapViewRules(value),
-    } as ViewStatement),
-    Enum: (key: any, value: any) => {
-        return {
-            name: key.name,
-            type: 'Enum',
-            values: Array.isArray(value) ?
-                value.map((s, i) => ({[s]: i})).reduce((a, o) => Object.assign(a, o), {} as {[key: string]: number})
-                : mapEnum(value)
-        } as EnumStatement
-    }
-}
-
 export interface ParseOptions {
     internal: boolean
 }
 
-function failOnInternals(b: any) {
-    if (!b || typeof b !== 'object') {
-        return
-    }
-    if (b.$internal
-        || (b.name && b.name.startsWith('@'))
-        || (b.$ref && b.$ref.startsWith('@'))
-        || (b.event && b.event.startsWith('@'))
-        )
-        throw new Error(`Internal refs not allowed: ${JSON.stringify(b)}`)
-
-    for (const key in b)
-        failOnInternals(b[key])
+function fixTokens(formula: Formula, fixer: (token?: Token) => Token): Formula {
+    return {...formula, $token: fixer(formula.$token), args: Reflect.has(formula, 'args') ? 
+        ((formula as FunctionFormula).args || []).map(a => fixTokens(a, fixer))
+    : null} as Formula
 }
 
-    const document = parseDocument(yaml, {keepCstNodes: true})
-    if (!document || !document.cstNode)
-        throw new Error(`Unable to parse ${file}`)
+export function parseKalDocument(
+                        yaml: string,
+                        file: string,
+                        options: ParseOptions = {internal: false}): Bundle {
+
+    const parseFormulaNode = (n: ast.AstNode|null): Formula => {
+        const node = assert(n)
+
+        if (node.type === 'MAP') {
+            const n = node as ast.MapNode
+            return {
+                op: 'object', $token: {range: n.range, file},
+                args: (n.items as ast.Pair[]).map(({key, value, range}: ast.Pair) =>
+                    ({ op: 'tuple', $token: {range, file},
+                       args: [parseFormulaNode(key), parseFormulaNode(value)]}))} as FunctionFormula
+        }
+
+        const formula = parseFormula(node.toJSON())
+        const $token = {range: node.range, file}
+        fixTokens(formula, (t?: Token) => (t && t.range && node.range)
+            ? ({file, range: t.range.map(r => r + (node.range as [number, number])[0]) as [number, number]}) : {})
+        return {...formula, $token}
+    }
+
+    const parseStateChildren = (node: ast.AstNode): Array<State|Transition> => {
+        const s = castAst(node, 'MAP')
+
+        return s.items.map(p => {
+            const key = p.key as ast.PlainValue
+            const value = p.value as ast.AstNode
+            const atom = {...parseAtom(controllerParser)(key.toJSON()), $token: {file, range: key.range}}
+            switch (atom.type) {
+                case 'State':
+                case 'Parallel':
+                case 'Final':
+                case 'History':
+                    return {...atom, ...resolveChildren(parseStateChildren(value as ast.Map))}
+                case 'Initial':
+                    return {...atom, default: parseStateActions(value)}
+                case 'OnEntry':
+                case 'OnExit':
+                    return {...atom, actions: parseStateActions(value)}
+                case 'Transition':
+                    return {...atom, actions: value && parseStateActions(value)}
+                default:
+                    throw new Error(`Unknown controller key: ${key}, ${JSON.stringify(atom)}`)
+            }
+        })
+    }
+
+    const parseDOMEventAction = (node: ast.AstNode | null): DOMEventAction => {
+        const action = toStringNode(node)
+
+        const $token = {range: action.range, file}
+        if (action.value === 'prevent default') {
+            return {
+                $token,
+                type: 'PreventDefault'
+            } as DOMEventAction
+        }
+
+        if (action.value === 'stop propagation') {
+            return {
+                $token,
+                type: 'StopPropagation'
+            } as DOMEventAction
+        }
+
+        const a = parseAtom(domEventActionParser)(action.value as string) as DOMEventAction
+        assert(a.type === 'Dispatch')
+        return {...a, $token} as DispatchAction
+    }
+
+    const parseViewDeclarations = (v: ast.AstNode): ViewDeclaration[] =>
+        castAst(v, 'MAP').items.map(({key, value}) => mapViewDeclaration(key, value as ast.AstNode))
+
+    const mapViewDeclaration = (k: ast.AstNode | null, value: ast.AstNode | null): ViewDeclaration => {
+        const key = toStringNode(k)
+
+        try {
+            const $token = {range: key.range, file}
+            const action = parseAtom(viewRulesParser)(key.value as string)
+            switch (action.type) {
+                case 'DomEvent':
+                    return {
+                        actions: toArray(value).map(parseDOMEventAction),
+                        eventType: action.eventType,
+                        argName: action.argName,
+                        condition: action.condition,
+                        $token,
+                        type: 'DOMEvent'
+                    } as DOMEventDeclaration
+                case 'BindAttribute':
+                    return {
+                        src: parseFormulaNode(value),
+                        target: action.attribute,
+                        $token,
+                        targetType: 'attribute',
+                        type: 'Bind'
+                    } as BindDeclaration
+                case 'BindData':
+                    return {
+                        src: parseFormulaNode(value),
+                        target: action.attribute,
+                        $token,
+                        targetType: 'data',
+                        type: 'Bind',
+                    } as BindDeclaration
+                case 'BindStyle':
+                    return {
+                        src: parseFormulaNode(value),
+                        target: action.style,
+                        $token,
+                        targetType: 'style',
+                        type: 'Bind',
+                    } as BindDeclaration
+                case 'BindContent':
+                    return {
+                        src: parseFormulaNode(value),
+                        $token,
+                        targetType: 'content',
+                        type: 'Bind',
+                    } as BindDeclaration
+                case 'BindIndex':
+                    return {
+                        src: parseFormulaNode(value),
+                        $token,
+                        targetType: 'index',
+                        type: 'Bind',
+                    } as BindDeclaration
+                case 'Clone':
+                    return {
+                        iterator: action.iterator,
+                        mapSource: action.mapSource,
+                        $token,
+                        childRules: mapViewRules(value),
+                        type: 'Clone',
+                    } as CloneDeclaration
+                default:
+                    throw new Error(`Unknow view type ${action.type}`)
+            }
+        } catch (e) {
+            throw new Error(`Error mapping view declaration ${e}`)
+        }
+    }
+
+    const parseType = (node: ast.AstNode): NativeType => {
+        if (node.type === 'MAP')
+            return {
+                $token: {range: node.range, file},
+                tuple: node.items.map(item => (item.value as ast.PlainValue).value),
+                getters: node.items.map(item => (item.key as ast.PlainValue).value)
+            } as NativeTupleType
+
+        return {...parseAtom(typeParser)(toStringNode(node).value), $token: {range: node.range, file}} as NativeType
+    }
+
+    const mapViewRules = (node: ast.AstNode | null) => {
+        const rules = castAst(node, 'MAP')
+
+        return (rules.items).map(({key, value}) => {
+            const selector = (key as ast.PlainValue).value
+            const declarations = parseViewDeclarations(value as ast.AstNode)
+            return {selector, declarations, $token: {range: key ? key.range : null, file}} as ViewRule
+        })
+    }
+
+    const mapEnum = (value: ast.AstNode) =>
+        ((value as ast.Map).items as ast.Pair[])
+            .map(({key, value}) => {
+                return {[toStringNode(assert(key)).value as string]: +toStringNode(assert(value)).value}
+            }).reduce((a, o) => Object.assign(a, o), {})
+
+
+    const valueParser = {
+        Controller: (key: any, value: ast.AstNode) => ({
+            type: 'Controller',
+            name: key.name,
+            rootState: parseStateChildren(value)[0],
+        } as ControllerStatement),
+        Let: (key: any, valueType: ast.AstNode) => ({
+            type: 'Let',
+            name: key.name,
+            valueType: parseType(valueType),
+        } as LetStatement),
+        Table: (key: any, valueType: ast.AstNode) => ({
+            type: 'Table',
+            name: key.name,
+            valueType: parseType(valueType),
+        } as TableStatement),
+        Slot: (key: any, formula: ast.AstNode) => ({
+            type: 'Slot',
+            name: key.name,
+            formula: parseFormulaNode(formula),
+        } as SlotStatement),
+        Database: (key: any, declarations: ast.AstNode) => ({
+            type: 'Database',
+            name: key.name,
+            persist: ((declarations as ast.Map).items as ast.Pair[]).map(({key, value}) => {
+                const table = (key as ast.PlainValue).value as string
+                assert(table.startsWith('persist '))
+                return {
+                    table: table.substr(8),
+                    mode: 'optimistic'
+                }
+            }),
+        } as DatabaseStatement),
+        Router: (key: any, declarations: ast.AstNode) => {
+            const map = castAst(declarations, 'MAP')
+            const routes = map.items.find(({key}) => toStringNode(key).value === 'routes') || null
+            const onChange = map.items.find(({key}) => toStringNode(key).value === 'on change')
+            return {
+                type: 'Router',
+                name: key.name,
+                routes: castAst((routes as ast.Pair).value, 'MAP').items.map(({key, value}) =>
+                    ({[toStringNode(key).value as string]:
+                        parseFormulaNode(value as ast.AstNode)})).reduce((a, o) => Object.assign(a, o), {}),
+                onChange: toArray((onChange as ast.Pair).value).map(parseDOMEventAction)
+            } as RouterStatement
+        },
+        View: (key: any, value: ast.AstNode) => ({
+            type: 'View',
+            name: key.name,
+            rules: mapViewRules(value),
+        } as ViewStatement),
+        Enum: (key: any, value: ast.AstNode) => {
+            return {
+                name: key.name,
+                type: 'Enum',
+                values: value.type === 'SEQ' ?
+                    value.items.map((s, i) =>
+                        ({[(s as ast.PlainValue).value as string]: i}))
+                            .reduce((a, o) => Object.assign(a, o), {} as {[key: string]: number})
+                    : mapEnum(value)
+            } as EnumStatement
+        }
+    }
+
+    function failOnInternals(b: any) {
+        if (!b || typeof b !== 'object') {
+            return
+        }
+
+        assert (b.$internal
+            || !((b.name && b.name.startsWith('@'))
+            || (b.$ref && b.$ref.startsWith('@'))
+            || (b.event && b.event.startsWith('@'))))
+
+        for (const key in b)
+            failOnInternals(b[key])
+    }
+
+    const document = parseDocument(yaml)
+    assert(document)
 
     const map = (document.contents) as ast.Map
     return (map.items as ast.Pair[]).map(({key, value}: ast.Pair) => {
-        if (!key)
-            throw new Error(`Key is null`)
+        key = assert(key)
         const rootKey =
             parseAtom(rootParser)((key as ast.PlainValue).value as string) as
                 ({type: keyof typeof valueParser})
-        if (!rootKey)
-            throw new Error(`Unknown key: ${key} at ${key.range}`)
 
-        const p = valueParser[rootKey.type]
-        if (!p)
-            throw new Error(`No parser found for ${rootKey.type}`)
+        assert(rootKey)
+
+        const p = assert(valueParser[rootKey.type])
         let v
         try {
-            v = p(rootKey, (value as ast.PlainValue).toJSON())
+            v = p(rootKey, value as ast.AstNode)
         } catch (e) {
             throw new Error(`Error while parsing ${key}: ${e.message}. Stack:\n\t\t${e.stack}`)
         }
@@ -331,33 +413,6 @@ function failOnInternals(b: any) {
         if (!options.internal)
             failOnInternals(v)
 
-        v.$token = {file, range: key.range}
-        return v
-    })
-}
-
-export function parseKal(
-                        parsedYaml: {[k: string]: any},
-                        options: ParseOptions = {internal: false}): Bundle {
-    return Object.keys(parsedYaml).map(key => {
-        const rootKey = parseAtom(rootParser)(key) as ({type: keyof typeof valueParser})
-        const value = parsedYaml[key]
-        if (!rootKey)
-            throw new Error(`Unknown key: ${key}`)
-
-        const p = valueParser[rootKey.type]
-        if (!p)
-            throw new Error(`No parser found for ${rootKey.type}`)
-        let v
-        try {
-            v = p(rootKey, value)
-        } catch (e) {
-            throw new Error(`Error while parsing ${key}: ${e.message}. Stack:\n\t\t${e.stack}`)
-        }
-
-        if (!options.internal)
-            failOnInternals(v)
-
-        return v
+        return {...v, $token: {file, range: key.range}}
     })
 }

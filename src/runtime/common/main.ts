@@ -1,10 +1,10 @@
 import { Store, StartMessage } from './RuntimeTypes'
-import { StoreSpec, ViewConfig } from '../../builder/types'
+import { StoreSpec, ViewConfig, ViewSetup } from '../../builder/types'
 import initViews from './views'
 import initRoutes from './routes'
 
 interface MainConfig {
-    views: ViewConfig
+    views: ViewSetup
     routeConfig: {[name: string]: number}
     headers: {[name: string]: number}
     rootElements: {[name: string]: HTMLElement}
