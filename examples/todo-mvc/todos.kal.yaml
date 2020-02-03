@@ -59,7 +59,6 @@ hasCompletedTasks:
   filters[FilterType.Completed] |> size() > 0
 
 todoCountText: |
-  taskCount == 0 ? "No tasks" :
   taskCount == 1 ? "1 task":
   `${taskCount} tasks`
 
