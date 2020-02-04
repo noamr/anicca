@@ -94,6 +94,7 @@ export const defaultEvaluators: {[op: string]: (...args: Evaluator[]) => Evaluat
     startsWith: (a, b) => ctx => (a(ctx) as string).startsWith(a(ctx)),
     endsWith: (a, b) => ctx => (a(ctx) as string).endsWith(b(ctx)),
     stringIncludes: (a, b) => ctx => (a(ctx) as string).includes(b(ctx)),
+    trim: (a) => ctx => (a(ctx) as string).trim(),
     match: (a, b) => ctx => (a(ctx) as string).match(b(ctx)),
     join: (args, separator) => ctx => [...args(ctx).values()].join(separator(ctx)),
 

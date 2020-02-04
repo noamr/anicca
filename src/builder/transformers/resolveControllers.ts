@@ -1,5 +1,5 @@
 import fs from 'fs'
-import {assign, filter, flatten, forEach, keys, map, mapValues, pickBy, values, uniq, compact} from 'lodash'
+import { assign, filter, flatten, forEach, keys, map, mapValues, pickBy, values, uniq, uniqBy, compact, isEqual } from 'lodash'
 import path from 'path'
 import { AssignmentDirective, AssignTransitionAction, Bundle, ControllerStatement, DispatchAction, FlatStatechart,
          Formula, FunctionFormula, Juncture, LetStatement, ReferenceFormula, SlotStatement, State, Statement,
@@ -98,13 +98,14 @@ export default function resolveControllers(bundle: Bundle, im: TransformData): B
                     return a
                 }, [] as NativeType[])} as NativeTupleType) as NativeTupleType[]
 
-        const uniquePayloads = uniq(compact(payloads))
-
-        if (!uniquePayloads.length)
+        const actualPayloads = compact(payloads)
+        if (!actualPayloads.length)
             return {tuple: []}
 
-        if (uniquePayloads.length === 1)
-            return payloads[0]
+        const identical = actualPayloads.slice(1).every(p => isEqual(p, actualPayloads[0]))
+
+        if (identical)
+            return actualPayloads[0]
 
         throw new Error(`Mismatch in payloads for event ${event} in controller ${target}`)
     }

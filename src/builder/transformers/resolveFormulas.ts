@@ -233,6 +233,7 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
         uid: strictTypeCheck(['u64', []]),
         now: strictTypeCheck(['u64', []]),
         toLowerCase: strictTypeCheck(['string', ['string']]),
+        trim: strictTypeCheck(['string', []]),
         toUpperCase: strictTypeCheck(['string', ['string']]),
         substring: strictTypeCheck(['string', ['number', 'number']]),
         startsWith: strictTypeCheck(['bool', ['string', 'string']]),

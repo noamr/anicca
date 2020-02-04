@@ -18,6 +18,7 @@ interface EventHandler {
 
 interface Binding {
     selector: string
+    root: string | null
     target?: string
     type: BindTargetType
 }
@@ -64,12 +65,10 @@ function createView(root: HTMLElement, events: EventSetup[], bindings: Binding[]
         doSelect(rootElement, selector).forEach(e => e.addEventListener(eventType, e => handler(e, key, emit)))
     }
 
-    events.filter(s => !s.root).forEach(eventSetup => listen(root, eventSetup))
-
     const cloneRootMap = new Map<string, CloneInfo>()
     const cloneInfoMap = new WeakMap<HTMLElement, CloneInfo>()
 
-    function createCloneInfo(selector: string): CloneInfo {
+    function createCloneInfo(selector: string) {
         const template = root.querySelector(selector) as HTMLElement
         assert(template)
 
@@ -90,7 +89,6 @@ function createView(root: HTMLElement, events: EventSetup[], bindings: Binding[]
 
         parent.removeChild(template)
         cloneRootMap.set(selector, cloneInfo)
-        return cloneInfo
     }
 
     function clone(cloneInfo: CloneInfo, key: number): HTMLElement {
@@ -109,7 +107,7 @@ function createView(root: HTMLElement, events: EventSetup[], bindings: Binding[]
         if (!rootSelector)
             return doSelect(root, selector)
 
-        const cloneInfo = cloneRootMap.get(rootSelector) || createCloneInfo(rootSelector)
+        const cloneInfo = cloneRootMap.get(rootSelector) as CloneInfo
 
         assert(key !== null)
         const {parent, template, children} = cloneInfo
@@ -135,6 +133,10 @@ function createView(root: HTMLElement, events: EventSetup[], bindings: Binding[]
         }
         clonesWithModifiedIndices.clear()
     }
+
+    events.filter(s => !s.root).forEach(eventSetup => listen(root, eventSetup))
+    for (const {root} of bindings.filter(b => b.type === 'remove'))
+        createCloneInfo(root as string)
 
     return {select, setIndex, commit}
 }

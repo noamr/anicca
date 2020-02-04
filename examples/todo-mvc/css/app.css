@@ -8,11 +8,11 @@ remove this file if not
 */
 
 .todoapp {
-    visibility: hidden;
+    transition: opacity 300ms;
 }
 
 .todoapp[data-initialized] {
-    visibility: visible;
+    opacity: 1;
 }
 
 .todoapp[data-has-tasks="no"] .main {

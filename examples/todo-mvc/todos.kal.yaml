@@ -35,6 +35,9 @@ router routeFilter:
 
 controller todosController:
   root: 
+    on changeFilter(filter as FilterType):
+      currentFilter = filter
+
     initial:
       - currentTask = 0
       - currentFilter = routeFilter
@@ -48,6 +51,9 @@ controller todosController:
         - currentTask = 0
       on cancel:
         - goto idle
+      # on save(title as string) when trim(title) == '':
+      #   - delete currentTask from allTasks
+      #   - goto idle
       on save(title as string):
         - allTasks[currentTask] = [false, title]
         - goto idle
@@ -66,8 +72,6 @@ controller todosController:
         allTasks = map(allTasks, [completed, value().title])
       on deleteCompleted:
         allTasks = filter(allTasks, !isTaskCompleted)
-      on changeFilter(filter as FilterType):
-        currentFilter = filter
       on create(title as string):
         allTasks[uid()] = [false, title]
 
@@ -91,7 +95,7 @@ view todosView:
         'yes'
       data editing: |
         isEditing ? 'yes' : 'no'
-  .new-todo:
+  .new-todo:      
     on keydown(event) when event.keyCode==13:
       - dispatch create(event.target.value) to todosController
       - prevent default
@@ -119,9 +123,9 @@ view todosView:
       .edit:
         attribute value: |
           task.title
-        on keydown(event) when event.keyCode==13: |
+        on keydown(event) when event.keyCode==13:
           dispatch save(event.target.value) to todosController
-        on change: |
+        on change(event):
           dispatch save(event.target.value) to todosController
           
       .destroy:
