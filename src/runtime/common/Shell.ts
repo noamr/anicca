@@ -22,7 +22,6 @@ export default function createShell({store, ports}: ShellParams) {
     ports.forEach((port, i) => {
         port.addEventListener('message', ({data}) => {
             const {payload, header} = data
-            debugger
             store.enqueue(header, payload)
             run()
         })

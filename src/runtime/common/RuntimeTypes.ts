@@ -5,8 +5,8 @@ export type StartStore = (outgoing: Enqueue) => Enqueue
 export interface StoreMessageData {buffer: ArrayBuffer}
 
 export interface Store {
-    enqueue: (header: number, payload: ArrayBuffer|null) => Promise<void>
-    commit: (emit: (header: number, payload: ArrayBuffer | null) => Promise<void>) => Promise<void>
+    enqueue: (header: number, payload: ArrayBuffer|null) => void | Promise<void>
+    commit: (emit: (header: number, payload: ArrayBuffer | null) => void | Promise<void>) => void | Promise<void>
 }
 
 export interface StartMessage {
