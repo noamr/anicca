@@ -109,24 +109,30 @@ export default function createStoreInterpreter(spec: StoreSpec) {
         update(table as number, key, value)
     }
 
+    function dequeue(emit: (header: number, payload: ArrayBuffer) => Promise<void>) {
+        const outbox = evaluate<Map<number, ArrayBuffer>>(spec.roots.outbox)
+        if (!outbox.size)
+            return
+        for (const commit of spec.onCommit)
+            commitEntry(evaluate(commit))
+        for (const [header, payload] of outbox)
+            emit(header, payload)
+    }
+
     return {
         enqueue: (header: number, payload: ArrayBuffer|null) =>
             update(evaluate(spec.roots.inbox), nextID(), [header, payload]),
-        awaitIdle: async () => {
-            const idle = evaluate<boolean>(spec.roots.idle)
-            return idle && !evaluate<Map<number, ArrayBuffer>>(spec.roots.outbox).size
-        },
-        commit: async () => {
-            const stagingData = await evaluate<Map<number, [number, number, any]>>(spec.roots.staging)
-            if (stagingData)
-                for (const entry of stagingData.values())
-                    commitEntry(entry)
-        },
-        dequeue: async (): Promise<Array<[number, ArrayBuffer]>> => {
-            const outbox = evaluate<Map<number, ArrayBuffer>>(spec.roots.outbox)
-            for (const commit of spec.onCommit)
-                commitEntry(await evaluate(commit))
-            return [...outbox.entries()]
+        commit: async (emit: (target: number, payload: ArrayBuffer) => Promise<void>): Promise<void> => {
+            do {
+                dequeue(emit)
+                const stagingData = evaluate<Map<number, [number, number, any]>>(spec.roots.staging)
+                if (stagingData) {
+                    for (const entry of stagingData.values())
+                        commitEntry(entry)
+                    dequeue(emit)
+                }
+
+            } while (!evaluate<boolean>(spec.roots.idle))
         }
     } as Store
 }

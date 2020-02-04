@@ -6,9 +6,7 @@ export interface StoreMessageData {buffer: ArrayBuffer}
 
 export interface Store {
     enqueue: (header: number, payload: ArrayBuffer|null) => Promise<void>
-    dequeue: () => Promise<Array<[number, ArrayBuffer]>>
-    awaitIdle: () => Promise<boolean>
-    commit: () => Promise<void>
+    commit: (emit: (header: number, payload: ArrayBuffer | null) => Promise<void>) => Promise<void>
 }
 
 export interface StartMessage {

@@ -59,8 +59,7 @@ hasCompletedTasks:
   filters[FilterType.Completed] |> size() > 0
 
 todoCountText: |
-  taskCount == 1 ? "1 task":
-  `${taskCount} tasks`
+  `${taskCount} task${taskCount == 1 ? '' : 's'}`
 
 view todosView:
   '&':

@@ -112,7 +112,7 @@ export const defaultEvaluators: {[op: string]: (...args: Evaluator[]) => Evaluat
     // Maps
     get: (a, b) => ctx => u2n((obj => obj && obj.get(b(ctx)))(a(ctx))),
     at: (a, b) => ctx => u2n((obj => obj && obj[b(ctx)])(a(ctx))),
-    size: a => ctx => a(ctx).size,
+    size: a => ctx => (a(ctx) || {size: 0}).size,
     head: a => ctx => u2n([...(a(ctx) as Map<any, any>).keys()][0]),
     tail: a => ctx => u2n([...(a(ctx) as Map<any, any>).keys()].slice(-1)[0]),
     first: a => ctx => a(ctx)[0],

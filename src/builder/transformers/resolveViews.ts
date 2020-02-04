@@ -158,9 +158,9 @@ export default function resolveViews(bundle: Bundle, im: TransformData): Bundle 
             target: declaration.target,
             type: declaration.targetType,
         })), ...cloneDeclarations.map(({view, selector}) => ({
-            root: null,
+            root: selector,
             view,
-            selector,
+            selector: '&',
             type: 'remove' as BindTargetType
         }))],
         formulas,
@@ -175,6 +175,7 @@ export default function resolveViews(bundle: Bundle, im: TransformData): Bundle 
             TypedFormula<Map<number, Map<number, string>>>
 
     const bindingIndices = Array(viewBindingDeclarations.length).fill(0).map((a, i) => i)
+    const cloneIndices = cloneDeclarations.map((d, i) => i)
     const prevBindings = bindingIndices.map(index =>
         withInfo(F.get(viewPrev, index), `Prev value for binding ${index}`))
     const diffs = bindingIndices.map(index => withInfo(F.diff(viewBindings[index], prevBindings[index]), `Diff for binding ${index}`))
@@ -188,7 +189,9 @@ export default function resolveViews(bundle: Bundle, im: TransformData): Bundle 
         c => F.map(c.declaration.mapSource as
             TypedFormula<Map<number, any>>, {$primitive: '', $T: ''} as TypedFormula<string>))), 'clones')
     const deletedClones = withInfo(
-        F.filter(F.map(clonesPrev, F.diff(F.get(clonesPrev, F.key()), F.get(viewClones, F.key()))), F.key()), 'deleted clones')
+        F.filter(F.array(...cloneIndices.map(cloneIndex =>
+                withInfo(F.diff(F.get(clonesPrev, cloneIndex), F.get(viewClones, cloneIndex)),
+                `Remove clone ${cloneDeclarations[cloneIndex].selector}`))), F.size(F.value())), 'deleted clones')
 
     const viewDiff = withInfo(F.flatMap(F.array(0, 1),
         F.cond(F.key(),
@@ -205,7 +208,8 @@ export default function resolveViews(bundle: Bundle, im: TransformData): Bundle 
 
     im.outputs = {
         '@view_channel': F.cond(F.size(viewDiff),
-        F.encode(viewDiff, {$type: {dictionary: ['u32', {dictionary: ['u32', 'string']}]}}), null)
+        withInfo(F.encode(viewDiff,
+            {$type: {dictionary: ['u32', {dictionary: ['u32', 'string']}]}}), 'encode outbox'), null)
     }
 
     return bundle.flatMap((statement) => {

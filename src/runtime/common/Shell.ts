@@ -13,14 +13,9 @@ export default function createShell({store, ports}: ShellParams) {
             return
 
         running = true
-        do {
-            store.commit()
-            const outbox = await store.dequeue()
-            outbox.forEach(([target, payload]) => {
-                debugger
-                ports[target].postMessage({payload}, [payload])
-            })
-        } while (!(await store.awaitIdle()))
+        await store.commit((target, payload) => {
+            ports[target].postMessage({payload}, [payload])
+        })
         running = false
     }
 
