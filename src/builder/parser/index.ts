@@ -145,30 +145,32 @@ export function parseKalDocument(
 
     const parseFormulaNode = (n: ast.AstNode|null): Formula => {
         const node = assert(n)
+        const info = node.toString()
 
         if (node.type === 'MAP') {
             const n = node as ast.MapNode
             return {
-                op: 'object', $token: {range: n.range, file},
+                op: 'object', $token: {range: n.range, file, info},
                 args: (n.items as ast.Pair[]).map(({key, value, range}: ast.Pair) =>
                     ({ op: 'tuple', $token: {range, file},
                        args: [parseFormulaNode(key), parseFormulaNode(value)]}))} as FunctionFormula
         }
 
         const formula = parseFormula(node.toJSON())
-        const $token = {range: node.range, file}
+        const $token = {range: node.range, file, info}
         fixTokens(formula, (t?: Token) => (t && t.range && node.range)
-            ? ({file, range: t.range.map(r => r + (node.range as [number, number])[0]) as [number, number]}) : {})
+            ? ({info, file, range: t.range.map(r => r + (node.range as [number, number])[0]) as [number, number]}) : {})
         return {...formula, $token}
     }
 
     const parseStateChildren = (node: ast.AstNode): Array<State|Transition> => {
         const s = castAst(node, 'MAP')
+        const info = node.toString()
 
         return s.items.map(p => {
             const key = p.key as ast.PlainValue
             const value = p.value as ast.AstNode
-            const atom = {...parseAtom(controllerParser)(key.toJSON()), $token: {file, range: key.range}}
+            const atom = {...parseAtom(controllerParser)(key.toJSON()), $token: {file, range: key.range, info}}
             switch (atom.type) {
                 case 'State':
                 case 'Parallel':
@@ -190,8 +192,9 @@ export function parseKalDocument(
 
     const parseDOMEventAction = (node: ast.AstNode | null): DOMEventAction => {
         const action = toStringNode(node)
+        const info = node ? node.toString() : null
 
-        const $token = {range: action.range, file}
+        const $token = {range: action.range, file, info}
         if (action.value === 'prevent default') {
             return {
                 $token,
@@ -217,9 +220,10 @@ export function parseKalDocument(
 
     const mapViewDeclaration = (k: ast.AstNode | null, value: ast.AstNode | null): ViewDeclaration => {
         const key = toStringNode(k)
+        const info = key.toString()
 
         try {
-            const $token = {range: key.range, file}
+            const $token = {range: key.range, file, info}
             const action = parseAtom(viewRulesParser)(key.value as string)
             switch (action.type) {
                 case 'DomEvent':
@@ -286,14 +290,16 @@ export function parseKalDocument(
     }
 
     const parseType = (node: ast.AstNode): NativeType => {
+        const info = node.toString()
         if (node.type === 'MAP')
             return {
-                $token: {range: node.range, file},
+                $token: {range: node.range, file, info},
                 tuple: node.items.map(item => (item.value as ast.PlainValue).value),
                 getters: node.items.map(item => (item.key as ast.PlainValue).value)
             } as NativeTupleType
 
-        return {...parseAtom(typeParser)(toStringNode(node).value), $token: {range: node.range, file}} as NativeType
+        const type = parseAtom(typeParser)(toStringNode(node).value)
+        return typeof type === 'object' ? {...type, $token: {range: node.range, file, info}} : type as NativeType
     }
 
     const mapViewRules = (node: ast.AstNode | null) => {

@@ -168,6 +168,7 @@ BWS -> Binary[BWS, "<<", AS] {% ExtractOp('shl') %}
 
 COMPARE ->
     Binary[COMPARE, "==", BWS] {% ExtractOp('eq') %}
+    | Binary[COMPARE, "===", BWS] {% ExtractOp('eq') %}
     | Binary[COMPARE, "<=", BWS] {% ExtractOp('lte') %}
     | Binary[COMPARE, "!=", BWS] {% ExtractOp('neq') %}
     | Binary[COMPARE, ">=", BWS] {% ExtractOp('gte') %}

@@ -185,7 +185,7 @@ export default function resolveControllers(bundle: Bundle, im: TransformData): B
                 const byName = bundle.find(s => s.name === asRef.$ref)
                 if (!byName)
                     throw new Error(`Undefined ref: ${asRef.$ref}`)
-                if(byName.type === 'Slot')
+                if (byName.type === 'Slot')
                     return parseAssignment((byName as SlotStatement).formula, source)
                 if (byName.type === 'Table')
                     return [parseTable(asRef), F.replace(), source]

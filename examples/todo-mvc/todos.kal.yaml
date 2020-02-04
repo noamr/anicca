@@ -17,7 +17,9 @@ filters:
     FilterType.Active: allTasks |> filter(!isTaskCompleted)
     FilterType.Completed: allTasks |> filter(isTaskCompleted)
 
-tasksToShow: filters[currentFilter]
+tasksToShow: |
+  filters[currentFilter]
+
 let currentFilter: u8
 let isEditing: bool
 
@@ -104,7 +106,7 @@ view todosView:
     on change(event):
       - dispatch toggleAll(event.target.checked) to todosController
   .todo-item:
-    for [id, task] in allTasks:
+    for [id, task] in tasksToShow:
       "&":
         class: |
             id == currentTask ? 'editing' :
@@ -138,3 +140,12 @@ view todosView:
         hasCompletedTasks ? 'visible' : 'hidden'
     on click:
       dispatch deleteCompleted to todosController
+  a[href$='/active']:
+    class: |
+      currentFilter == FilterType.Active ? 'selected' : ''
+  a[href$='/completed']:
+    class: |
+      currentFilter == FilterType.Completed ? 'selected' : ''
+  a[href$='/']:
+    class: |
+      currentFilter == FilterType.Any ? 'selected' : ''

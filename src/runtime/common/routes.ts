@@ -10,9 +10,10 @@ interface RouteParams {
 
 function encode_RouteChange(route: number, url: string): ArrayBuffer {
     const payload = new TextEncoder().encode(url)
-    const dv = new DataView(new ArrayBuffer(payload.byteLength + 4))
+    const dv = new DataView(new ArrayBuffer(payload.byteLength + 8))
     dv.setUint32(0, route)
-    new Uint8Array(dv.buffer).set(payload, 4)
+    dv.setUint32(4, payload.length)
+    new Uint8Array(dv.buffer).set(payload, 8)
     return dv.buffer
 }
 
@@ -30,10 +31,8 @@ export default function createRoutes({routes, port, header}: RouteParams) {
                     return
 
                 const url = hash.substr(prefix.length)
-                const router = routes[routerIndex]
-                const payload = encode_RouteChange(router, url)
+                const payload = encode_RouteChange(routerIndex, url)
                 port.postMessage({header, payload}, [payload])
-
             }
         })
     }

@@ -46,7 +46,7 @@ export default function resolveRouters(bundle: Bundle, im: TransformData): Bundl
             payload: {router: [0, 'u32'], address: [1, 'string']},
             actions: [
                 ...(rs.onChange || []),
-                {target: routes, key: routerIndex,
+                {target: F.get(routes, routerIndex),
                 source: {$ref: 'address'}, type: 'Assign'} as AssignTransitionAction
         ]}) as Transition)
 

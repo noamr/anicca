@@ -81,7 +81,7 @@ export default function createStoreInterpreter(spec: StoreSpec) {
         return result
     }
 
-    const evaluate = evaluateDebug
+    const evaluate = evaluateProd
 
     function update(table: number, key: any, value: any) {
         const ensure = () => (tables[table] || (tables[table] = new Map<any, any>())) as Map<any, any>

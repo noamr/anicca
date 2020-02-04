@@ -28,7 +28,7 @@ export default async function main(cfg: MainConfig) {
     initViews({config: views, rootElements, port: viewPort.port1})
     initRoutes({port: viewPort.port1, header: headers.route,
         routes: Object.entries(routes).map(([key, name]) =>
-            ({[key]: routeConfig[name]})).reduce((a, o) => Object.assign(a, o), {})})
+            ({[name]: routeConfig[key]})).reduce((a, o) => Object.assign(a, o), {})})
     worker.postMessage({type: 'start', payload: {ports: storePorts}}, storePorts)
 
     viewPort.port1.start()

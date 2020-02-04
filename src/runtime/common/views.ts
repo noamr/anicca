@@ -31,6 +31,7 @@ function ancestors(e: HTMLElement, a: HTMLElement|null): HTMLElement[] {
 interface View {
      select(rootSelector: string | null, selector: string, key: number|null): HTMLElement[]
      setIndex(e: HTMLElement, index: number): void
+     removeClone(e: HTMLElement): void
      commit(): void
 }
 
@@ -123,6 +124,20 @@ function createView(root: HTMLElement, events: EventSetup[], bindings: Binding[]
         indices.set(e, index)
     }
 
+    function removeClone(e: HTMLElement) {
+        const clone = cloneInfoMap.get(e) as CloneInfo
+        if (!clone)
+            return
+
+        clone.parent.removeChild(e)
+        indices.delete(e)
+        const key = cloneIds.get(e)
+        if (typeof key !== 'undefined') {
+            clone.children.delete(key)
+            cloneIds.delete(e)
+        }
+    }
+
     function commit(): void {
         for (const cloneToSort of clonesWithModifiedIndices) {
             const reverseSortedChildren = [...indices.keys()].filter(k => k.parentElement === cloneToSort.parent)
@@ -138,7 +153,7 @@ function createView(root: HTMLElement, events: EventSetup[], bindings: Binding[]
     for (const {root} of bindings.filter(b => b.type === 'remove'))
         createCloneInfo(root as string)
 
-    return {select, setIndex, commit}
+    return {select, setIndex, commit, removeClone}
 }
 
 const indices = new WeakMap<HTMLElement, number>()
@@ -164,8 +179,9 @@ const appliers: {[key in BindTargetType]: (e: HTMLElement, target: string, value
     },
     index: (e, t, value, view) =>
         assert(view).setIndex(e, +(value || 0)),
-    remove: (e, t, value) =>
-        assert(e.parentElement).removeChild(e)
+    remove: (e, t, value, view) => {
+        assert(view).removeClone(e)
+    }
 
 }
 

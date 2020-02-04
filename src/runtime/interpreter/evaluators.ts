@@ -23,7 +23,7 @@ const extractStringFunctions = <T extends keyof ''>(...keys: T[]) =>
         ((''[k]) as any).call(s(ctx), ...args.map(a => a(ctx)))})).reduce((a, o) => Object.assign(a, o), {})
 
 const flatMap = <K, V, K2, V2>(source: Evaluator<Map<K, V>>, predicate: Evaluator<Map<number, Map<number, K2|V2>>>) =>
-    (ctx: Context|null) => new Map(Array.from(source(ctx).keys()).flatMap(key => 
+    (ctx: Context|null) => new Map(Array.from((source(ctx) || new Map()).keys()).flatMap(key =>
         Array.from(predicate({ source, key }))))
 
 const flatReduce = (src: Evaluator, predicate: Evaluator, initialValue: Evaluator) => (ctx: Context|null) => {
