@@ -112,7 +112,7 @@ interface NodeTypes {
 }
 
 function castAst<T extends keyof NodeTypes>(node: ast.AstNode|null, type: T): NodeTypes[T] {
-    assert(node && node.type === type)
+    assert(node && node.type === type, `Expected ${node} to be of type ${type}`)
     return node as NodeTypes[T]
 }
 
@@ -207,6 +207,7 @@ export function parseKalDocument(
         }
 
         const a = parseAtom(domEventActionParser)(action.value as string) as DOMEventAction
+        assert(a, `Invalid DOM action: ${action.value}`)
         assert(a.type === 'Dispatch')
         return {...a, $token} as DispatchAction
     }

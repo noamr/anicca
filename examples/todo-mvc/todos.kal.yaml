@@ -2,6 +2,8 @@ table allTasks:
   completed: bool
   title: string
 
+let currentTask: u32
+
 enum FilterType:
   - Any
   - Completed
@@ -17,6 +19,7 @@ filters:
 
 tasksToShow: filters[currentFilter]
 let currentFilter: u8
+let isEditing: bool
 
 database tasksDB:
   persist allTasks:
@@ -31,23 +34,42 @@ router routeFilter:
     dispatch routeChanged to todosController
 
 controller todosController:
-  root:
-    on routeChanged:
-      dispatch changeFilter(routeFilter)
-    entering:
-      currentFilter = routeFilter
-    on completed(id as u32, completed as bool): |
-      allTasks[id] = [completed, allTasks[id].title]
-    on delete(id as u32): |
-      delete id from allTasks
-    on toggleAll(completed as bool):
-      allTasks = map(allTasks, [completed, value().title])
-    on deleteCompleted:
-      allTasks = filter(allTasks, !isTaskCompleted)
-    on changeFilter(filter as FilterType):
-      currentFilter = filter
-    on create(title as string):
-      allTasks[uid()] = [false, title]
+  root: 
+    initial:
+      - currentTask = 0
+      - currentFilter = routeFilter
+      - goto idle
+
+    editing:
+      entering:
+        - isEditing = true
+      leaving:
+        - isEditing = false
+        - currentTask = 0
+      on cancel:
+        - goto idle
+      on save(title as string):
+        - allTasks[currentTask] = [false, title]
+        - goto idle
+
+    idle:
+      on edit(id as u32):
+        - goto editing
+        - currentTask = id
+      on routeChanged:
+        dispatch changeFilter(routeFilter)
+      on completed(id as u32, completed as bool): |
+        allTasks[id] = [completed, allTasks[id].title]
+      on delete(id as u32): |
+        delete id from allTasks
+      on toggleAll(completed as bool):
+        allTasks = map(allTasks, [completed, value().title])
+      on deleteCompleted:
+        allTasks = filter(allTasks, !isTaskCompleted)
+      on changeFilter(filter as FilterType):
+        currentFilter = filter
+      on create(title as string):
+        allTasks[uid()] = [false, title]
 
 taskCount:
    allTasks |> size()
@@ -67,6 +89,8 @@ view todosView:
         hasTasks ? 'yes' : 'no'
       data initialized: |
         'yes'
+      data editing: |
+        isEditing ? 'yes' : 'no'
   .new-todo:
     on keydown(event) when event.keyCode==13:
       - dispatch create(event.target.value) to todosController
@@ -79,16 +103,27 @@ view todosView:
     for [id, task] in allTasks:
       "&":
         class: |
-            task.completed ? 'completed' : 'active'
+            id == currentTask ? 'editing' :
+            (task.completed ? 'completed' : 'active')
         id: |
           `task-${id}`
       label:
           content: task.title
+          on dblclick:
+              dispatch edit(id) to todosController
       .toggle:
           attribute checked: |
               task.completed ? 'checked' : null
           on change(event):
               dispatch completed(id, event.target.checked) to todosController
+      .edit:
+        attribute value: |
+          task.title
+        on keydown(event) when event.keyCode==13: |
+          dispatch save(event.target.value) to todosController
+        on change: |
+          dispatch save(event.target.value) to todosController
+          
       .destroy:
         on click:
             dispatch delete(id) to todosController
