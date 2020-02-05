@@ -30,7 +30,7 @@ export function flattenState(rootState: State): FlatStatechart {
 
     const isAtomicState = (s: State) => s.type === 'State' && !childStates(s).length
     const conditionFor = (t: Transition|null): Formula =>
-        (t && Reflect.has(t, 'condition')) ? t.condition as Formula : trueCondition
+        (t && t.condition) ? t.condition as Formula : trueCondition
     const trueCondition = {$primitive: true} as Formula
     const falseCondition = {$primitive: false} as Formula
 
@@ -192,7 +192,7 @@ export function flattenState(rootState: State): FlatStatechart {
                 if (!current)
                     return []
                 if (!next.length)
-                    return [current]
+                    return current.map(t => [t])
 
                 return computePivot(...next).map(
                     (p: Transition[]) => [...flatten(current.map(t => ([t, ...p])))] as Transition[])
@@ -203,30 +203,41 @@ export function flattenState(rootState: State): FlatStatechart {
                 condition:
                     transitions.length === 1 ?
                     conditionFor(head(transitions)) :
-                    F.and(...transitions.map(conditionFor)),
-                transitions: filterConflicts(transitions),
+                    F.or(...transitions.map(conditionFor)),
+                transitions: resolveConflicts(transitions),
             })).filter(a => a) as ConditionalTransitionSet[]
 
-            function filterConflicts(selected: Transition[]): Transition[] {
-                const filteredTransitions = new Set<Transition>()
+            function resolveConflicts(selected: Transition[]): Transition[] {
+                const preemptions = new Map<Transition, Set<Transition>>()
+                const preempt = (preempted: Transition, preemptor: Transition) => {
+                    const t = preemptions.get(preempted) || new Set<Transition>()
+                    t.add(preemptor)
+                    preemptions.set(preempted, t)
+                }
+
                 selected.forEach((t1, i) => {
-                    let t1Preempted = false
-                    const transitionsToRemove = new Set<Transition>()
                     for (const t2 of selected.slice(i + 1)) {
                         if (intersectSets(computeExitSet([t1]), computeExitSet([t2]))) {
                             if (isDescendant(getTransitionSource(t1), getTransitionSource(t2)))
-                                transitionsToRemove.add(t2)
+                                preempt(t1, t2)
                             else
-                                t1Preempted = true
+                                preempt(t2, t1)
                         }
                     }
-                    if (!t1Preempted) {
-                        for (const t3 of transitionsToRemove)
-                            filteredTransitions.delete(t3)
-                        filteredTransitions.add(t1)
-                    }
                 })
-                return [...filteredTransitions]
+
+                return selected.map(t => {
+                    if (!preemptions.has(t))
+                        return t
+
+                    const preemptors = [...preemptions.get(t) as Set<Transition>]
+                    const getCondition = ({condition}: Transition) => condition || {$primitive: true} as Formula
+                    const condition =
+                        withInfo(F.cond(getCondition(t), F.not(F.or(...preemptors.map(getCondition))), false),
+                            `Preemptive condition for ${JSON.stringify(t.$token)}`
+                        )
+                    return {...t, condition}
+                })
             }
         }
 

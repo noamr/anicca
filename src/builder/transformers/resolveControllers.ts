@@ -161,7 +161,7 @@ export default function resolveControllers(bundle: Bundle, im: TransformData): B
             {assignments: toFormula<Map<number, AssignmentDirective>>} {
         const hashToIndex: {[hash: string]: number} = {}
 
-        const [, fsc] = current
+        const [controllerName, fsc] = current
 
         forEach([...fsc.junctures], ([juncture], i) => { hashToIndex[juncture ? juncture.modus : ''] = i})
 
@@ -264,11 +264,11 @@ export default function resolveControllers(bundle: Bundle, im: TransformData): B
                                     F.eq(getInternalFromEventHeader, F.cond(F.eq(currentPhase, INTERNAL_PHASE), 1, 0)),
                                 )), null)
 
-        const currentEvent = withInfo(F.cond(F.eq(currentPhase, AUTO_PHASE), null, F.get(inbox, currentEventKey)), 'current event')
+        const currentEvent = withInfo(F.cond(F.eq(currentPhase, AUTO_PHASE), null, F.get(inbox, currentEventKey)), `${controllerName}: current event`)
         const currentEventType = withInfo(F.cond(F.isNil(currentEvent), 0,
-            F.bwand(F.plus(F.first(currentEvent), 1), (1 << TARGET_BITS) - 1)), 'current event type')
+            F.bwand(F.plus(F.first(currentEvent), 1), (1 << TARGET_BITS) - 1)), `${controllerName}: current event type`)
         const payloads = fsc.events.map((eventName, eventIndex) => ({[`@payload-${eventName}`]:
-            withInfo(F.cond(F.eq(currentEventType, eventIndex + 1), F.second(currentEvent), null), `Payload for controller ${index}, event ${eventName}`)
+            withInfo(F.cond(F.eq(currentEventType, eventIndex + 1), F.second(currentEvent), null), `Payload for controller ${controllerName}, event ${eventName}`)
         })).reduce(assign)
 
         const modusMap = withInfo(resolveRefs(F.object(...[...junctures.keys()]
@@ -279,7 +279,7 @@ export default function resolveControllers(bundle: Bundle, im: TransformData): B
                 return withInfo(
                         F.pair(header, F.pair(condition,
                             withInfo(F.array(...assignments.map(a => F.tuple(a[0], a[1], a[2]) as
-                                TypedFormula<[number, number, number]>)), 'assignments'))), `juncture: ${info}`)
+                                TypedFormula<[number, number, number]>)), 'assignments'))), j ? `juncture: ${info}(${j.event})` : 'initial')
             })), payloads), 'modus map')
 
         const modus = F.cond(F.size(modi), F.get(modi, index), 0)

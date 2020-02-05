@@ -53,11 +53,11 @@ controller todosController:
         - currentTask = 0
       on cancel:
         - goto idle
-      on save(title as string) when trim(title) == '':
+      on save(title as string) when !title || trim(title) == '':
         - delete currentTask from allTasks
         - goto idle
       on save(title as string):
-        - allTasks[currentTask] = [false, title]
+        - allTasks[currentTask] = [false, trim(title)]
         - goto idle
 
     idle:

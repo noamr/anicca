@@ -233,7 +233,7 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
         uid: strictTypeCheck(['u64', []]),
         now: strictTypeCheck(['u64', []]),
         toLowerCase: strictTypeCheck(['string', ['string']]),
-        trim: strictTypeCheck(['string', []]),
+        trim: strictTypeCheck(['string', ['string']]),
         toUpperCase: strictTypeCheck(['string', ['string']]),
         substring: strictTypeCheck(['string', ['number', 'number']]),
         startsWith: strictTypeCheck(['bool', ['string', 'string']]),
@@ -665,7 +665,7 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
     }
 
     const transformFormula = (formula: Formula): Formula =>
-        [resolveFormula, rewrite, resolveTypes, resolveTypedGetters, resolveConstants, resolveContext]
+        [resolveFormula, resolveTypes, resolveTypedGetters, resolveConstants, resolveContext]
             .reduce((a, f) => f(a), formula)
 
     im.roots = mapValues(im.roots, (value, key) => merge(transformFormula(value as Formula), {token: {info: key}}))

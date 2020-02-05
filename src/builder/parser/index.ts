@@ -58,7 +58,7 @@ const toArray = (a: ast.AstNode|null) => a ? a.type === 'SEQ' ? a.items : [a] : 
 const parseAtom = (b: () => Parser) => (s: string) => {
     const p = b()
     try {
-        p.feed(s)
+        p.feed(s.trim())
         p.finish()
     } catch (e) {
         if (e.token)
