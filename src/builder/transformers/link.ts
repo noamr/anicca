@@ -18,6 +18,7 @@ export default function link(bundle: Bundle, data: TransformData): StoreSpec {
     const tableTypes = mapValues(data.tableTypes, indexOfType)
     const onCommit = data.onCommit.map(indexOfFormula)
     data.types = [...typeMap.values()]
+    console.log(data.tables)
 
     return {
         channels: data.channels,

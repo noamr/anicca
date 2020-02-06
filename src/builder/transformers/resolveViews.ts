@@ -193,13 +193,12 @@ export default function resolveViews(bundle: Bundle, im: TransformData): Bundle 
                 withInfo(F.diff(F.get(clonesPrev, cloneIndex), F.get(viewClones, cloneIndex)),
                 `Remove clone ${cloneDeclarations[cloneIndex].selector}`))), F.size(F.value())), 'deleted clones')
 
-    const viewDiff = withInfo(F.flatMap(F.array(0, 1),
-        F.cond(F.key(),
+    const viewDiff = withInfo(F.combine(
             F.flatMap(deletedClones, F.object(
                 F.pair(F.plus(F.key(), bindingIndices.length),
                     F.value() as TypedFormula<Map<number, string>>))),
             bindingsDiff
-        )), 'view diff with clones')
+        ), 'view diff with clones')
 
     im.onCommit = [
         ...im.onCommit,

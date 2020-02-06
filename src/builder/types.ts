@@ -463,6 +463,8 @@ export type FormulaBuilder = {
         ResolveType<T> extends nativeToJS<infer NT> ? toFormula<ArrayBuffer> : never : never
     decode<T, NTF>(buffer: toArgType<ArrayBuffer|null>, type: NTF):
         NTF extends NativeTypeFormula<infer NT> ? T : never
+
+    combine<M>(...maps: M[]): IsMapType<ResolveType<M>> extends true ? toFormula<M> : never
 }
 
 export type Bundle = Statement[]

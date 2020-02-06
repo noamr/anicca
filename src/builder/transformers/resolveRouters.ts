@@ -63,8 +63,9 @@ export default function resolveRouters(bundle: Bundle, im: TransformData): Bundl
         const {onChange, name} = rs
         // TODO: complex routes
         return [
-            {type: 'Slot', name, formula: F.get(F.object(...Object.entries(rs.routes).map(([k, v]) => F.pair(k, v))),
-            F.get(routes, routerIndex))} as SlotStatement,
+            {type: 'Slot', name, formula:
+                F.get(F.object(...Object.entries(rs.routes).map(([k, v]) => F.pair(k, v))),
+                      F.get(routes, routerIndex))} as SlotStatement,
         ]
     })
 

@@ -33,17 +33,17 @@ const phases = {$ref: PHASE_TABLE, $T: new Map<number, number>()}
 const inbox = {$ref: INBOX_TABLE, $T: new Map<number, EventType>()}
 const timers = {$ref: TIMER_TABLE, $T: new Map<number, number>()}
 
-function resolveRefs(formula: Formula, refs: {[name: string]: Formula}): Formula {
+function resolveRefs<T extends Formula>(formula: T, refs: {[name: string]: Formula}): T {
     const ref = Reflect.get(formula, '$ref')
     if (refs[ref])
-        return refs[ref]
+        return refs[ref] as T
 
     if (!Reflect.has(formula, 'args'))
         return formula
 
-    const {args} = formula as FunctionFormula
+    const {args} = formula as any as {args: T[]}
 
-    return {...formula, args: assert(args).map(a => resolveRefs(a, refs))} as FunctionFormula
+    return {...formula as any, args: assert(args).map(a => resolveRefs(a, refs))} as T
 }
 
 export default function resolveControllers(bundle: Bundle, im: TransformData): Bundle {
@@ -241,7 +241,6 @@ export default function resolveControllers(bundle: Bundle, im: TransformData): B
 
         type AssignmentDirective = [number, any, any]
         interface JValue {condition: TypedFormula<boolean>, assignments: AssignmentDirective[], info: string}
-
         const junctures = new Map([...fsc.junctures].map(
             ([juncture, results]) => tuple(juncture ? {
                 event: juncture.event,
@@ -292,10 +291,9 @@ export default function resolveControllers(bundle: Bundle, im: TransformData): B
         const advance = withInfo(F.put(parseTable(phases), index, nextPhase), 'advance phase')
         const deleteCurrentEvent = F.put(parseTable(inbox), currentEventKey,
             F.delete()) as TypedFormula<AssignmentDirective>
-        const assignments = withInfo(F.flatMap([0, 1],
-            F.cond(F.key(), F.second(currentJuncture), F.cond(currentEventKey,
+        const assignments = withInfo(F.combine(F.second(currentJuncture), F.cond(currentEventKey,
                 withInfo(F.object(F.pair(10000, advance), F.pair(10001, deleteCurrentEvent)), 'delete current event'),
-                withInfo(F.object(F.pair(10000, advance)), 'advance without event')))), 'assignments')
+                withInfo(F.object(F.pair(10000, advance)), 'advance without event'))), 'assignments')
 
         return {assignments}
     }

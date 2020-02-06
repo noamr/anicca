@@ -48,7 +48,10 @@ export default function initPersist(header: number, stores: string[]) {
                 for (const [storeIndex, entries] of decoded) {
                     const store = transaction.objectStore(stores[storeIndex])
                     for (const [id, buffer] of entries)
-                        store.put(buffer, id)
+                        if (buffer.byteLength)
+                            store.put(buffer, id)
+                        else
+                            store.delete(id)
                 }
             })
 

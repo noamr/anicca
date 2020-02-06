@@ -51,7 +51,7 @@ function createView(root: HTMLElement, events: EventSetup[], bindings: Binding[]
         Array.from(select(root, selector, key)).includes(e)
 
     const emit = (header: number, payload: ArrayBuffer) =>
-        port.postMessage({header, payload}, [payload])
+        port.postMessage({header, payload}, payload ? [payload] : [])
 
     const cloneIds = new WeakMap<HTMLElement, number>()
 

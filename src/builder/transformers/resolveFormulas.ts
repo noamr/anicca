@@ -16,6 +16,7 @@ const functions: {[name: string]: (...args: any[]) => Formula} = {
             F.object(F.pair(F.key() as any, F.value() as any)),
             F.object<M>())),
     map: <M, P>(m: M, predicate: P) => F.flatMap(m, F.object(F.pair(F.key(), predicate))),
+    mapKeys: <M, P>(m: M, predicate: P) => F.flatMap(m, F.object(F.pair(predicate, F.value()))),
     first: <M>(m: M) => F.at(m, 0),
     second: <M>(m: M) => F.at(m, 1),
     pair: <A, B>(a: A, b: B) => F.tuple(a, b),
@@ -38,8 +39,9 @@ const functions: {[name: string]: (...args: any[]) => Formula} = {
         args.length === 2 ? F.cond(args[0], args[1], args[0]) :
         F.cond(F.every(args, F.value()), F.tail(args), F.findFirst(args, F.not(F.value()))),
     diff: <K, V, T = Map<K, V>>(a: toArgType<T | null>, b: toArgType<T | null>) =>
-        F.cond(a, F.cond(b, F.filter(a, F.neq(F.value<V>(), F.get(b, F.key()))), a), null)
-
+        F.cond(a, F.cond(b, F.filter(a, F.neq(F.value<V>(), F.get(b, F.key()))), a), null),
+    combine: <M = Map<any, any>>(...maps: Array<toArgType<M>>) =>
+        F.flatMap(F.array(...maps), F.value())
 }
 
 function formulaToString(f: Formula): string {
@@ -297,6 +299,14 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
                 expect(k).toMatchType(key.type, key.$token)
                 return v
             }
+        },
+        has: (args: Formula[]) => {
+            assert(args.length === 2)
+            const [map, key] = args.map(resolveTypes)
+            expect(map.type).toBeADictionary()
+            const [k, v] = Reflect.get(map.type as object, 'dictionary')
+            expect(k).toMatchType(key.type, key.$token)
+            return v
         },
         at: (args: Formula[]) => {
             assert(args.length === 2)

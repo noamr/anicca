@@ -83,6 +83,20 @@ export default function createStoreInterpreter(spec: StoreSpec) {
 
     const evaluate = evaluateProd
 
+    function cloneDeep(o: any): any {
+        if (!o || typeof o !== 'object')
+            return o
+
+        if (Array.isArray(o))
+            return o.map(cloneDeep)
+
+        if (o instanceof Map)
+            return new Map([...o.entries()].map(cloneDeep))
+        if (o instanceof ArrayBuffer)
+            return (o.slice(0, o.byteLength))
+        return Object.entries(o).map(cloneDeep).reduce((a, o) => ({[o[0]]: o[1]}), {})
+    }
+
     function update(table: number, key: any, value: any) {
         const ensure = () => (tables[table] || (tables[table] = new Map<any, any>())) as Map<any, any>
         switch (key) {
@@ -90,7 +104,7 @@ export default function createStoreInterpreter(spec: StoreSpec) {
                 return
 
             case replaceSymbol:
-                tables[table] = new Map(value as Map<any, any>)
+                tables[table] = cloneDeep(value)
                 break
 
             case mergeSymbol:
@@ -101,7 +115,7 @@ export default function createStoreInterpreter(spec: StoreSpec) {
                 if (value === deleteSymbol)
                     ensure().delete(key)
                 else
-                    ensure().set(key, value)
+                    ensure().set(key, cloneDeep(value))
         }
     }
 

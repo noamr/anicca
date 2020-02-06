@@ -142,12 +142,12 @@ view todosView:
         hasCompletedTasks ? 'visible' : 'hidden'
     on click:
       dispatch deleteCompleted to todosController
-  a[href$='/active']:
+  a[href='#/active']:
     class: |
       currentFilter == FilterType.Active ? 'selected' : ''
-  a[href$='/completed']:
+  a[href='#/completed']:
     class: |
       currentFilter == FilterType.Completed ? 'selected' : ''
-  a[href$='/']:
+  a[href='#/']:
     class: |
       currentFilter == FilterType.Any ? 'selected' : ''
