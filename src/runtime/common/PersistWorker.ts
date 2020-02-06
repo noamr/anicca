@@ -22,7 +22,7 @@ export default function initPersist(header: number, stores: string[]) {
         function onDBLoaded(db: IDBDatabase) {
             const transaction = db.transaction(stores, 'readonly')
             const persistedData = stores.map(() => new Map<number, ArrayBuffer>())
-            stores.forEach((t, i) => {
+            stores.forEach((name, i) => {
                 const request = transaction.objectStore(name).openCursor()
                 request.addEventListener('success', e => {
                     const cursor = request.result as IDBCursorWithValue
@@ -38,7 +38,7 @@ export default function initPersist(header: number, stores: string[]) {
             port.addEventListener('message', (e) => {
                 const {payload}: {payload: ArrayBuffer} = e.data
                 const decoded = decode(payload,
-                    {dictionary: ['uin32', {dictionary: ['u32', 'ByteArray']}]}) as
+                    {dictionary: ['u32', {dictionary: ['u32', 'ByteArray']}]}) as
                         Map<number, Map<number, ArrayBuffer>> | null
                 if (!decoded)
                     return
@@ -56,7 +56,7 @@ export default function initPersist(header: number, stores: string[]) {
         }
 
         dbStart.addEventListener('upgradeneeded', e => initDB(dbStart.result as IDBDatabase))
-        dbStart.addEventListener('successes', e => onDBLoaded(dbStart.result as IDBDatabase))
+        dbStart.addEventListener('success', e => onDBLoaded(dbStart.result as IDBDatabase))
     }
 
     self.onmessage = ({data}) => {

@@ -151,7 +151,7 @@ function encodeAny(value: any, type: NativeType): ArrayBuffer[] {
         const tt = type as NativeTupleType<any>
 
         if (!Array.isArray(value))
-            throw new Error(`Expecting array when encoing ${value}`)
+            throw new Error(`Expecting array when encoding ${value}`)
         const a = value as any[]
         if (a.length !== tt.tuple.length)
             throw new Error(`Tuple length of ${value} is ${value.length}, expected ${tt.tuple.length}`)

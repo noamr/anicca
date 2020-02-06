@@ -28,9 +28,11 @@ export default function resolvePersist(bundle: Bundle, im: TransformData): Bundl
     const transitions = persistStatements.map(({onLoad, table}, index) =>
         ({type: 'Transition', event: '@persistRead',
             condition: F.eq({$ref: 'tableIndex', $T: 0} as TypedFormula<number>, index),
-            payload: {tableIndex: [0, 'u32'], data: [1, {dictionary: ['number', 'ByteArray']}]},
+            payload: {tableIndex: [0, 'u32'], data: [1, {dictionary: ['u32', 'ByteArray']}]},
             actions: [
-                {type: 'Assign', target: {$ref: table}, source: {$ref: 'data'}},
+                {type: 'Assign', target: {$ref: table}, source: F.map({$ref: 'data'},
+                    F.decode(F.value(), {$type: im.getTableType(table)}))},
+                {type: 'Assign', target: persist, key: index, source: {$ref: 'data'}},
                 ...onLoad
         ]}) as Transition)
 
