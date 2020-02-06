@@ -1,0 +1,214 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Root cheeky 1`] = `
+Array [
+  Object {
+    "col": 1,
+    "line": 1,
+    "lineBreaks": 0,
+    "offset": 0,
+    "text": "nothing",
+    "toString": [Function],
+    "type": "stuff",
+    "value": "nothing",
+  },
+]
+`;
+
+exports[`Root cheeky 2`] = `
+Array [
+  Object {
+    "key": Object {
+      "col": 1,
+      "line": 1,
+      "lineBreaks": 0,
+      "offset": 0,
+      "text": "nothing ",
+      "toString": [Function],
+      "type": "stuff",
+      "value": "nothing",
+    },
+    "value": Array [
+      Object {
+        "col": 10,
+        "line": 1,
+        "lineBreaks": 0,
+        "offset": 9,
+        "text": " hello ",
+        "toString": [Function],
+        "type": "stuff",
+        "value": "hello",
+      },
+    ],
+  },
+]
+`;
+
+exports[`Root cheeky 3`] = `
+Array [
+  Object {
+    "key": Object {
+      "col": 10,
+      "line": 2,
+      "lineBreaks": 1,
+      "offset": 10,
+      "text": "
+view ",
+      "toString": [Function],
+      "type": "stuff",
+      "value": "view",
+    },
+    "value": Array [
+      Object {
+        "key": Object {
+          "col": 7,
+          "line": 3,
+          "lineBreaks": 1,
+          "offset": 17,
+          "text": " 
+    #hello ",
+          "toString": [Function],
+          "type": "stuff",
+          "value": "#hello",
+        },
+        "value": Array [
+          Object {
+            "col": 13,
+            "line": 4,
+            "lineBreaks": 0,
+            "offset": 31,
+            "text": "123",
+            "toString": [Function],
+            "type": "stuff",
+            "value": "123",
+          },
+        ],
+      },
+      Object {
+        "col": 17,
+        "line": 4,
+        "lineBreaks": 1,
+        "offset": 35,
+        "text": "
+",
+        "toString": [Function],
+        "type": "stuff",
+        "value": "",
+      },
+    ],
+  },
+  Object {
+    "col": 2,
+    "line": 5,
+    "lineBreaks": 1,
+    "offset": 37,
+    "text": "
+        ",
+    "toString": [Function],
+    "type": "stuff",
+    "value": "",
+  },
+]
+`;
+
+exports[`Root cheeky 4`] = `
+Array [
+  Object {
+    "key": Object {
+      "col": 1,
+      "line": 1,
+      "lineBreaks": 0,
+      "offset": 0,
+      "text": "enum ",
+      "toString": [Function],
+      "type": "stuff",
+      "value": "enum",
+    },
+    "value": Array [
+      Object {
+        "col": 7,
+        "line": 1,
+        "lineBreaks": 0,
+        "offset": 6,
+        "text": "hello",
+        "toString": [Function],
+        "type": "stuff",
+        "value": "hello",
+      },
+      Object {
+        "col": 13,
+        "line": 1,
+        "lineBreaks": 0,
+        "offset": 12,
+        "text": "goodbye",
+        "toString": [Function],
+        "type": "stuff",
+        "value": "goodbye",
+      },
+      Object {
+        "col": 21,
+        "line": 1,
+        "lineBreaks": 0,
+        "offset": 20,
+        "text": "c4",
+        "toString": [Function],
+        "type": "stuff",
+        "value": "c4",
+      },
+    ],
+  },
+]
+`;
+
+exports[`Root cheeky 5`] = `
+Array [
+  Object {
+    "key": Object {
+      "col": 1,
+      "line": 1,
+      "lineBreaks": 0,
+      "offset": 0,
+      "text": "a ",
+      "toString": [Function],
+      "type": "stuff",
+      "value": "a",
+    },
+    "value": Array [
+      Object {
+        "key": Object {
+          "col": 4,
+          "line": 1,
+          "lineBreaks": 0,
+          "offset": 3,
+          "text": " b ",
+          "toString": [Function],
+          "type": "stuff",
+          "value": "b",
+        },
+        "value": Array [
+          Object {
+            "col": 8,
+            "line": 1,
+            "lineBreaks": 0,
+            "offset": 7,
+            "text": " C ",
+            "toString": [Function],
+            "type": "stuff",
+            "value": "C",
+          },
+        ],
+      },
+      Object {
+        "col": 12,
+        "line": 1,
+        "lineBreaks": 0,
+        "offset": 11,
+        "text": " ",
+        "toString": [Function],
+        "type": "stuff",
+        "value": "",
+      },
+    ],
+  },
+]
+`;

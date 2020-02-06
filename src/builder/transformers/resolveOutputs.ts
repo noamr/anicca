@@ -11,6 +11,8 @@ export default function resolveOutputs(b: Bundle, im: TransformData): Bundle {
     im.roots.outbox = F.filter(buffers, F.value())
     if (Object.keys(im.routes).length)
         im.headers = {...(im.headers || {}), route: im.getEventHeader('@route', '@routerController')}
+    if (Object.keys(im.persist).length)
+        im.headers = {...(im.headers || {}), persist: im.getEventHeader('@persistRead', '@persistController')}
     im.channels = names.map((name, i) => ({[name as string]: i})).reduce(assign, {})
     im.roots = assign({}, im.outputs, mapValues(im.roots))
     return b

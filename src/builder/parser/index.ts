@@ -4,7 +4,7 @@ import { Grammar, Parser} from 'nearley'
 import {resolve} from 'path'
 import {assert} from '../transformers/helpers'
 import {ast, cst, parseDocument} from 'yaml'
-import { NativeType, DatabaseStatement, NativeTupleType, Statement, ViewRule } from '../types'
+import { NativeType, PersistStatement, NativeTupleType, Statement, ViewRule } from '../types'
 import {
   BindDeclaration,
   Bundle,
@@ -190,6 +190,16 @@ export function parseKalDocument(
         })
     }
 
+    const parseDispatchAction = (node: ast.AstNode | null): DispatchAction => {
+        const action = toStringNode(node)
+        const info = node ? node.toString() : null
+        const a = parseAtom(domEventActionParser)(action.value as string) as DOMEventAction
+        const $token = {range: action.range, file, info}
+        assert(a, `Invalid DOM action: ${action.value}`)
+        assert(a.type === 'Dispatch')
+        return {...a, $token} as DispatchAction
+    }
+
     const parseDOMEventAction = (node: ast.AstNode | null): DOMEventAction => {
         const action = toStringNode(node)
         const info = node ? node.toString() : null
@@ -209,10 +219,7 @@ export function parseKalDocument(
             } as DOMEventAction
         }
 
-        const a = parseAtom(domEventActionParser)(action.value as string) as DOMEventAction
-        assert(a, `Invalid DOM action: ${action.value}`)
-        assert(a.type === 'Dispatch')
-        return {...a, $token} as DispatchAction
+        return parseDispatchAction(node)
     }
 
     const parseViewDeclarations = (v: ast.AstNode): ViewDeclaration[] =>
@@ -340,18 +347,15 @@ export function parseKalDocument(
             name: key.name,
             formula: parseFormulaNode(formula),
         } as SlotStatement),
-        Database: (key: any, declarations: ast.AstNode) => ({
-            type: 'Database',
-            name: key.name,
-            persist: ((declarations as ast.Map).items as ast.Pair[]).map(({key, value}) => {
-                const table = (key as ast.PlainValue).value as string
-                assert(table.startsWith('persist '))
-                return {
-                    table: table.substr(8),
-                    mode: 'optimistic'
-                }
-            }),
-        } as DatabaseStatement),
+        Persist: (key: any, declarations: ast.AstNode) => ({
+            type: 'Persist',
+            table: key.name,
+            onLoad: ((declarations as ast.Map).items as ast.Pair[])
+                .filter(e => toStringNode(e.key).value === 'on load').flatMap(({key, value}) =>
+                toArray(value).map(parseDispatchAction)),
+            store: (((declarations as ast.Map).items as ast.Pair[])
+                .find(e => toStringNode(e.key).value === 'store') || {value: key.name}).value
+        } as PersistStatement),
         Router: (key: any, declarations: ast.AstNode) => {
             const map = castAst(declarations, 'MAP')
             const routes = map.items.find(({key}) => toStringNode(key).value === 'routes') || null
@@ -409,7 +413,7 @@ export function parseKalDocument(
 
         assert(rootKey)
 
-        const p = assert(valueParser[rootKey.type])
+        const p = assert(valueParser[rootKey.type], `Could not find parser for ${rootKey.type}`)
         let v
         try {
             v = p(rootKey, value as ast.AstNode)

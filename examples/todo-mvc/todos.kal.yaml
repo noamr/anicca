@@ -23,9 +23,10 @@ tasksToShow: |
 let currentFilter: u8
 let isEditing: bool
 
-database tasksDB:
-  persist allTasks:
-    mode: optimistic
+persist allTasks:
+  store: tasks
+  on load:
+    - dispatch dbReady to todosController
 
 router routeFilter:
   routes:
@@ -43,8 +44,12 @@ controller todosController:
     initial:
       - currentTask = 0
       - currentFilter = routeFilter
-      - goto idle
+      - goto waitForDB
 
+    waitForDB:
+      on dbReady:
+        - goto idle
+  
     editing:
       entering:
         - isEditing = true
@@ -77,11 +82,8 @@ controller todosController:
       on create(title as string):
         allTasks[uid()] = [false, title]
 
-taskCount:
-   allTasks |> size()
-
-hasTasks:
-  taskCount != 0
+taskCount: size(allTasks)
+hasTasks: taskCount != 0
 
 hasCompletedTasks:
   filters[FilterType.Completed] |> size() > 0

@@ -184,6 +184,11 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
         }
     }
 
+    im.tableTypes =
+        bundle.filter(({type}) => type === 'Table')
+            .map((s) => ({[im.tables[s.name as string]]: im.resolveNamedTypes((s as TableStatement).valueType)}))
+            .reduce(assign)
+
     let currentMap: Formula | null = null
     let currentAggregate: Formula | null = null
 
@@ -367,7 +372,7 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
         },
         encode: (args: Formula[]) => {
             assert(args.length === 2)
-            assert(Reflect.has(args[1], '$type'))
+            assert(Reflect.has(args[1], '$type'), `Missing type in encode`)
             resolveTypes(args[0])
             return 'ByteArray'
         },
@@ -398,7 +403,7 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
         table: (args: Formula[]) => {
             assert(args.length === 1)
             const tableIndex = Reflect.get(resolveTypes(args[0]), '$primitive') as number
-            assert(Reflect.has(im.tableTypes, tableIndex), `Table not found: ${args[0]}`)
+            assert(Reflect.has(im.tableTypes, tableIndex), `Table not found: ${tableIndex}`)
             return {dictionary: ['u32', im.tableTypes[tableIndex]]}
         },
         noop: (args: Formula[]) => {
@@ -472,45 +477,9 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
         return {...f, op, args} as Formula
     }
 
-    const enums = bundle.filter(s => s.type === 'Enum').map(s => {
-        const {values, name} = s as EnumStatement
-        const v = Object.values(values)
-        const enumType = v.some(v => Math.floor(v) !== v) ? 'f64' : 'i32'
-        const type = {
-            getters: Object.keys(values),
-            tuple: v.map(() => enumType)
-        } as NativeTupleType
-        return {
-            [name as string]: {
-                op: 'tuple',
-                type,
-                args: v.map(n => ({$primitive: n, type: enumType}))
-            } as FunctionFormula
-        }
-    }).reduce(assign, {}) as {[key: string]: FunctionFormula }
-
-    const resolveNamedTypes = (t: NativeType | string): NativeType => {
-        if (typeof t === 'string' && enums[t])
-            return 'i32'
-
-        if (typeof t !== 'object')
-            return t as NativeType
-
-        if (Reflect.has(t, 'tuple'))
-            return {...t, tuple: ((t as NativeTupleType).tuple || []).map(resolveNamedTypes)}
-        if (Reflect.has(t, 'dictionary'))
-            return {...t, dictionary: ((t as NativeDictionaryType).dictionary || [])
-                .map(resolveNamedTypes) as [NativeType, NativeType]}
-        return t as NativeType
-    }
-
-    im.tableTypes =
-        bundle.filter(({type}) => type === 'Table')
-            .map((s) => ({[im.tables[s.name as string]]: resolveNamedTypes((s as TableStatement).valueType)}))
-            .reduce(assign)
 
     const refs = {
-        ...enums,
+        ...im.enums,
         ...bundle.filter(s => s.type === 'Slot')
             .map(s => ({[s.name as string]: (s as SlotStatement).formula})).reduce(assign, {}),
         ...mapValues(im.tables, n => F.table(n)),
@@ -533,7 +502,7 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
 
         const resolvedFormula = ((): Formula => {
             if (Reflect.has(f, '$type'))
-                return {...f, $type: resolveNamedTypes(Reflect.get(f, '$type'))} as Formula
+                return {...f, $type: im.resolveNamedTypes(Reflect.get(f, '$type'))} as Formula
             if (Reflect.has(f, '$primitive'))
                 return f
 
@@ -599,7 +568,7 @@ export default function resolveFormulas(bundle: Bundle, im: TransformData): Bund
                 return primitiveToNativeType(Reflect.get(formula, '$primitive')) as NativeType
 
             const {op, args, type} = formula as FunctionFormula
-            return resolveNamedTypes((typeChecks as any)[op](args) as NativeType)
+            return im.resolveNamedTypes((typeChecks as any)[op](args) as NativeType)
         })()
         return formula
     }

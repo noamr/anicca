@@ -1,7 +1,7 @@
 import {NativeType, RawFormula, StoreSpec} from '../../builder/types'
 import { Enqueue, Store } from '../shell/RuntimeTypes'
 import {defaultEvaluators, Context, Evaluator} from './evaluators'
-import {decode, encode} from './transport'
+import {decode, encode} from '../common/transport'
 
 const noopSymbol = Symbol('noop')
 const deleteSymbol = Symbol('delete')

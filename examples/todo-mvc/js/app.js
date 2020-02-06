@@ -5,7 +5,7 @@
 		todosView: document.querySelector('.todoapp')
 	}, routes: {
 		routeFilter: '#'
-	}})
+	}, dbName: 'todo-mvc'})
 	// Your starting point. Enjoy the ride!
 
 })(window);

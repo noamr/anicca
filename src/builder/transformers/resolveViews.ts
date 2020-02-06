@@ -202,11 +202,13 @@ export default function resolveViews(bundle: Bundle, im: TransformData): Bundle 
         )), 'view diff with clones')
 
     im.onCommit = [
+        ...im.onCommit,
         withInfo(F.put(im.tables['@view_prev'], F.replace(), viewBindingsToCommit), 'commit view bindings'),
         withInfo(F.put(im.tables['@view_prev_clones'], F.replace(), viewClones), 'commit view clones')
     ]
 
     im.outputs = {
+        ...(im.outputs || {}),
         '@view_channel': F.cond(F.size(viewDiff),
         withInfo(F.encode(viewDiff,
             {$type: {dictionary: ['u32', {dictionary: ['u32', 'string']}]}}), 'encode outbox'), null)

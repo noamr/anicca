@@ -43,7 +43,6 @@ function encodeSingle(value: any, type: NativeType): ArrayBuffer[] {
     }
 }
 
-
 function decodeSingle(view: DataView, type: NativeType): [any, DataView] {
     switch (type) {
         case 'u32':

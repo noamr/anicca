@@ -11,7 +11,7 @@ RootType ->
     | "table" 
     | "slot"
     | "bus"
-    | "database"
+    | "persist"
     | "router"
     | "enum"
     | "import"

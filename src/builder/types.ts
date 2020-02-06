@@ -1,6 +1,8 @@
 export type Primitive = string | number | boolean | null
 
-export type StatementType = 'Const' | 'View' | 'Main' | 'Let' | 'Controller' | 'Slot' | 'Bus' | 'Table' | 'Database' | 'Router' | 'Enum'
+export type StatementType = 
+    'Const' | 'View' | 'Main' | 'Let' | 'Controller' | 'Slot' |
+    'Bus' | 'Table' | 'Persist' | 'Router' | 'Enum'
 
 export interface Token{
     file?: string
@@ -30,13 +32,11 @@ export interface SlotStatement extends Statement {
     formula: Formula
 }
 
-export interface PersistDeclaration {
+export interface PersistStatement extends Statement {
+    type: 'Persist'
     table: string
-    mode: 'optimistic'
-}
-export interface DatabaseStatement extends Statement {
-    type: 'Database'
-    persist: PersistDeclaration[]
+    store: string
+    onLoad: DispatchAction[]
 }
 
 export interface RouterStatement extends Statement {
@@ -350,7 +350,7 @@ export interface ViewSetup {
     events: EventSetup[]
 }
 export type RootType = 'inbox' | 'outbox' | 'idle' | 'staging' | 'commitView' | 'commitClones' | 'viewChannel'
-export type HeaderType = 'route'
+export type HeaderType = 'route' | 'persist'
 
 export interface TransformData {
     tables: {[name: string]: number}
@@ -362,6 +362,10 @@ export interface TransformData {
     channels: {[name: string]: number}
     onCommit: Formula[]
     outputs: {[name: string]: TypedFormula<ArrayBuffer|null>}
+    persist: string[]
+    enums: {[key: string]: Formula}
+    resolveNamedTypes: (type: NativeType | string) => NativeType
+    getTableType: (table: string) => NativeType
     getEventHeader: (event: string, target: string) => number
     getEventPayloadType: (event: string, target: string) => NativeType
     types: NativeType[]

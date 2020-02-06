@@ -24,7 +24,7 @@ export function parse(yamlString: string, filename: string, opt: ParseOptions = 
 
 export async function build(config: BuildOptions): Promise<void> {
     const bundle = parse(config.src || fs.readFileSync(config.inputPath || '', 'utf8'), config.inputPath || '#')
-    const {store, views, channels, routes, headers} = transformBundle(bundle)
+    const {store, views, channels, routes, persist, headers} = transformBundle(bundle)
     const toOutputPath = (p: string) => path.resolve(config.outputDir, p)
     const resolveLib = (p: string) => path.relative(config.outputDir, path.resolve(__dirname, p))
 
@@ -33,11 +33,14 @@ export async function build(config: BuildOptions): Promise<void> {
     const viewsDebugOutputPath = toOutputPath('views-debug.json')
     const viewsOutputPath = toOutputPath('views.js')
     const routesOutputPath = toOutputPath('routes.json')
+    const persistOutputPath = toOutputPath('persist.json')
     const busOutputPath = toOutputPath('channels.json')
     const mainOutputPath = toOutputPath('main.js')
-    const workerOutputPath = toOutputPath('worker.js')
+    const storeWorkerOutputPath = toOutputPath('store-worker.js')
+    const persistWorkerOutputPath = toOutputPath('persist-worker.js')
     const mainWrapperOutputPath = toOutputPath('main-wrapper.js')
-    const workerWrapperOutputPath = toOutputPath('worker-wrapper.js')
+    const storeWorkerWrapperOutputPath = toOutputPath('store-worker-wrapper.js')
+    const persistWorkerWrapperOutputPath = toOutputPath('persist-worker-wrapper.js')
     const headersOutputPath = toOutputPath('headers.json')
 
 
@@ -116,6 +119,7 @@ export async function build(config: BuildOptions): Promise<void> {
         }
     `))
     fs.writeFileSync(routesOutputPath, JSON.stringify(routes, null, 4))
+    fs.writeFileSync(persistOutputPath, JSON.stringify(persist, null, 4))
     fs.writeFileSync(headersOutputPath, JSON.stringify(headers, null, 4))
 
     const mainWrapper = `
@@ -125,8 +129,11 @@ export async function build(config: BuildOptions): Promise<void> {
         import routeConfig from './routes.json'
         import headers from './headers.json'
 
-        export default function init({rootElements, routes}) {
-            return main({rootElements, routes, views, channels, storeWorkerPath: '.kal/worker.js', routeConfig, headers})
+        export default function init({rootElements, routes, dbName}) {
+            return main({
+                rootElements, routes, views, channels,
+                persistWorkerPath: '.kal/persist-worker.js', dbName,
+                storeWorkerPath: '.kal/store-worker.js', routeConfig, headers})
         }
     `
 
@@ -135,6 +142,11 @@ export async function build(config: BuildOptions): Promise<void> {
         import store from './store.json'
 
         initStore(store)
+    `
+    const persistWorkerWrapper = `
+        import initPersistor from '${resolveLib('../runtime/common/PersistWorker')}'
+
+        initPersistor(${headers.persist}, ${JSON.stringify(persist)})
     `
 
     const rollupConfig = (name: string) => ({
@@ -152,13 +164,13 @@ export async function build(config: BuildOptions): Promise<void> {
         },
     })
 
-    fs.writeFileSync(workerWrapperOutputPath, interpreterWorkerWrapper)
+    fs.writeFileSync(storeWorkerWrapperOutputPath, interpreterWorkerWrapper)
+    fs.writeFileSync(persistWorkerWrapperOutputPath, persistWorkerWrapper)
     fs.writeFileSync(mainWrapperOutputPath, mainWrapper)
 
-    const mainConfig = rollupConfig('main')
-    const workerConfig = rollupConfig('worker')
-    const b1 = await rollup(mainConfig.inputOptions)
-    await b1.write(mainConfig.outputOptions)
-    const b2 = await rollup(rollupConfig('worker').inputOptions)
-    await b2.write(workerConfig.outputOptions)
+    for (const name of ['main', 'persist-worker', 'store-worker']) {
+        const cfg = rollupConfig(name)
+        const output = await rollup(cfg.inputOptions)
+        await output.write(cfg.outputOptions)
+    }
 }
